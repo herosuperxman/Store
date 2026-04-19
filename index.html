@@ -276,14 +276,31 @@
 
     /* ===== NAV PANEL ===== */
     .nav-panel {
-      position:fixed; top:0; right:0; bottom:0; width:260px; z-index:300;
+      position:fixed; top:0; left:0; bottom:0; width:220px; z-index:300;
       background:linear-gradient(180deg,rgba(14,10,32,0.98),rgba(10,8,24,0.98));
-      border-left:1px solid var(--glassBorder); backdrop-filter:blur(16px);
-      transform:translateX(100%); transition:transform 0.25s ease-out;
+      border-right:1px solid var(--glassBorder); backdrop-filter:blur(16px);
       display:flex; flex-direction:column; padding:16px;
       overflow-y:auto;
     }
-    .nav-panel.open { transform:translateX(0); }
+    /* Desktop: always visible, no close button */
+    @media (min-width:769px) {
+      .nav-panel { transform:none !important; }
+      .nav-close-btn { display:none !important; }
+      .nav-overlay { display:none !important; }
+      #app { margin-left:220px; }
+      .header { left:220px; }
+      .hamburger-btn { display:none !important; }
+    }
+    /* Mobile: slide-in drawer from left */
+    @media (max-width:768px) {
+      .nav-panel {
+        transform:translateX(-100%); transition:transform 0.25s ease-out;
+        width:100%; max-width:280px;
+      }
+      .nav-panel.open { transform:translateX(0); }
+      #app { margin-left:0; }
+      .header { left:0; }
+    }
     .nav-item {
       display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px;
       font-size:14px; font-weight:600; color:var(--textSecondary); cursor:pointer;
@@ -322,18 +339,18 @@
 <div class="nav-panel" id="navPanel">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
     <span style="font-family:'Orbitron',monospace;font-size:13px;color:var(--purpleLight);font-weight:900;letter-spacing:2px">GAMEOPS</span>
-    <button class="btn btn-ghost btn-sm" onclick="closeNav()">✕</button>
+    <button class="btn btn-ghost btn-sm nav-close-btn" onclick="closeNav()">✕</button>
   </div>
   <div class="nav-item" data-view="dashboard" onclick="navTo('dashboard')">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     Dashboard
   </div>
   <div class="nav-item" data-view="cashin" onclick="navTo('cashin')">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
     <span style="color:var(--green)">Cash In</span>
   </div>
   <div class="nav-item" data-view="cashout" onclick="navTo('cashout')">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><path d="M12 19V5M5 12l7 7 7-7"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
     <span style="color:var(--orange)">Cash Out</span>
   </div>
   <div class="nav-divider"></div>
@@ -378,6 +395,22 @@ const firebaseConfig = {
 const fbApp = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(fbApp);
 const db = firebase.firestore(fbApp);
+
+/*
+  ============================================================
+  FIRESTORE SECURITY RULES — paste into Firebase Console:
+  https://console.firebase.google.com → Firestore → Rules
+  ============================================================
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /users/{userId}/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+  ============================================================
+*/
 
 // ============================================================
 // STATE
@@ -494,7 +527,7 @@ function renderHeader() {
     </div>
     <div class="header-actions">
       <span id="hdrClock" style="font-family:'Rajdhani',monospace;font-size:11px;color:var(--textMuted);display:none"></span>
-      <button class="btn btn-ghost btn-sm" onclick="openNav()" style="padding:7px">
+      <button class="btn btn-ghost btn-sm hamburger-btn" onclick="openNav()" style="padding:7px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--textSecondary)" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
       </button>
     </div>
@@ -591,16 +624,14 @@ function bindAuth() {
   const googleBtnEl = $('googleBtn');
   const googleBtnHTML = googleBtnEl.innerHTML;
   googleBtnEl.onclick = async () => {
-    googleBtnEl.disabled = true;
-    googleBtnEl.textContent = 'Signing in...';
+    googleBtnEl.disabled = true; googleBtnEl.textContent = 'Signing in...';
     $('authErr').textContent = '';
     try {
       const provider = new firebase.auth.GoogleAuthProvider();
       await auth.signInWithPopup(provider);
     } catch(e) {
       $('authErr').textContent = e.message.replace('Firebase: ','').replace(/\(auth.*\)/,'').trim();
-      googleBtnEl.disabled = false;
-      googleBtnEl.innerHTML = googleBtnHTML;
+      googleBtnEl.disabled = false; googleBtnEl.innerHTML = googleBtnHTML;
     }
   };
 }
@@ -617,11 +648,11 @@ function renderDashboard() {
     <!-- Quick Actions -->
     <div class="quick-action-bar">
       <button class="quick-btn-cashin" onclick="navTo('cashin')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
         CASH IN
       </button>
       <button class="quick-btn-cashout" onclick="navTo('cashout')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7 7 7-7"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
         CASHOUT
       </button>
     </div>
