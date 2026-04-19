@@ -275,42 +275,43 @@
     .toast-info { background:rgba(124,58,237,0.9); color:#fff; }
 
     /* ===== NAV PANEL ===== */
+    /* DESKTOP (≥769px): always-visible left sidebar */
     .nav-panel {
-      position:fixed; top:0; left:0; bottom:0; width:220px; z-index:300;
-      background:linear-gradient(180deg,rgba(14,10,32,0.98),rgba(10,8,24,0.98));
-      border-right:1px solid var(--glassBorder); backdrop-filter:blur(16px);
-      display:flex; flex-direction:column; padding:16px;
-      overflow-y:auto;
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px; z-index: 300;
+      background: linear-gradient(180deg,rgba(14,10,32,0.99),rgba(10,8,24,0.99));
+      border-right: 1px solid var(--glassBorder); backdrop-filter: blur(16px);
+      display: flex; flex-direction: column; padding: 16px;
+      overflow-y: auto;
+      /* Desktop: always shown, no transition needed */
+      transform: translateX(0);
     }
-    /* Desktop: always visible, no close button */
-    @media (min-width:769px) {
-      .nav-panel { transform:none !important; }
-      .nav-close-btn { display:none !important; }
-      .nav-overlay { display:none !important; }
-      #app { margin-left:220px; }
-      .header { left:220px; }
-      .hamburger-btn { display:none !important; }
+    /* Desktop: push content right, hide hamburger & close btn */
+    @media (min-width: 769px) {
+      #app { margin-left: 220px; }
+      .nav-close-btn { display: none !important; }
+      .hamburger-btn { display: none !important; }
+      .nav-overlay { display: none !important; }
     }
-    /* Mobile: slide-in drawer from left */
-    @media (max-width:768px) {
+    /* MOBILE (<769px): slide-in drawer from left */
+    @media (max-width: 768px) {
       .nav-panel {
-        transform:translateX(-100%); transition:transform 0.25s ease-out;
-        width:100%; max-width:280px;
+        width: 260px;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease-out;
       }
-      .nav-panel.open { transform:translateX(0); }
-      #app { margin-left:0; }
-      .header { left:0; }
+      .nav-panel.open { transform: translateX(0); }
+      #app { margin-left: 0; }
     }
     .nav-item {
-      display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px;
-      font-size:14px; font-weight:600; color:var(--textSecondary); cursor:pointer;
-      transition:all 0.15s; margin-bottom:2px;
+      display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; color: var(--textSecondary); cursor: pointer;
+      transition: all 0.15s; margin-bottom: 2px;
     }
-    .nav-item:hover { background:var(--bgHover); color:var(--textPrimary); }
-    .nav-item.active { background:rgba(124,58,237,0.18); color:var(--purpleLight); border:1px solid rgba(124,58,237,0.25); }
-    .nav-divider { height:1px; background:var(--border); margin:8px 0; }
-    .nav-overlay { position:fixed; inset:0; z-index:299; background:rgba(0,0,0,0.5); display:none; }
-    .nav-overlay.open { display:block; }
+    .nav-item:hover { background: var(--bgHover); color: var(--textPrimary); }
+    .nav-item.active { background: rgba(124,58,237,0.18); color: var(--purpleLight); border: 1px solid rgba(124,58,237,0.25); }
+    .nav-divider { height: 1px; background: var(--border); margin: 8px 0; }
+    .nav-overlay { position: fixed; inset: 0; z-index: 299; background: rgba(0,0,0,0.5); display: none; }
+    .nav-overlay.open { display: block; }
 
     /* ===== PLAYER AVATAR ===== */
     .player-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--purple),var(--pink)); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; flex-shrink:0; }
@@ -346,11 +347,11 @@
     Dashboard
   </div>
   <div class="nav-item" data-view="cashin" onclick="navTo('cashin')">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
     <span style="color:var(--green)">Cash In</span>
   </div>
   <div class="nav-item" data-view="cashout" onclick="navTo('cashout')">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
     <span style="color:var(--orange)">Cash Out</span>
   </div>
   <div class="nav-divider"></div>
@@ -395,22 +396,6 @@ const firebaseConfig = {
 const fbApp = firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth(fbApp);
 const db = firebase.firestore(fbApp);
-
-/*
-  ============================================================
-  FIRESTORE SECURITY RULES — paste into Firebase Console:
-  https://console.firebase.google.com → Firestore → Rules
-  ============================================================
-  rules_version = '2';
-  service cloud.firestore {
-    match /databases/{database}/documents {
-      match /users/{userId}/{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-    }
-  }
-  ============================================================
-*/
 
 // ============================================================
 // STATE
@@ -576,7 +561,7 @@ function renderAuth() {
         <button class="btn btn-primary btn-full" id="loginBtn" style="margin-top:4px">Sign In</button>
         <div style="display:flex;align-items:center;gap:8px;margin:2px 0">
           <div style="flex:1;height:1px;background:var(--border)"></div>
-          <span style="font-size:11px;color:var(--textMuted);letter-spacing:0.5px">OR</span>
+          <span style="font-size:11px;color:var(--textMuted)">OR</span>
           <div style="flex:1;height:1px;background:var(--border)"></div>
         </div>
         <button class="btn btn-secondary btn-full" id="googleBtn" style="gap:10px;font-size:13px">
@@ -620,18 +605,16 @@ function bindAuth() {
   };
   $('loginBtn').onclick = doAuth;
   $('authPass').onkeydown = e => { if(e.key==='Enter') doAuth(); };
-
-  const googleBtnEl = $('googleBtn');
-  const googleBtnHTML = googleBtnEl.innerHTML;
-  googleBtnEl.onclick = async () => {
-    googleBtnEl.disabled = true; googleBtnEl.textContent = 'Signing in...';
+  const gBtn = $('googleBtn');
+  const gBtnHTML = gBtn.innerHTML;
+  gBtn.onclick = async () => {
+    gBtn.disabled = true; gBtn.textContent = 'Signing in...';
     $('authErr').textContent = '';
     try {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithPopup(provider);
+      await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
     } catch(e) {
       $('authErr').textContent = e.message.replace('Firebase: ','').replace(/\(auth.*\)/,'').trim();
-      googleBtnEl.disabled = false; googleBtnEl.innerHTML = googleBtnHTML;
+      gBtn.disabled = false; gBtn.innerHTML = gBtnHTML;
     }
   };
 }
@@ -648,11 +631,11 @@ function renderDashboard() {
     <!-- Quick Actions -->
     <div class="quick-action-bar">
       <button class="quick-btn-cashin" onclick="navTo('cashin')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
         CASH IN
       </button>
       <button class="quick-btn-cashout" onclick="navTo('cashout')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
         CASHOUT
       </button>
     </div>
@@ -855,8 +838,8 @@ async function bindTransactionPage(type) {
 
   // Load games
   try {
-    const snap = await db.collection(uPath()+'/games').where('active','==',true).orderBy('name').get();
-    txGames = snap.docs.map(d=>({_id:d.id,...d.data()}));
+    const snap = await db.collection(uPath()+'/games').where('active','==',true).get();
+    txGames = snap.docs.map(d=>({_id:d.id,...d.data()})).sort((a,b)=>a.name.localeCompare(b.name));
     const sel = $('txGame');
     if (sel) {
       sel.innerHTML = '<option value="">— Select Game —</option>' +
@@ -870,11 +853,12 @@ async function bindTransactionPage(type) {
 
   // Load staff
   try {
-    const sSnap = await db.collection(uPath()+'/staff').where('active','==',true).orderBy('name').get();
+    const sSnap = await db.collection(uPath()+'/staff').where('active','==',true).get();
     const staffSel = $('txStaff');
     if (staffSel) {
+      const staffDocs = sSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.name.localeCompare(b.name));
       staffSel.innerHTML = '<option value="">— Select Staff —</option>' +
-        sSnap.docs.map(d=>`<option value="${d.id}">${esc(d.data().name)}</option>`).join('');
+        staffDocs.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('');
     }
   } catch(e) {}
 
@@ -1155,9 +1139,9 @@ function getElapsed(start) {
 async function loadClockPanel() {
   const el = $('clockPanel'); if (!el) return;
   try {
-    const sSnap = await db.collection(uPath()+'/staff').where('active','==',true).orderBy('name').get();
+    const sSnap = await db.collection(uPath()+'/staff').where('active','==',true).get();
     if (sSnap.empty) { el.innerHTML = '<div style="color:var(--textMuted);font-size:13px">No active staff. Add staff below.</div>'; return; }
-    const staffList = sSnap.docs.map(d=>({_id:d.id,...d.data()}));
+    const staffList = sSnap.docs.map(d=>({_id:d.id,...d.data()})).sort((a,b)=>a.name.localeCompare(b.name));
     const today = new Date(); today.setHours(0,0,0,0);
     const shiftsSnap = await db.collection(uPath()+'/shifts')
       .where('date','>=',firebase.firestore.Timestamp.fromDate(today)).get();
