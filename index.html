@@ -889,12 +889,12 @@
           <div class="card-body">
             <p class="text-muted text-sm" style="margin-bottom:1rem">Update your Firebase project credentials below. These are saved in localStorage.</p>
             <div class="form-grid">
-              <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y"></div>
-              <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain" placeholder="store-manage-a5c84.firebaseapp.com"></div>
-              <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId" placeholder="store-manage-a5c84"></div>
-              <div class="form-group"><label>Storage Bucket</label><input type="text" id="fb-storageBucket" placeholder="store-manage-a5c84.firebasestorage.app"></div>
-              <div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fb-messagingSenderId" placeholder="382462372132"></div>
-              <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:382462372132:web:3a8f93153ad2c91cd3abb1"></div>
+              <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIza..."></div>
+              <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain" placeholder="project.firebaseapp.com"></div>
+              <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId" placeholder="your-project-id"></div>
+              <div class="form-group"><label>Storage Bucket</label><input type="text" id="fb-storageBucket" placeholder="project.appspot.com"></div>
+              <div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fb-messagingSenderId" placeholder="123456789"></div>
+              <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123:web:abc"></div>
             </div>
             <div class="form-actions">
               <button class="btn btn-primary" onclick="saveFirebaseConfig()">Save & Reload</button>
@@ -1079,6 +1079,12 @@ const DEFAULT_CONFIG = {
   messagingSenderId: "382462372132",
   appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1"
 };
+
+// Clear any stale localStorage config so DEFAULT_CONFIG above is always used
+// Remove this line once you've confirmed sign-in works
+(function() {
+  try { localStorage.removeItem('gameops_firebase_config'); } catch(e) {}
+})();
 
 function getFirebaseConfig() {
   try {
