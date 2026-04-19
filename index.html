@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GameOps — Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     CSS VARIABLES & RESET
+  ============================================================ */
+  :root {
+    --bg:        #0a0c0f;
+    --surface:   #111318;
+    --surface2:  #181c24;
+    --border:    #1e2330;
+    --border2:   #2a3040;
+    --text:      #e8eaf0;
+    --muted:     #6b7280;
+    --accent:    #00d4aa;
+    --accent2:   #0099ff;
+    --danger:    #ff4d6d;
+    --warning:   #f59e0b;
+    --success:   #10b981;
+    --mono:      'DM Mono', monospace;
+    --display:   'Syne', sans-serif;
+    --radius:    8px;
+    --radius-lg: 14px;
+    --shadow:    0 4px 24px rgba(0,0,0,0.4);
+    --transition: 0.18s cubic-bezier(0.4,0,0.2,1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; scroll-behavior: smooth; }
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+  input, select, textarea { font-family: inherit; outline: none; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ============================================================
+     AUTH SCREEN
+  ============================================================ */
+  #auth-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    z-index: 1000;
+  }
+  #auth-screen.hidden { display: none; }
+  .auth-card {
+    width: 100%; max-width: 380px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow);
+    animation: slideUp 0.4s ease;
+  }
+  .auth-logo {
+    font-family: var(--display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-bottom: 0.3rem;
+  }
+  .auth-sub { color: var(--muted); font-size: 0.8rem; margin-bottom: 2rem; }
+  .auth-card h2 { font-family: var(--display); font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; color: var(--text); }
+
+  /* ============================================================
+     LAYOUT
+  ============================================================ */
+  #app { display: none; min-height: 100vh; }
+  #app.visible { display: flex; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px; min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100;
+    transition: transform var(--transition);
+  }
+  .sidebar-logo {
+    padding: 1.5rem 1.2rem 1rem;
+    font-family: var(--display);
+    font-size: 1.2rem; font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .sidebar-logo span { font-size: 0.65rem; color: var(--muted); font-weight: 400; font-family: var(--mono); }
+  .nav-links { flex: 1; padding: 0.8rem 0.6rem; display: flex; flex-direction: column; gap: 2px; }
+  .nav-link {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+  }
+  .nav-link:hover { background: var(--surface2); color: var(--text); }
+  .nav-link.active { background: rgba(0,212,170,0.1); color: var(--accent); }
+  .nav-link .icon { font-size: 1rem; width: 18px; text-align: center; }
+  .sidebar-footer {
+    padding: 1rem 0.8rem;
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 0.4rem;
+  }
+  .user-chip {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+  }
+  .user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 600; color: #000;
+    flex-shrink: 0;
+  }
+  .user-info { flex: 1; overflow: hidden; }
+  .user-name { color: var(--text); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-role { color: var(--muted); font-size: 0.65rem; }
+  .btn-logout {
+    padding: 0.5rem; border-radius: var(--radius);
+    background: transparent; color: var(--muted);
+    font-size: 0.75rem; text-align: center;
+    transition: all var(--transition);
+  }
+  .btn-logout:hover { background: rgba(255,77,109,0.1); color: var(--danger); }
+
+  /* Main content */
+  .main {
+    margin-left: 220px;
+    flex: 1; min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  .topbar {
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 1.5rem;
+    background: var(--bg);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .page-title { font-family: var(--display); font-size: 1.1rem; font-weight: 700; }
+  .topbar-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .content { padding: 1.5rem; flex: 1; }
+
+  /* ============================================================
+     SECTIONS
+  ============================================================ */
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.2s ease; }
+
+  /* ============================================================
+     CARDS & GRIDS
+  ============================================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem; margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.2rem 1.3rem;
+    position: relative; overflow: hidden;
+    transition: border-color var(--transition);
+  }
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.green::before  { background: var(--accent); }
+  .stat-card.blue::before   { background: var(--accent2); }
+  .stat-card.red::before    { background: var(--danger); }
+  .stat-card.amber::before  { background: var(--warning); }
+  .stat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+  .stat-value { font-family: var(--display); font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .stat-value.green  { color: var(--accent); }
+  .stat-value.blue   { color: var(--accent2); }
+  .stat-value.red    { color: var(--danger); }
+  .stat-value.amber  { color: var(--warning); }
+  .stat-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.4rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.2rem;
+  }
+  .card-header {
+    padding: 1rem 1.3rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-family: var(--display); font-size: 0.9rem; font-weight: 700; }
+  .card-body { padding: 1.2rem 1.3rem; }
+
+  /* ============================================================
+     TABLE
+  ============================================================ */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  th {
+    text-align: left; padding: 0.65rem 0.9rem;
+    color: var(--muted); font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge.green  { background: rgba(16,185,129,0.15); color: var(--success); }
+  .badge.blue   { background: rgba(0,153,255,0.15);  color: var(--accent2); }
+  .badge.red    { background: rgba(255,77,109,0.15); color: var(--danger); }
+  .badge.amber  { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .badge.teal   { background: rgba(0,212,170,0.15);  color: var(--accent); }
+  .badge.gray   { background: rgba(107,114,128,0.15); color: var(--muted); }
+
+  /* ============================================================
+     BUTTONS
+  ============================================================ */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.78rem; font-weight: 500;
+    transition: all var(--transition);
+    cursor: pointer; border: none;
+    font-family: var(--mono);
+  }
+  .btn-primary {
+    background: var(--accent); color: #000;
+  }
+  .btn-primary:hover { background: #00bfa0; }
+  .btn-secondary {
+    background: var(--surface2); color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .btn-secondary:hover { border-color: var(--muted); }
+  .btn-danger {
+    background: rgba(255,77,109,0.15); color: var(--danger);
+    border: 1px solid rgba(255,77,109,0.3);
+  }
+  .btn-danger:hover { background: rgba(255,77,109,0.25); }
+  .btn-blue {
+    background: var(--accent2); color: #fff;
+  }
+  .btn-blue:hover { background: #0080dd; }
+  .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.72rem; }
+  .btn-icon { padding: 0.4rem; width: 30px; height: 30px; justify-content: center; border-radius: var(--radius); background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+  .btn-icon:hover { color: var(--text); border-color: var(--border2); }
+
+  /* ============================================================
+     FORMS
+  ============================================================ */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 0.55rem 0.8rem;
+    font-size: 0.82rem;
+    width: 100%;
+    transition: border-color var(--transition);
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+  .form-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+
+  /* ============================================================
+     MODAL
+  ============================================================ */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500; padding: 1rem;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.15s ease;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-lg);
+    width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+    animation: slideUp 0.25s ease;
+  }
+  .modal-header {
+    padding: 1.2rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: var(--surface); z-index: 1;
+  }
+  .modal-title { font-family: var(--display); font-size: 1rem; font-weight: 700; }
+  .modal-body { padding: 1.4rem; }
+  .modal-close { background: none; color: var(--muted); font-size: 1.2rem; padding: 0.2rem 0.5rem; transition: color var(--transition); }
+  .modal-close:hover { color: var(--text); }
+
+  /* ============================================================
+     SHIFT LIVE TICKER
+  ============================================================ */
+  .shift-ticker {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    background: rgba(0,212,170,0.05);
+    border: 1px solid rgba(0,212,170,0.15);
+    border-radius: var(--radius-lg);
+    margin-bottom: 1.2rem;
+    min-height: 52px;
+    align-items: center;
+  }
+  .shift-ticker-label { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 0.4rem; }
+  .shift-pill {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: rgba(0,212,170,0.1);
+    border: 1px solid rgba(0,212,170,0.2);
+    border-radius: 20px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.72rem;
+    animation: pulse 2s infinite;
+  }
+  .shift-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 1.5s infinite; }
+
+  /* ============================================================
+     LIVE BADGE
+  ============================================================ */
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    background: rgba(0,212,170,0.12);
+    border: 1px solid rgba(0,212,170,0.25);
+    border-radius: 20px; padding: 0.2rem 0.6rem;
+    font-size: 0.65rem; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 1.5s infinite; }
+
+  /* ============================================================
+     TABS
+  ============================================================ */
+  .tabs { display: flex; gap: 2px; background: var(--surface2); padding: 3px; border-radius: var(--radius); margin-bottom: 1.2rem; width: fit-content; }
+  .tab {
+    padding: 0.45rem 1rem;
+    font-size: 0.75rem; border-radius: 6px;
+    cursor: pointer; transition: all var(--transition);
+    color: var(--muted);
+  }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ============================================================
+     PROFIT BAR
+  ============================================================ */
+  .profit-breakdown {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    padding: 1rem;
+    background: var(--surface2);
+    border-radius: var(--radius);
+  }
+  .profit-row {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.78rem;
+  }
+  .profit-row.total {
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+    margin-top: 0.3rem;
+    font-weight: 600;
+    font-family: var(--display);
+    font-size: 0.9rem;
+  }
+  .profit-row .label { color: var(--muted); }
+  .profit-row .amount { font-family: var(--mono); }
+  .profit-row .plus  { color: var(--success); }
+  .profit-row .minus { color: var(--danger); }
+  .profit-row.total .plus  { color: var(--accent); font-size: 1.1rem; }
+  .profit-row.total .minus { color: var(--danger); font-size: 1.1rem; }
+
+  /* ============================================================
+     EMPTY STATE
+  ============================================================ */
+  .empty {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .empty .icon { font-size: 2.5rem; margin-bottom: 0.8rem; opacity: 0.4; }
+
+  /* ============================================================
+     TOAST
+  ============================================================ */
+  #toast-container {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 0.7rem 1rem;
+    font-size: 0.78rem;
+    box-shadow: var(--shadow);
+    animation: slideLeft 0.25s ease;
+    max-width: 300px;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .toast.success { border-left: 3px solid var(--success); }
+  .toast.error   { border-left: 3px solid var(--danger); }
+  .toast.info    { border-left: 3px solid var(--accent2); }
+
+  /* ============================================================
+     MOBILE
+  ============================================================ */
+  .mobile-menu-btn {
+    display: none;
+    background: none; color: var(--text);
+    font-size: 1.3rem; padding: 0.4rem;
+  }
+  .sidebar-overlay { display: none; }
+
+  /* ============================================================
+     ANIMATIONS
+  ============================================================ */
+  @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+  @keyframes slideLeft { from { opacity: 0; transform: translateX(20px) } to { opacity: 1; transform: translateX(0) } }
+  @keyframes blink { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.2) } 50% { box-shadow: 0 0 0 4px rgba(0,212,170,0) } }
+
+  /* ============================================================
+     RESPONSIVE
+  ============================================================ */
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      z-index: 200;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .mobile-menu-btn { display: flex; }
+    .sidebar-overlay {
+      display: block;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 199;
+      display: none;
+    }
+    .sidebar-overlay.open { display: block; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+    .content { padding: 1rem; }
+  }
+
+  /* Misc helpers */
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-3 { gap: 0.75rem; }
+  .mt-1 { margin-top: 0.5rem; }
+  .mb-1 { margin-bottom: 0.5rem; }
+  .text-muted { color: var(--muted); }
+  .text-sm { font-size: 0.75rem; }
+  .font-display { font-family: var(--display); font-weight: 700; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; }
+  .section-title { font-family: var(--display); font-size: 1rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">⬡ GameOps</div>
+    <div class="auth-sub">Management System v1.0</div>
+    <h2>Sign In</h2>
+    <div class="form-group" style="margin-bottom:1rem">
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="admin@example.com">
+    </div>
+    <div class="form-group" style="margin-bottom:1.5rem">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="signIn()">Sign In</button>
+    <div id="auth-error" style="color:var(--danger);font-size:0.75rem;margin-top:0.75rem;display:none"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      ⬡ GameOps <span>v1.0</span>
+    </div>
+    <nav class="nav-links">
+      <div class="nav-link active" onclick="navigate('dashboard')" data-section="dashboard">
+        <span class="icon">◈</span> Dashboard
+      </div>
+      <div class="nav-link" onclick="navigate('employees')" data-section="employees">
+        <span class="icon">◉</span> Employees
+      </div>
+      <div class="nav-link" onclick="navigate('platforms')" data-section="platforms">
+        <span class="icon">◎</span> Platforms
+      </div>
+      <div class="nav-link" onclick="navigate('transactions')" data-section="transactions">
+        <span class="icon">◈</span> Transactions
+      </div>
+      <div class="nav-link" onclick="navigate('reports')" data-section="reports">
+        <span class="icon">▤</span> Reports
+      </div>
+      <div class="nav-link admin-only" onclick="navigate('settings')" data-section="settings">
+        <span class="icon">⊙</span> Settings
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="btn-logout btn" onclick="signOut()">↩ Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div class="flex items-center gap-3">
+        <button class="mobile-menu-btn" onclick="openSidebar()">☰</button>
+        <span class="page-title" id="page-title">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <span class="live-badge"><span class="live-dot"></span> Live</span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ====================================================
+           DASHBOARD
+      ==================================================== -->
+      <section class="section active" id="section-dashboard">
+        <!-- Active shifts ticker -->
+        <div class="shift-ticker" id="shift-ticker">
+          <span class="shift-ticker-label">● Active Shifts</span>
+          <span class="text-muted text-sm" id="no-shifts-msg">No employees currently clocked in</span>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="stats-grid" id="dashboard-stats">
+          <div class="stat-card green">
+            <div class="stat-label">Deposits Today</div>
+            <div class="stat-value green" id="stat-deposits">$0.00</div>
+            <div class="stat-sub" id="stat-deposits-count">0 transactions</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Cashouts Today</div>
+            <div class="stat-value red" id="stat-cashouts">$0.00</div>
+            <div class="stat-sub" id="stat-cashouts-count">0 transactions</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Bonuses Given</div>
+            <div class="stat-value amber" id="stat-bonuses">$0.00</div>
+            <div class="stat-sub" id="stat-bonuses-count">0 given</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Today's Profit</div>
+            <div class="stat-value" id="stat-profit">$0.00</div>
+            <div class="stat-sub" id="stat-profit-period">Live calculation</div>
+          </div>
+        </div>
+
+        <!-- Profit tabs + breakdown -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Profit Overview</span>
+            <div class="tabs">
+              <div class="tab active" onclick="setProfitPeriod('day',this)">Today</div>
+              <div class="tab" onclick="setProfitPeriod('week',this)">Week</div>
+              <div class="tab" onclick="setProfitPeriod('month',this)">Month</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="profit-breakdown" id="profit-breakdown">
+              <div class="profit-row"><span class="label">Loading...</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent transactions preview -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Transactions</span>
+            <button class="btn btn-sm btn-secondary" onclick="navigate('transactions')">View All →</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Time</th><th>Type</th><th>Platform</th><th>Amount</th><th>Points</th>
+              </tr></thead>
+              <tbody id="recent-tx-body">
+                <tr><td colspan="5"><div class="empty"><div>Loading...</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           EMPLOYEES
+      ==================================================== -->
+      <section class="section" id="section-employees">
+        <div class="section-header">
+          <span class="section-title">Employees</span>
+          <div class="flex gap-2">
+            <button class="btn btn-primary admin-only" onclick="openModal('modal-add-employee')">+ Add Employee</button>
+          </div>
+        </div>
+
+        <!-- Shift controls for current user -->
+        <div class="card" id="my-shift-card">
+          <div class="card-header">
+            <span class="card-title">My Shift</span>
+            <span class="live-badge"><span class="live-dot"></span> Real-time</span>
+          </div>
+          <div class="card-body" id="my-shift-body">
+            <p class="text-muted text-sm">Loading...</p>
+          </div>
+        </div>
+
+        <!-- All employees -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">All Employees</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Name</th><th>Role</th><th>Rate/hr</th><th>Status</th><th>Hours (Month)</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="employees-body">
+                <tr><td colspan="6"><div class="empty"><div>Loading...</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           PLATFORMS
+      ==================================================== -->
+      <section class="section" id="section-platforms">
+        <div class="section-header">
+          <span class="section-title">Game Platforms</span>
+          <button class="btn btn-primary admin-only" onclick="openModal('modal-add-platform')">+ Add Platform</button>
+        </div>
+        <div id="platforms-grid" class="stats-grid"></div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">All Platforms</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Platform</th><th>Cost Rate</th><th>Sell Rate</th><th>Points Balance</th><th>Actions</th>
+              </tr></thead>
+              <tbody id="platforms-body">
+                <tr><td colspan="5"><div class="empty"><div>Loading...</div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           TRANSACTIONS
+      ==================================================== -->
+      <section class="section" id="section-transactions">
+        <div class="section-header">
+          <span class="section-title">Transactions</span>
+          <div class="flex gap-2">
+            <button class="btn btn-primary editor-only" onclick="openModal('modal-add-deposit')">+ Deposit</button>
+            <button class="btn btn-secondary editor-only" onclick="openModal('modal-add-cashout')">Cashout</button>
+            <button class="btn btn-secondary editor-only" onclick="openModal('modal-add-bonus')">Bonus</button>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="switchTxTab('deposits',this)">Deposits</div>
+          <div class="tab" onclick="switchTxTab('cashouts',this)">Cashouts</div>
+          <div class="tab" onclick="switchTxTab('bonuses',this)">Bonuses</div>
+        </div>
+
+        <div class="tab-panel active" id="tx-deposits">
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Date</th><th>Platform</th><th>Amount</th><th>Points</th><th>Cost of Pts</th><th>By</th></tr></thead>
+                <tbody id="tx-deposits-body"><tr><td colspan="6"><div class="empty">Loading...</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel" id="tx-cashouts">
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Date</th><th>Platform</th><th>Amount</th><th>Method</th><th>Fee</th><th>Total Cost</th><th>By</th></tr></thead>
+                <tbody id="tx-cashouts-body"><tr><td colspan="7"><div class="empty">Loading...</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel" id="tx-bonuses">
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Date</th><th>Platform</th><th>Points</th><th>Value (Cost)</th><th>Note</th><th>By</th></tr></thead>
+                <tbody id="tx-bonuses-body"><tr><td colspan="6"><div class="empty">Loading...</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           REPORTS
+      ==================================================== -->
+      <section class="section" id="section-reports">
+        <div class="section-header">
+          <span class="section-title">Reports</span>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Date Range Filter</span></div>
+          <div class="card-body">
+            <div class="form-grid" style="max-width:500px">
+              <div class="form-group">
+                <label>From</label>
+                <input type="date" id="report-from">
+              </div>
+              <div class="form-group">
+                <label>To</label>
+                <input type="date" id="report-to">
+              </div>
+            </div>
+            <div class="flex gap-2 mt-1" style="margin-top:1rem">
+              <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
+              <button class="btn btn-secondary" id="btn-export" onclick="exportExcel()" style="display:none">↓ Export Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="report-results" style="display:none">
+          <div class="stats-grid" id="report-stats"></div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Profit Breakdown</span></div>
+            <div class="card-body">
+              <div class="profit-breakdown" id="report-profit-breakdown"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SETTINGS
+      ==================================================== -->
+      <section class="section" id="section-settings">
+        <div class="section-header">
+          <span class="section-title">Settings</span>
+        </div>
+
+        <!-- Payout Methods -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Payout Methods</span>
+            <button class="btn btn-sm btn-primary" onclick="openModal('modal-add-payout-method')">+ Add</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Fee Type</th><th>Fee Value</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="payout-methods-body"><tr><td colspan="5"><div class="empty">Loading...</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Currency Rates -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Currency Conversion Rates (to USD)</span></div>
+          <div class="card-body">
+            <div id="currency-rates-list"></div>
+            <hr class="divider">
+            <div class="form-grid" style="max-width:400px">
+              <div class="form-group">
+                <label>Currency Code</label>
+                <input type="text" id="new-currency-code" placeholder="e.g. MXN" maxlength="5">
+              </div>
+              <div class="form-group">
+                <label>Rate (1 unit → USD)</label>
+                <input type="number" id="new-currency-rate" placeholder="0.058" step="0.0001">
+              </div>
+            </div>
+            <div class="flex gap-2" style="margin-top:1rem">
+              <button class="btn btn-primary btn-sm" onclick="saveCurrencyRate()">Save Rate</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Firebase config -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">Firebase Configuration</span></div>
+          <div class="card-body">
+            <p class="text-muted text-sm" style="margin-bottom:1rem">Update your Firebase project credentials below. These are saved in localStorage.</p>
+            <div class="form-grid">
+              <div class="form-group"><label>API Key</label><input type="text" id="fb-apiKey" placeholder="AIza..."></div>
+              <div class="form-group"><label>Auth Domain</label><input type="text" id="fb-authDomain" placeholder="project.firebaseapp.com"></div>
+              <div class="form-group"><label>Project ID</label><input type="text" id="fb-projectId" placeholder="your-project-id"></div>
+              <div class="form-group"><label>Storage Bucket</label><input type="text" id="fb-storageBucket" placeholder="project.appspot.com"></div>
+              <div class="form-group"><label>Messaging Sender ID</label><input type="text" id="fb-messagingSenderId" placeholder="123456789"></div>
+              <div class="form-group"><label>App ID</label><input type="text" id="fb-appId" placeholder="1:123:web:abc"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="saveFirebaseConfig()">Save & Reload</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /app -->
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- Add Employee -->
+<div class="modal-overlay hidden" id="modal-add-employee">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Employee</span>
+      <button class="modal-close" onclick="closeModal('modal-add-employee')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name</label><input type="text" id="emp-name" placeholder="John Doe"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="emp-email" placeholder="john@example.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="emp-password" placeholder="Min 6 chars"></div>
+        <div class="form-group"><label>Role</label>
+          <select id="emp-role">
+            <option value="viewer">Viewer</option>
+            <option value="editor">Editor</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Hourly Rate (USD)</label><input type="number" id="emp-rate" placeholder="15.00" step="0.01"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-employee')">Cancel</button>
+        <button class="btn btn-primary" onclick="addEmployee()">Create Employee</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Platform -->
+<div class="modal-overlay hidden" id="modal-add-platform">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Platform</span>
+      <button class="modal-close" onclick="closeModal('modal-add-platform')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Platform Name</label><input type="text" id="plat-name" placeholder="e.g. FireKirin"></div>
+        <div class="form-group"><label>Cost Rate ($/pt)</label><input type="number" id="plat-cost" placeholder="0.01" step="0.001"></div>
+        <div class="form-group"><label>Selling Type</label>
+          <select id="plat-sell-type" onchange="toggleSellRate()">
+            <option value="fixed">Fixed (1:1)</option>
+            <option value="percentage">Percentage</option>
+          </select>
+        </div>
+        <div class="form-group" id="plat-sell-rate-group" style="display:none">
+          <label>Sell Rate (%)</label>
+          <input type="number" id="plat-sell-rate" placeholder="95" step="0.1">
+        </div>
+        <div class="form-group"><label>Initial Points Balance</label><input type="number" id="plat-balance" placeholder="0"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-platform')">Cancel</button>
+        <button class="btn btn-primary" onclick="addPlatform()">Add Platform</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Deposit -->
+<div class="modal-overlay hidden" id="modal-add-deposit">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Record Deposit</span>
+      <button class="modal-close" onclick="closeModal('modal-add-deposit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Platform</label>
+          <select id="dep-platform"></select>
+        </div>
+        <div class="form-group"><label>Amount Received</label><input type="number" id="dep-amount" placeholder="100.00" step="0.01"></div>
+        <div class="form-group"><label>Currency</label>
+          <select id="dep-currency">
+            <option value="USD">USD</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Points Given</label><input type="number" id="dep-points" placeholder="10000"></div>
+      </div>
+      <div id="dep-preview" style="background:var(--surface2);border-radius:var(--radius);padding:0.8rem;margin-top:0.8rem;font-size:0.78rem;display:none">
+        <div class="flex justify-between"><span class="text-muted">Amount USD:</span><span id="dep-prev-usd">—</span></div>
+        <div class="flex justify-between"><span class="text-muted">Cost of Points:</span><span id="dep-prev-cost">—</span></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-deposit')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitDeposit()">Record Deposit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cashout -->
+<div class="modal-overlay hidden" id="modal-add-cashout">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Record Cashout</span>
+      <button class="modal-close" onclick="closeModal('modal-add-cashout')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Platform</label><select id="co-platform"></select></div>
+        <div class="form-group"><label>Payout Amount</label><input type="number" id="co-amount" placeholder="50.00" step="0.01" oninput="previewCashout()"></div>
+        <div class="form-group"><label>Currency</label><select id="co-currency"><option value="USD">USD</option></select></div>
+        <div class="form-group"><label>Points Returned</label><input type="number" id="co-points" placeholder="5000"></div>
+        <div class="form-group full"><label>Payout Method</label><select id="co-method" onchange="previewCashout()"></select></div>
+      </div>
+      <div id="co-preview" style="background:var(--surface2);border-radius:var(--radius);padding:0.8rem;margin-top:0.8rem;font-size:0.78rem;display:none">
+        <div class="flex justify-between"><span class="text-muted">Payout USD:</span><span id="co-prev-usd">—</span></div>
+        <div class="flex justify-between"><span class="text-muted">Fee:</span><span id="co-prev-fee">—</span></div>
+        <div class="flex justify-between" style="border-top:1px solid var(--border);padding-top:0.4rem;margin-top:0.4rem;font-weight:600"><span>Total Cost:</span><span id="co-prev-total">—</span></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-cashout')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCashout()">Record Cashout</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bonus -->
+<div class="modal-overlay hidden" id="modal-add-bonus">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Record Bonus / Freeplay</span>
+      <button class="modal-close" onclick="closeModal('modal-add-bonus')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Platform</label><select id="bon-platform"></select></div>
+        <div class="form-group"><label>Points Given</label><input type="number" id="bon-points" placeholder="1000"></div>
+        <div class="form-group full"><label>Note</label><input type="text" id="bon-note" placeholder="e.g. Welcome bonus"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-bonus')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitBonus()">Record Bonus</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Payout Method -->
+<div class="modal-overlay hidden" id="modal-add-payout-method">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Payout Method</span>
+      <button class="modal-close" onclick="closeModal('modal-add-payout-method')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Name</label><input type="text" id="pm-name" placeholder="Chime, CashApp, etc."></div>
+        <div class="form-group"><label>Fee Type</label>
+          <select id="pm-fee-type">
+            <option value="fixed">Fixed ($)</option>
+            <option value="percentage">Percentage (%)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Fee Value</label><input type="number" id="pm-fee-value" placeholder="1.50" step="0.01"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modal-add-payout-method')">Cancel</button>
+        <button class="btn btn-primary" onclick="addPayoutMethod()">Add Method</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- ============================================================
+     SCRIPTS: Firebase + App Logic
+============================================================ -->
+<script type="module">
+// ---- Firebase imports ----
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, signInWithEmailAndPassword, signOut as fbSignOut,
+  onAuthStateChanged, createUserWithEmailAndPassword
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc,
+  updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot,
+  runTransaction, serverTimestamp, Timestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ============================================================
+// FIREBASE CONFIG — edit here or via Settings tab
+// ============================================================
+const DEFAULT_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+function getFirebaseConfig() {
+  try {
+    const saved = localStorage.getItem('gameops_firebase_config');
+    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+  } catch { return DEFAULT_CONFIG; }
+}
+
+const firebaseConfig = getFirebaseConfig();
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  user: null,
+  userDoc: null,
+  role: 'viewer',
+  platforms: [],
+  payoutMethods: [],
+  users: [],
+  activeShifts: [],
+  manualRates: {},
+  currentProfitPeriod: 'day',
+  reportData: null,
+  listeners: []
+};
+
+// ============================================================
+// AUTH
+// ============================================================
+window.signIn = async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw    = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  try {
+    errEl.style.display = 'none';
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch (e) {
+    errEl.textContent = e.message.replace('Firebase: ','');
+    errEl.style.display = 'block';
+  }
+};
+
+window.signOut = async () => {
+  unsubAll();
+  await fbSignOut(auth);
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    state.user = user;
+    await loadUserDoc(user.uid);
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    await initApp();
+  } else {
+    state.user = null; state.userDoc = null;
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app').classList.remove('visible');
+  }
+});
+
+async function loadUserDoc(uid) {
+  const snap = await getDoc(doc(db, 'users', uid));
+  if (snap.exists()) {
+    state.userDoc = { id: snap.id, ...snap.data() };
+    state.role = state.userDoc.role || 'viewer';
+  }
+  updateUserUI();
+}
+
+function updateUserUI() {
+  const u = state.userDoc;
+  if (!u) return;
+  document.getElementById('user-name').textContent = u.displayName || u.email;
+  document.getElementById('user-role').textContent = u.role;
+  document.getElementById('user-avatar').textContent = (u.displayName || u.email || '?')[0].toUpperCase();
+
+  // Role-based visibility
+  document.querySelectorAll('.admin-only').forEach(el => {
+    el.style.display = state.role === 'admin' ? '' : 'none';
+  });
+  document.querySelectorAll('.editor-only').forEach(el => {
+    el.style.display = (state.role === 'admin' || state.role === 'editor') ? '' : 'none';
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function initApp() {
+  await loadSettings();
+  await loadPlatforms();
+  await loadPayoutMethods();
+  await loadUsers();
+  startRealTimeListeners();
+  renderDashboard();
+  prefillSettingsTab();
+  setDefaultDates();
+}
+
+function unsubAll() { state.listeners.forEach(u => u()); state.listeners = []; }
+
+// ============================================================
+// REAL-TIME LISTENERS
+// ============================================================
+function startRealTimeListeners() {
+  // Active shifts
+  const unsub1 = onSnapshot(
+    query(collection(db, 'shifts'), where('clockOut', '==', null)),
+    async (snap) => {
+      state.activeShifts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderActiveShifts();
+      renderMyShiftCard();
+    }
+  );
+  state.listeners.push(unsub1);
+
+  // Recent transactions (last 20)
+  const unsub2 = onSnapshot(
+    query(collection(db, 'deposits'), orderBy('createdAt', 'desc'), limit(20)),
+    () => { if (document.getElementById('section-dashboard').classList.contains('active')) renderRecentTx(); }
+  );
+  state.listeners.push(unsub2);
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadSettings() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'global'));
+    if (snap.exists()) {
+      state.manualRates = snap.data().manualRates || {};
+      renderCurrencyRates();
+    }
+  } catch {}
+}
+
+async function loadPlatforms() {
+  const snap = await getDocs(collection(db, 'platforms'));
+  state.platforms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderPlatforms();
+  populatePlatformSelects();
+}
+
+async function loadPayoutMethods() {
+  const snap = await getDocs(query(collection(db, 'payoutMethods'), where('active', '==', true)));
+  state.payoutMethods = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderPayoutMethods();
+  populateMethodSelects();
+}
+
+async function loadUsers() {
+  const snap = await getDocs(collection(db, 'users'));
+  state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderEmployees();
+}
+
+// ============================================================
+// CURRENCY HELPERS
+// ============================================================
+function toUSD(amount, currency) {
+  if (currency === 'USD') return { amountUSD: amount, conversionRate: 1.0 };
+  const rate = state.manualRates[currency];
+  if (!rate) throw new Error(`No conversion rate for ${currency}`);
+  return { amountUSD: amount * rate, conversionRate: rate };
+}
+function formatUSD(n) {
+  if (n === undefined || n === null || isNaN(n)) return '$0.00';
+  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function formatNum(n) {
+  if (!n && n !== 0) return '—';
+  return Number(n).toLocaleString('en-US');
+}
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const diff = Math.floor((Date.now() - d) / 60000);
+  if (diff < 1) return 'Just now';
+  if (diff < 60) return `${diff}m ago`;
+  return `${Math.floor(diff/60)}h ${diff%60}m ago`;
+}
+function getUserName(uid) {
+  const u = state.users.find(x => x.id === uid);
+  return u ? (u.displayName || u.email || uid) : uid;
+}
+function getPlatformName(id) {
+  const p = state.platforms.find(x => x.id === id);
+  return p ? p.name : id;
+}
+
+// ============================================================
+// PROFIT CALCULATION
+// ============================================================
+async function calculateProfit(from, to) {
+  const fromTs = Timestamp.fromDate(from);
+  const toTs   = Timestamp.fromDate(to);
+
+  const [depSnap, coSnap, bonSnap, shiftSnap] = await Promise.all([
+    getDocs(query(collection(db,'deposits'), where('createdAt','>=',fromTs), where('createdAt','<=',toTs))),
+    getDocs(query(collection(db,'cashouts'), where('createdAt','>=',fromTs), where('createdAt','<=',toTs))),
+    getDocs(query(collection(db,'bonuses'),  where('createdAt','>=',fromTs), where('createdAt','<=',toTs))),
+    getDocs(query(collection(db,'shifts'),   where('clockIn','>=',fromTs),   where('clockIn','<=',toTs))),
+  ]);
+
+  const deposits = depSnap.docs.map(d => d.data());
+  const cashouts = coSnap.docs.map(d => d.data());
+  const bonuses  = bonSnap.docs.map(d => d.data());
+  const shifts   = shiftSnap.docs.map(d => d.data()).filter(s => s.clockOut !== null);
+
+  const totalRevenue  = deposits.reduce((s,d) => s + (d.amountUSD||0), 0);
+  const costOfPoints  = deposits.reduce((s,d) => s + (d.costOfPoints||0), 0);
+  const totalCashouts = cashouts.reduce((s,c) => s + (c.amountUSD||0), 0);
+  const totalFees     = cashouts.reduce((s,c) => s + (c.feeUSD||0), 0);
+  const totalBonuses  = bonuses.reduce((s,b)  => s + (b.valueUSD||0), 0);
+  const totalPayroll  = shifts.reduce((sum, shift) => {
+    const user = state.users.find(u => u.id === shift.userId);
+    const hours = (shift.durationMinutes || 0) / 60;
+    return sum + hours * (user?.hourlyRate || 0);
+  }, 0);
+
+  const profit = totalRevenue - costOfPoints - totalCashouts - totalFees - totalBonuses - totalPayroll;
+
+  return {
+    totalRevenue, costOfPoints, totalCashouts, totalFees,
+    totalBonuses, totalPayroll, profit,
+    depCount: deposits.length, coCount: cashouts.length, bonCount: bonuses.length
+  };
+}
+
+function periodRange(period) {
+  const now = new Date();
+  let from;
+  if (period === 'day') {
+    from = new Date(now); from.setHours(0,0,0,0);
+  } else if (period === 'week') {
+    from = new Date(now); from.setDate(now.getDate() - now.getDay()); from.setHours(0,0,0,0);
+  } else {
+    from = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  const to = new Date(now); to.setHours(23,59,59,999);
+  return { from, to };
+}
+
+// ============================================================
+// RENDER: DASHBOARD
+// ============================================================
+async function renderDashboard() {
+  await refreshDashboardStats();
+}
+
+async function refreshDashboardStats() {
+  const { from, to } = periodRange(state.currentProfitPeriod);
+  const stats = await calculateProfit(from, to);
+
+  // Today stats (always day)
+  const todayStats = state.currentProfitPeriod === 'day' ? stats : await calculateProfit(...Object.values(periodRange('day')));
+  const ts = state.currentProfitPeriod === 'day' ? stats : todayStats;
+
+  document.getElementById('stat-deposits').textContent = formatUSD(ts.totalRevenue);
+  document.getElementById('stat-deposits-count').textContent = `${ts.depCount} transactions`;
+  document.getElementById('stat-cashouts').textContent = formatUSD(ts.totalCashouts + ts.totalFees);
+  document.getElementById('stat-cashouts-count').textContent = `${ts.coCount} transactions`;
+  document.getElementById('stat-bonuses').textContent = formatUSD(ts.totalBonuses);
+  document.getElementById('stat-bonuses-count').textContent = `${ts.bonCount} given`;
+
+  const profitEl = document.getElementById('stat-profit');
+  profitEl.textContent = formatUSD(stats.profit);
+  profitEl.className = 'stat-value ' + (stats.profit >= 0 ? 'green' : 'red');
+
+  renderProfitBreakdown('profit-breakdown', stats);
+  renderRecentTx();
+}
+
+function renderProfitBreakdown(elId, stats) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = `
+    <div class="profit-row"><span class="label">Revenue (Deposits)</span><span class="amount plus">${formatUSD(stats.totalRevenue)}</span></div>
+    <div class="profit-row"><span class="label">Cost of Points</span><span class="amount minus">−${formatUSD(stats.costOfPoints)}</span></div>
+    <div class="profit-row"><span class="label">Player Cashouts</span><span class="amount minus">−${formatUSD(stats.totalCashouts)}</span></div>
+    <div class="profit-row"><span class="label">Cashout Fees</span><span class="amount minus">−${formatUSD(stats.totalFees)}</span></div>
+    <div class="profit-row"><span class="label">Bonuses / Freeplay</span><span class="amount minus">−${formatUSD(stats.totalBonuses)}</span></div>
+    <div class="profit-row"><span class="label">Payroll</span><span class="amount minus">−${formatUSD(stats.totalPayroll)}</span></div>
+    <div class="profit-row total"><span class="label">Net Profit</span><span class="amount ${stats.profit>=0?'plus':'minus'}">${formatUSD(stats.profit)}</span></div>
+  `;
+}
+
+async function renderRecentTx() {
+  const snap = await getDocs(query(collection(db,'deposits'), orderBy('createdAt','desc'), limit(10)));
+  const tbody = document.getElementById('recent-tx-body');
+  if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="icon">◎</div>No transactions yet</div></td></tr>'; return; }
+  tbody.innerHTML = snap.docs.map(d => {
+    const tx = d.data();
+    return `<tr>
+      <td class="text-muted">${timeAgo(tx.createdAt)}</td>
+      <td><span class="badge green">Deposit</span></td>
+      <td>${getPlatformName(tx.platformId)}</td>
+      <td>${formatUSD(tx.amountUSD)}</td>
+      <td>${formatNum(tx.pointsGiven)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderActiveShifts() {
+  const ticker = document.getElementById('shift-ticker');
+  const noMsg  = document.getElementById('no-shifts-msg');
+  const pills  = ticker.querySelectorAll('.shift-pill');
+  pills.forEach(p => p.remove());
+
+  if (state.activeShifts.length === 0) {
+    noMsg.style.display = '';
+  } else {
+    noMsg.style.display = 'none';
+    state.activeShifts.forEach(shift => {
+      const name = getUserName(shift.userId);
+      const since = shift.clockIn?.toDate ? shift.clockIn.toDate() : new Date();
+      const mins = Math.floor((Date.now() - since) / 60000);
+      const pill = document.createElement('div');
+      pill.className = 'shift-pill';
+      pill.innerHTML = `<span class="shift-dot"></span>${name} <span class="text-muted" style="margin-left:0.2rem">${mins}m</span>`;
+      ticker.appendChild(pill);
+    });
+  }
+}
+
+window.setProfitPeriod = async (period, el) => {
+  state.currentProfitPeriod = period;
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  await refreshDashboardStats();
+};
+
+// ============================================================
+// RENDER: EMPLOYEES
+// ============================================================
+function renderEmployees() {
+  const tbody = document.getElementById('employees-body');
+  if (!state.users.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="icon">◉</div>No employees found</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.users.map(u => {
+    const isOnShift = state.activeShifts.some(s => s.userId === u.id);
+    return `<tr>
+      <td><strong>${u.displayName || '—'}</strong><br><span class="text-muted text-sm">${u.email}</span></td>
+      <td><span class="badge ${u.role==='admin'?'red':u.role==='editor'?'blue':'gray'}">${u.role}</span></td>
+      <td>${formatUSD(u.hourlyRate)}/hr</td>
+      <td>${isOnShift ? '<span class="badge green">● On Shift</span>' : '<span class="badge gray">Off</span>'}</td>
+      <td id="emp-hours-${u.id}">—</td>
+      <td>
+        ${state.role==='admin' ? `<button class="btn btn-sm btn-secondary" onclick="editEmployee('${u.id}')">Edit</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+  loadMonthlyHours();
+  renderMyShiftCard();
+}
+
+async function loadMonthlyHours() {
+  const from = new Date(); from.setDate(1); from.setHours(0,0,0,0);
+  const snap = await getDocs(query(collection(db,'shifts'), where('clockIn','>=',Timestamp.fromDate(from))));
+  const shifts = snap.docs.map(d => d.data()).filter(s => s.clockOut !== null);
+  state.users.forEach(u => {
+    const el = document.getElementById(`emp-hours-${u.id}`);
+    if (!el) return;
+    const total = shifts.filter(s => s.userId === u.id).reduce((sum,s) => sum + (s.durationMinutes||0), 0);
+    el.textContent = `${(total/60).toFixed(1)}h`;
+  });
+}
+
+function renderMyShiftCard() {
+  const el = document.getElementById('my-shift-body');
+  if (!el || !state.user) return;
+  const myShift = state.activeShifts.find(s => s.userId === state.user.uid);
+  if (myShift) {
+    const since = myShift.clockIn?.toDate ? myShift.clockIn.toDate() : new Date();
+    const mins  = Math.floor((Date.now() - since) / 60000);
+    el.innerHTML = `
+      <p style="margin-bottom:1rem;font-size:0.82rem">Clocked in <strong>${mins} minutes ago</strong> at ${since.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</p>
+      <button class="btn btn-danger" onclick="clockOut('${myShift.id}')">Clock Out</button>
+    `;
+  } else {
+    el.innerHTML = `
+      <p class="text-muted text-sm" style="margin-bottom:1rem">You are not currently clocked in.</p>
+      <button class="btn btn-primary" onclick="clockIn()">Clock In</button>
+    `;
+  }
+}
+
+window.clockIn = async () => {
+  const uid = state.user.uid;
+  const open = state.activeShifts.find(s => s.userId === uid);
+  if (open) { toast('Already clocked in', 'error'); return; }
+  try {
+    await addDoc(collection(db,'shifts'), {
+      userId: uid, clockIn: serverTimestamp(), clockOut: null,
+      durationMinutes: null, payroll: null
+    });
+    toast('Clocked in!', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.clockOut = async (shiftId) => {
+  const user = state.userDoc;
+  const now  = new Date();
+  await runTransaction(db, async (tx) => {
+    const ref  = doc(db,'shifts',shiftId);
+    const snap = await tx.get(ref);
+    if (!snap.exists() || snap.data().clockOut !== null) throw new Error('Invalid shift');
+    const clockIn = snap.data().clockIn.toDate();
+    const durationMinutes = Math.round((now - clockIn) / 60000);
+    const payroll = (durationMinutes / 60) * (user?.hourlyRate || 0);
+    tx.update(ref, { clockOut: now, durationMinutes, payroll });
+  });
+  toast('Clocked out!', 'success');
+};
+
+window.editEmployee = (uid) => {
+  toast('Edit employee: coming soon', 'info');
+};
+
+// ============================================================
+// RENDER: PLATFORMS
+// ============================================================
+function renderPlatforms() {
+  const grid = document.getElementById('platforms-grid');
+  const tbody = document.getElementById('platforms-body');
+
+  if (!state.platforms.length) {
+    grid.innerHTML = '';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="icon">◎</div>No platforms yet</div></td></tr>';
+    return;
+  }
+
+  grid.innerHTML = state.platforms.map(p => `
+    <div class="stat-card teal" style="--border-color:var(--accent)">
+      <div class="stat-label">${p.name}</div>
+      <div class="stat-value" style="color:var(--accent)">${formatNum(p.pointsBalance)}</div>
+      <div class="stat-sub">pts · cost ${formatUSD(p.costRate)}/pt</div>
+    </div>
+  `).join('');
+
+  tbody.innerHTML = state.platforms.map(p => `
+    <tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${formatUSD(p.costRate)}/pt</td>
+      <td>${p.sellingType === 'fixed' ? '1:1 Fixed' : `${p.sellingRate}%`}</td>
+      <td><strong>${formatNum(p.pointsBalance)}</strong> pts</td>
+      <td>
+        ${state.role==='admin' ? `<button class="btn btn-sm btn-danger" onclick="deletePlatform('${p.id}')">Delete</button>` : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function populatePlatformSelects() {
+  const opts = state.platforms.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  ['dep-platform','co-platform','bon-platform'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts || '<option>No platforms</option>';
+  });
+}
+
+window.toggleSellRate = () => {
+  const type = document.getElementById('plat-sell-type').value;
+  document.getElementById('plat-sell-rate-group').style.display = type === 'percentage' ? '' : 'none';
+};
+
+window.addPlatform = async () => {
+  const name    = document.getElementById('plat-name').value.trim();
+  const cost    = parseFloat(document.getElementById('plat-cost').value);
+  const sType   = document.getElementById('plat-sell-type').value;
+  const sRate   = parseFloat(document.getElementById('plat-sell-rate').value) || 100;
+  const balance = parseFloat(document.getElementById('plat-balance').value) || 0;
+  if (!name || isNaN(cost)) { toast('Fill all required fields', 'error'); return; }
+  await addDoc(collection(db,'platforms'), {
+    name, costRate: cost, sellingType: sType,
+    sellingRate: sType === 'fixed' ? 1.0 : sRate / 100,
+    pointsBalance: balance, createdAt: serverTimestamp()
+  });
+  await loadPlatforms();
+  closeModal('modal-add-platform');
+  toast('Platform added!', 'success');
+};
+
+window.deletePlatform = async (id) => {
+  if (!confirm('Delete this platform?')) return;
+  await deleteDoc(doc(db,'platforms',id));
+  await loadPlatforms();
+  toast('Platform deleted', 'info');
+};
+
+// ============================================================
+// TRANSACTIONS
+// ============================================================
+window.submitDeposit = async () => {
+  const platformId = document.getElementById('dep-platform').value;
+  const amount     = parseFloat(document.getElementById('dep-amount').value);
+  const currency   = document.getElementById('dep-currency').value;
+  const points     = parseFloat(document.getElementById('dep-points').value);
+
+  if (!platformId || isNaN(amount) || isNaN(points)) { toast('Fill all fields', 'error'); return; }
+
+  const { amountUSD, conversionRate } = toUSD(amount, currency);
+  const platformRef = doc(db, 'platforms', platformId);
+
+  try {
+    await runTransaction(db, async (tx) => {
+      const pSnap = await tx.get(platformRef);
+      if (!pSnap.exists()) throw new Error('Platform not found');
+      const platform = pSnap.data();
+      const costOfPoints = points * platform.costRate;
+      const newBalance   = platform.pointsBalance - points;
+      if (newBalance < 0) throw new Error('Insufficient platform points balance');
+      tx.update(platformRef, { pointsBalance: newBalance });
+      const depRef = doc(collection(db,'deposits'));
+      tx.set(depRef, {
+        platformId, originalAmount: amount, currency, conversionRate,
+        amountUSD, pointsGiven: points, sellingRate: platform.sellingRate,
+        costOfPoints, createdBy: state.user.uid, createdAt: serverTimestamp()
+      });
+    });
+    await loadPlatforms();
+    closeModal('modal-add-deposit');
+    toast('Deposit recorded!', 'success');
+    renderDepositsList();
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.submitCashout = async () => {
+  const platformId = document.getElementById('co-platform').value;
+  const amount     = parseFloat(document.getElementById('co-amount').value);
+  const currency   = document.getElementById('co-currency').value;
+  const points     = parseFloat(document.getElementById('co-points').value);
+  const methodId   = document.getElementById('co-method').value;
+  if (!platformId || isNaN(amount) || isNaN(points) || !methodId) { toast('Fill all fields','error'); return; }
+
+  const method = state.payoutMethods.find(m => m.id === methodId);
+  const { amountUSD, conversionRate } = toUSD(amount, currency);
+  const feeUSD = method.feeType === 'fixed' ? method.feeValue : amountUSD * (method.feeValue / 100);
+  const totalCostUSD = amountUSD + feeUSD;
+  const platformRef = doc(db,'platforms',platformId);
+
+  try {
+    await runTransaction(db, async (tx) => {
+      const pSnap = await tx.get(platformRef);
+      const platform = pSnap.data();
+      tx.update(platformRef, { pointsBalance: platform.pointsBalance + points });
+      const coRef = doc(collection(db,'cashouts'));
+      tx.set(coRef, {
+        platformId, originalAmount: amount, currency, conversionRate,
+        amountUSD, pointsReturned: points, payoutMethodId: methodId,
+        feeType: method.feeType, feeValue: method.feeValue, feeUSD, totalCostUSD,
+        createdBy: state.user.uid, createdAt: serverTimestamp()
+      });
+    });
+    await loadPlatforms();
+    closeModal('modal-add-cashout');
+    toast('Cashout recorded!', 'success');
+    renderCashoutsList();
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.submitBonus = async () => {
+  const platformId = document.getElementById('bon-platform').value;
+  const points     = parseFloat(document.getElementById('bon-points').value);
+  const note       = document.getElementById('bon-note').value.trim();
+  if (!platformId || isNaN(points)) { toast('Fill all fields','error'); return; }
+
+  const platformRef = doc(db,'platforms',platformId);
+  try {
+    await runTransaction(db, async (tx) => {
+      const pSnap = await tx.get(platformRef);
+      const platform = pSnap.data();
+      const valueUSD  = points * platform.costRate;
+      const newBalance = platform.pointsBalance - points;
+      if (newBalance < 0) throw new Error('Insufficient points balance');
+      tx.update(platformRef, { pointsBalance: newBalance });
+      const bonRef = doc(collection(db,'bonuses'));
+      tx.set(bonRef, {
+        platformId, pointsGiven: points, valueUSD, note,
+        createdBy: state.user.uid, createdAt: serverTimestamp()
+      });
+    });
+    await loadPlatforms();
+    closeModal('modal-add-bonus');
+    toast('Bonus recorded!', 'success');
+    renderBonusesList();
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+window.previewCashout = () => {
+  const amount   = parseFloat(document.getElementById('co-amount').value);
+  const currency = document.getElementById('co-currency').value;
+  const methodId = document.getElementById('co-method').value;
+  if (!amount || !methodId) return;
+  try {
+    const { amountUSD } = toUSD(amount, currency);
+    const method = state.payoutMethods.find(m => m.id === methodId);
+    if (!method) return;
+    const fee   = method.feeType === 'fixed' ? method.feeValue : amountUSD * (method.feeValue / 100);
+    const total = amountUSD + fee;
+    document.getElementById('co-preview').style.display = '';
+    document.getElementById('co-prev-usd').textContent   = formatUSD(amountUSD);
+    document.getElementById('co-prev-fee').textContent   = formatUSD(fee);
+    document.getElementById('co-prev-total').textContent = formatUSD(total);
+  } catch {}
+};
+
+async function renderDepositsList() {
+  const snap = await getDocs(query(collection(db,'deposits'), orderBy('createdAt','desc'), limit(50)));
+  const tbody = document.getElementById('tx-deposits-body');
+  if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No deposits yet</div></td></tr>'; return; }
+  tbody.innerHTML = snap.docs.map(d => {
+    const tx = d.data();
+    return `<tr>
+      <td class="text-muted text-sm">${formatDate(tx.createdAt)}</td>
+      <td>${getPlatformName(tx.platformId)}</td>
+      <td>${formatUSD(tx.amountUSD)} ${tx.currency !== 'USD' ? `<span class="text-muted text-sm">(${tx.currency} ${tx.originalAmount})</span>` : ''}</td>
+      <td>${formatNum(tx.pointsGiven)}</td>
+      <td class="text-muted">${formatUSD(tx.costOfPoints)}</td>
+      <td class="text-muted text-sm">${getUserName(tx.createdBy)}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function renderCashoutsList() {
+  const snap = await getDocs(query(collection(db,'cashouts'), orderBy('createdAt','desc'), limit(50)));
+  const tbody = document.getElementById('tx-cashouts-body');
+  if (snap.empty) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty">No cashouts yet</div></td></tr>'; return; }
+  tbody.innerHTML = snap.docs.map(d => {
+    const tx = d.data();
+    const method = state.payoutMethods.find(m => m.id === tx.payoutMethodId);
+    return `<tr>
+      <td class="text-muted text-sm">${formatDate(tx.createdAt)}</td>
+      <td>${getPlatformName(tx.platformId)}</td>
+      <td>${formatUSD(tx.amountUSD)}</td>
+      <td>${method?.name || tx.payoutMethodId}</td>
+      <td class="text-muted">${formatUSD(tx.feeUSD)}</td>
+      <td><strong>${formatUSD(tx.totalCostUSD)}</strong></td>
+      <td class="text-muted text-sm">${getUserName(tx.createdBy)}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function renderBonusesList() {
+  const snap = await getDocs(query(collection(db,'bonuses'), orderBy('createdAt','desc'), limit(50)));
+  const tbody = document.getElementById('tx-bonuses-body');
+  if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No bonuses yet</div></td></tr>'; return; }
+  tbody.innerHTML = snap.docs.map(d => {
+    const tx = d.data();
+    return `<tr>
+      <td class="text-muted text-sm">${formatDate(tx.createdAt)}</td>
+      <td>${getPlatformName(tx.platformId)}</td>
+      <td>${formatNum(tx.pointsGiven)}</td>
+      <td class="text-muted">${formatUSD(tx.valueUSD)}</td>
+      <td>${tx.note || '—'}</td>
+      <td class="text-muted text-sm">${getUserName(tx.createdBy)}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.switchTxTab = (tab, el) => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tx-${tab}`).classList.add('active');
+  if (tab === 'deposits') renderDepositsList();
+  if (tab === 'cashouts') renderCashoutsList();
+  if (tab === 'bonuses')  renderBonusesList();
+};
+
+// ============================================================
+// PAYOUT METHODS
+// ============================================================
+function renderPayoutMethods() {
+  const tbody = document.getElementById('payout-methods-body');
+  if (!state.payoutMethods.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty">No payout methods configured</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.payoutMethods.map(m => `
+    <tr>
+      <td><strong>${m.name}</strong></td>
+      <td>${m.feeType}</td>
+      <td>${m.feeType === 'fixed' ? formatUSD(m.feeValue) : `${m.feeValue}%`}</td>
+      <td><span class="badge green">Active</span></td>
+      <td>
+        <button class="btn btn-sm btn-danger" onclick="deletePayoutMethod('${m.id}')">Remove</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function populateMethodSelects() {
+  const opts = state.payoutMethods.map(m => `<option value="${m.id}">${m.name} (${m.feeType === 'fixed' ? formatUSD(m.feeValue) : m.feeValue + '%'})</option>`).join('');
+  const el = document.getElementById('co-method');
+  if (el) el.innerHTML = opts || '<option>No methods configured</option>';
+}
+
+window.addPayoutMethod = async () => {
+  const name  = document.getElementById('pm-name').value.trim();
+  const ftype = document.getElementById('pm-fee-type').value;
+  const fval  = parseFloat(document.getElementById('pm-fee-value').value);
+  if (!name || isNaN(fval)) { toast('Fill all fields','error'); return; }
+  await addDoc(collection(db,'payoutMethods'), {
+    name, feeType: ftype, feeValue: fval, active: true, createdAt: serverTimestamp()
+  });
+  await loadPayoutMethods();
+  closeModal('modal-add-payout-method');
+  toast('Payout method added!', 'success');
+};
+
+window.deletePayoutMethod = async (id) => {
+  await updateDoc(doc(db,'payoutMethods',id), { active: false });
+  await loadPayoutMethods();
+  toast('Method removed', 'info');
+};
+
+// ============================================================
+// EMPLOYEES: Add via Firebase Admin SDK workaround
+// ============================================================
+window.addEmployee = async () => {
+  const name  = document.getElementById('emp-name').value.trim();
+  const email = document.getElementById('emp-email').value.trim();
+  const pw    = document.getElementById('emp-password').value;
+  const role  = document.getElementById('emp-role').value;
+  const rate  = parseFloat(document.getElementById('emp-rate').value) || 0;
+
+  if (!name || !email || !pw) { toast('Fill all fields', 'error'); return; }
+
+  try {
+    // Create auth account
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    // Write user doc
+    await setDoc(doc(db,'users', cred.user.uid), {
+      displayName: name, email, role, hourlyRate: rate, createdAt: serverTimestamp()
+    });
+    await loadUsers();
+    closeModal('modal-add-employee');
+    toast(`Employee ${name} created!`, 'success');
+  } catch (e) { toast(e.message, 'error'); }
+};
+
+// ============================================================
+// SETTINGS: Currency Rates
+// ============================================================
+function renderCurrencyRates() {
+  const el = document.getElementById('currency-rates-list');
+  if (!el) return;
+  const entries = Object.entries(state.manualRates);
+  if (!entries.length) { el.innerHTML = '<p class="text-muted text-sm">No custom rates set. USD is always 1.0.</p>'; return; }
+  el.innerHTML = entries.map(([code, rate]) => `
+    <div class="flex items-center justify-between" style="padding:0.4rem 0;border-bottom:1px solid var(--border)">
+      <span class="font-display" style="font-size:0.85rem">${code}</span>
+      <span class="text-muted text-sm">1 ${code} = ${rate} USD</span>
+      <button class="btn btn-sm btn-danger" onclick="deleteCurrencyRate('${code}')">✕</button>
+    </div>
+  `).join('');
+
+  // Update currency selects
+  const opts = '<option value="USD">USD</option>' + Object.keys(state.manualRates).map(c => `<option value="${c}">${c}</option>`).join('');
+  ['dep-currency','co-currency'].forEach(id => {
+    const el2 = document.getElementById(id);
+    if (el2) el2.innerHTML = opts;
+  });
+}
+
+window.saveCurrencyRate = async () => {
+  const code = document.getElementById('new-currency-code').value.trim().toUpperCase();
+  const rate = parseFloat(document.getElementById('new-currency-rate').value);
+  if (!code || isNaN(rate)) { toast('Enter code and rate', 'error'); return; }
+  state.manualRates[code] = rate;
+  await setDoc(doc(db,'settings','global'), { manualRates: state.manualRates }, { merge: true });
+  renderCurrencyRates();
+  toast(`Rate saved: 1 ${code} = ${rate} USD`, 'success');
+};
+
+window.deleteCurrencyRate = async (code) => {
+  delete state.manualRates[code];
+  await setDoc(doc(db,'settings','global'), { manualRates: state.manualRates }, { merge: true });
+  renderCurrencyRates();
+  toast(`${code} rate removed`, 'info');
+};
+
+// ============================================================
+// SETTINGS: Firebase Config
+// ============================================================
+function prefillSettingsTab() {
+  const cfg = getFirebaseConfig();
+  Object.keys(cfg).forEach(k => {
+    const el = document.getElementById(`fb-${k}`);
+    if (el) el.value = cfg[k];
+  });
+}
+
+window.saveFirebaseConfig = () => {
+  const cfg = {
+    apiKey:            document.getElementById('fb-apiKey').value.trim(),
+    authDomain:        document.getElementById('fb-authDomain').value.trim(),
+    projectId:         document.getElementById('fb-projectId').value.trim(),
+    storageBucket:     document.getElementById('fb-storageBucket').value.trim(),
+    messagingSenderId: document.getElementById('fb-messagingSenderId').value.trim(),
+    appId:             document.getElementById('fb-appId').value.trim()
+  };
+  localStorage.setItem('gameops_firebase_config', JSON.stringify(cfg));
+  toast('Config saved! Reloading...', 'success');
+  setTimeout(() => location.reload(), 1200);
+};
+
+// ============================================================
+// REPORTS
+// ============================================================
+function setDefaultDates() {
+  const now  = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('report-from').value = from.toISOString().split('T')[0];
+  document.getElementById('report-to').value   = now.toISOString().split('T')[0];
+}
+
+window.generateReport = async () => {
+  const from = new Date(document.getElementById('report-from').value + 'T00:00:00');
+  const to   = new Date(document.getElementById('report-to').value   + 'T23:59:59');
+  if (isNaN(from) || isNaN(to)) { toast('Select valid dates','error'); return; }
+
+  const stats = await calculateProfit(from, to);
+  state.reportData = { stats, from, to };
+
+  document.getElementById('report-results').style.display = '';
+  document.getElementById('btn-export').style.display = '';
+
+  document.getElementById('report-stats').innerHTML = `
+    <div class="stat-card green"><div class="stat-label">Revenue</div><div class="stat-value green">${formatUSD(stats.totalRevenue)}</div><div class="stat-sub">${stats.depCount} deposits</div></div>
+    <div class="stat-card red"><div class="stat-label">Cashouts + Fees</div><div class="stat-value red">${formatUSD(stats.totalCashouts + stats.totalFees)}</div><div class="stat-sub">${stats.coCount} cashouts</div></div>
+    <div class="stat-card amber"><div class="stat-label">Bonuses</div><div class="stat-value amber">${formatUSD(stats.totalBonuses)}</div><div class="stat-sub">${stats.bonCount} given</div></div>
+    <div class="stat-card blue"><div class="stat-label">Payroll</div><div class="stat-value blue">${formatUSD(stats.totalPayroll)}</div></div>
+    <div class="stat-card ${stats.profit>=0?'green':'red'}"><div class="stat-label">Net Profit</div><div class="stat-value ${stats.profit>=0?'green':'red'}">${formatUSD(stats.profit)}</div></div>
+  `;
+  renderProfitBreakdown('report-profit-breakdown', stats);
+  toast('Report generated', 'success');
+};
+
+window.exportExcel = async () => {
+  if (!state.reportData) return;
+  const { from, to } = state.reportData;
+  const fromTs = Timestamp.fromDate(from);
+  const toTs   = Timestamp.fromDate(to);
+
+  const [depSnap, coSnap, bonSnap] = await Promise.all([
+    getDocs(query(collection(db,'deposits'), where('createdAt','>=',fromTs), where('createdAt','<=',toTs))),
+    getDocs(query(collection(db,'cashouts'), where('createdAt','>=',fromTs), where('createdAt','<=',toTs))),
+    getDocs(query(collection(db,'bonuses'),  where('createdAt','>=',fromTs), where('createdAt','<=',toTs))),
+  ]);
+
+  const deps = depSnap.docs.map(d => {
+    const r = d.data();
+    return { Date: formatDate(r.createdAt), Platform: getPlatformName(r.platformId), 'Amount USD': r.amountUSD, Currency: r.currency, 'Original Amount': r.originalAmount, 'Points Given': r.pointsGiven, 'Cost of Points': r.costOfPoints, 'By': getUserName(r.createdBy) };
+  });
+  const cos = coSnap.docs.map(d => {
+    const r = d.data();
+    return { Date: formatDate(r.createdAt), Platform: getPlatformName(r.platformId), 'Amount USD': r.amountUSD, 'Points Returned': r.pointsReturned, 'Fee USD': r.feeUSD, 'Total Cost': r.totalCostUSD, 'By': getUserName(r.createdBy) };
+  });
+  const bons = bonSnap.docs.map(d => {
+    const r = d.data();
+    return { Date: formatDate(r.createdAt), Platform: getPlatformName(r.platformId), 'Points Given': r.pointsGiven, 'Value USD': r.valueUSD, Note: r.note, 'By': getUserName(r.createdBy) };
+  });
+
+  const stats = state.reportData.stats;
+  const summary = [{
+    'Total Revenue': stats.totalRevenue,
+    'Cost of Points': stats.costOfPoints,
+    'Total Cashouts': stats.totalCashouts,
+    'Cashout Fees': stats.totalFees,
+    'Bonuses/Freeplay': stats.totalBonuses,
+    'Payroll': stats.totalPayroll,
+    'Net Profit': stats.profit
+  }];
+
+  // Use SheetJS from CDN
+  const XLSX = window.XLSX;
+  if (!XLSX) { toast('Excel library not loaded yet, try again','error'); return; }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(deps || [{}]),    'Deposits');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cos  || [{}]),    'Cashouts');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(bons || [{}]),    'Bonuses');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary),         'Summary');
+  XLSX.writeFile(wb, `gameops-report-${from.toISOString().split('T')[0]}-to-${to.toISOString().split('T')[0]}.xlsx`);
+  toast('Excel exported!', 'success');
+};
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+window.navigate = (section) => {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById(`section-${section}`)?.classList.add('active');
+  document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
+  document.getElementById('page-title').textContent = section.charAt(0).toUpperCase() + section.slice(1);
+  closeSidebar();
+
+  // Trigger section renders
+  if (section === 'dashboard')    renderDashboard();
+  if (section === 'employees')    { renderEmployees(); }
+  if (section === 'platforms')    renderPlatforms();
+  if (section === 'transactions') { renderDepositsList(); }
+  if (section === 'settings')     { renderPayoutMethods(); renderCurrencyRates(); }
+};
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+window.openModal = (id) => {
+  document.getElementById(id)?.classList.remove('hidden');
+  // Populate selects fresh
+  populatePlatformSelects();
+  populateMethodSelects();
+};
+window.closeModal = (id) => { document.getElementById(id)?.classList.add('hidden'); };
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.add('hidden');
+  });
+});
+
+// ============================================================
+// MOBILE SIDEBAR
+// ============================================================
+window.openSidebar = () => {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+};
+window.closeSidebar = () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+};
+
+// ============================================================
+// TOAST
+// ============================================================
+window.toast = (msg, type = 'info') => {
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span> ${msg}`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+};
+
+// Enter key on auth
+document.getElementById('auth-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') signIn();
+});
+
+</script>
+
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+</body>
+</html>
