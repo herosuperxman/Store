@@ -1168,12 +1168,12 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
       measurementId: "G-0LMKKJRY4X"
     };
 
@@ -7043,7 +7043,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7104,44 +7104,45 @@
         state.view = 'loading';
         render();
 
-        // Check access first, then load data with cache-first strategy
-        const access = await checkUserAccess(user);
-        state.gbUsername = access.gbUsername || '';
-        state.accessDaysLeft = access.daysLeft;
-        state.accessExpiry = access.expiry;
-        state.accessUnlimited = access.isUnlimited || false;
-
-        // Resolve employee role (owner vs employee)
+        // STEP 1: Resolve role FIRST (employee vs owner) — must happen before access check
+        //         so employees are never blocked by the subscription gate.
         try { await resolveEmployeeRole(user); } catch(e) { console.warn('Role resolve:', e); }
 
-        // If user is an employee, check the owner's subscription instead
+        // STEP 2: If this is an employee, validate against the OWNER'S subscription
         if (state.empRole === 'employee') {
-          if (!access.hasAccess) {
-            // Try checking owner's access for employees
-            let ownerHasAccess = false;
-            try {
-              const ownerAccessDoc = await db.collection('userAccess').doc(state.empOrgId).get();
-              if (ownerAccessDoc.exists) {
-                const od = ownerAccessDoc.data();
-                if (od.isUnlimited) ownerHasAccess = true;
-                else if (od.expiryDate) {
-                  const exp = od.expiryDate.toDate();
-                  ownerHasAccess = exp > new Date();
-                }
+          let ownerHasAccess = false;
+          try {
+            const ownerAccessDoc = await db.collection('userAccess').doc(state.empOrgId).get();
+            if (ownerAccessDoc.exists) {
+              const od = ownerAccessDoc.data();
+              if (od.isUnlimited) {
+                ownerHasAccess = true;
+              } else if (od.expiryDate) {
+                const exp = od.expiryDate.toDate ? od.expiryDate.toDate() : new Date(od.expiryDate);
+                const daysLeft = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+                ownerHasAccess = daysLeft > 0;
               }
-            } catch(e) { console.warn('Owner access check:', e); }
-            if (!ownerHasAccess) {
-              state.view = 'accessDenied';
-              render();
-              return;
             }
+          } catch(e) { console.warn('Owner access check for employee:', e); }
+
+          if (!ownerHasAccess) {
+            state.view = 'accessDenied';
+            render();
+            return;
           }
-          // Employee: go directly to employment page (no billing data needed)
+          // Employee is authorized — go to employment page (no billing data needed)
           state.view = 'employment';
           render();
           setTimeout(() => checkPopupMessages(user.uid), 600);
           return;
         }
+
+        // STEP 3: Owner — check their own subscription as before
+        const access = await checkUserAccess(user);
+        state.gbUsername = access.gbUsername || '';
+        state.accessDaysLeft = access.daysLeft;
+        state.accessExpiry = access.expiry;
+        state.accessUnlimited = access.isUnlimited || false;
 
         if (!access.hasAccess) {
           state.view = 'accessDenied';
@@ -7372,34 +7373,52 @@
     function payPath()   { return `organizations/${state.empOrgId}/salaryPayments`; }
 
     // --- Resolve role after login ---
+    // Convert email to a safe Firestore document key (replace dots/@ with underscores)
+    function emailToKey(email) {
+      return (email || '').toLowerCase().replace(/[.@]/g, '_');
+    }
+
     async function resolveEmployeeRole(user) {
-      // 1. Check if this user owns an org
+      // 1. Check if this user owns an org (direct doc lookup — no index needed)
       const ownerDoc = await db.collection('organizations').doc(user.uid).get();
       if (ownerDoc.exists) {
         state.empRole  = 'owner';
         state.empOrgId = user.uid;
         return;
       }
-      // 2. Check if this user is an employee in any org
-      // collectionGroup requires a Firestore index — gracefully fall back to owner if it fails
+
+      // 2. Check employeeLinks collection — a flat lookup keyed by email.
+      //    This avoids collectionGroup queries and Firestore indexes entirely.
+      //    The link doc is written automatically when the owner adds an employee.
+      const linkKey = emailToKey(user.email);
       try {
-        const empSnap = await db.collectionGroup('employees')
-          .where('email', '==', user.email)
-          .where('active', '==', true)
-          .limit(1)
-          .get();
-        if (!empSnap.empty) {
-          const empDoc  = empSnap.docs[0];
-          const orgRef  = empDoc.ref.parent.parent;
-          state.empRole        = 'employee';
-          state.empOrgId       = orgRef.id;
-          state.empEmployeeDoc = { _id: empDoc.id, ...empDoc.data() };
-          return;
+        const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
+        if (linkDoc.exists) {
+          const link = linkDoc.data();
+          if (link.active === false) {
+            // Employee was deactivated
+            state.empRole  = 'owner';
+            state.empOrgId = user.uid;
+            return;
+          }
+          // Fetch the actual employee record from the org subcollection
+          const empDoc = await db.collection('organizations')
+            .doc(link.ownerUid)
+            .collection('employees')
+            .doc(link.employeeId)
+            .get();
+          if (empDoc.exists && empDoc.data().active !== false) {
+            state.empRole        = 'employee';
+            state.empOrgId       = link.ownerUid;
+            state.empEmployeeDoc = { _id: empDoc.id, ...empDoc.data() };
+            return;
+          }
         }
       } catch(e) {
-        console.warn('Employee collectionGroup query failed (index may be needed):', e);
+        console.warn('Employee link lookup failed:', e);
       }
-      // 3. Plain owner with no org yet — will create on first use
+
+      // 3. Not an employee — treat as owner (no org yet, created on first use)
       state.empRole  = 'owner';
       state.empOrgId = user.uid;
     }
@@ -7919,21 +7938,36 @@
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Invalid email address.'); return; }
         await ensureOrgDoc();
         const data = { name, email, role, contact, salaryType, salaryRate, active: true };
+        let empId;
         if (isEdit) {
           await db.collection(empPath()).doc(existing._id).update(data);
+          empId = existing._id;
         } else {
           data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-          await db.collection(empPath()).add(data);
+          const ref = await db.collection(empPath()).add(data);
+          empId = ref.id;
         }
+        // Write/update employeeLinks so the employee can log in without collectionGroup query
+        const linkKey = emailToKey(email);
+        await db.collection('employeeLinks').doc(linkKey).set({
+          email:      email,
+          ownerUid:   state.empOrgId,
+          employeeId: empId,
+          active:     true,
+          updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        });
         modal.remove();
         await refreshEmployeeList();
       };
 
       if (isEdit) {
         document.getElementById('toggleEmpActive').onclick = async () => {
-          const newState = existing.active === false ? true : false;
-          if (!confirm(newState ? 'Re-activate this employee?' : 'Deactivate this employee?')) return;
-          await db.collection(empPath()).doc(existing._id).update({ active: newState });
+          const newActive = existing.active === false;
+          if (!confirm(newActive ? 'Re-activate this employee?' : 'Deactivate this employee?')) return;
+          await db.collection(empPath()).doc(existing._id).update({ active: newActive });
+          // Mirror active state to employeeLinks so login is blocked/allowed immediately
+          const linkKey = emailToKey(existing.email);
+          await db.collection('employeeLinks').doc(linkKey).update({ active: newActive });
           modal.remove();
           await refreshEmployeeList();
         };
