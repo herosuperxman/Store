@@ -1168,12 +1168,12 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
       measurementId: "G-0LMKKJRY4X"
     };
 
@@ -7043,7 +7043,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7540,10 +7540,16 @@
             <div class="emp-section-title" style="margin:0 0 4px">MANAGE EMPLOYEES</div>
             <div style="font-size:12px;color:var(--textMuted)">Organization workforce management</div>
           </div>
-          <button class="btn btn-green btn-sm" id="btnAddEmployee" style="gap:6px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Employee
-          </button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="btnSyncAllLinks" style="gap:6px;color:#22d3ee;border-color:rgba(34,211,238,0.3)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Sync Access
+            </button>
+            <button class="btn btn-green btn-sm" id="btnAddEmployee" style="gap:6px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Employee
+            </button>
+          </div>
         </div>
         <div id="empListWrap"><div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:13px">Loading employees…</div></div>
       </div>`;
@@ -7551,6 +7557,34 @@
       await ensureOrgDoc();
       await refreshEmployeeList();
       document.getElementById('btnAddEmployee').onclick = () => showAddEmployeeModal();
+      document.getElementById('btnSyncAllLinks').onclick = () => syncAllEmployeeLinks();
+    }
+
+    // Write a single employeeLinks doc for a given employee record
+    async function writeEmployeeLink(emp, empId) {
+      const linkKey = emailToKey(emp.email);
+      await db.collection('employeeLinks').doc(linkKey).set({
+        email:      emp.email,
+        ownerUid:   state.empOrgId,
+        employeeId: empId,
+        active:     emp.active !== false,
+        updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Sync every employee's link doc — fixes legacy employees added before this feature
+    async function syncAllEmployeeLinks() {
+      const btn = document.getElementById('btnSyncAllLinks');
+      if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+      try {
+        const employees = await fetchEmployees();
+        await Promise.all(employees.map(emp => writeEmployeeLink(emp, emp._id)));
+        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Synced'; btn.style.color = '#34d399'; }
+        await refreshEmployeeList();
+      } catch(e) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Sync Access'; }
+        alert('Sync failed: ' + e.message);
+      }
     }
 
     async function refreshEmployeeList() {
@@ -7562,6 +7596,17 @@
         wrap.innerHTML = '<div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:13px">No employees yet. Add your first employee above.</div>';
         return;
       }
+
+      // Check which employees are missing their employeeLinks doc
+      const linkChecks = await Promise.all(employees.map(async emp => {
+        try {
+          const doc = await db.collection('employeeLinks').doc(emailToKey(emp.email)).get();
+          return { empId: emp._id, linked: doc.exists && doc.data().active !== false };
+        } catch(e) { return { empId: emp._id, linked: false }; }
+      }));
+      const linkMap = {};
+      linkChecks.forEach(c => { linkMap[c.empId] = c.linked; });
+
       const now = Date.now();
       wrap.innerHTML = employees.map(emp => {
         const isActive = activeShift && activeShift.employeeId === emp._id;
@@ -7569,15 +7614,22 @@
           ? now - (activeShift.startTime.toDate ? activeShift.startTime.toDate().getTime() : 0)
           : 0;
         const salaryLabel = { hourly:'Hourly', daily:'Daily', weekly:'Weekly', biweekly:'Bi-Weekly', monthly:'Monthly' }[emp.salaryType] || emp.salaryType;
-        return `<div class="emp-card ${isActive?'active-shift':''}" data-empid="${emp._id}">
+        const isLinked = linkMap[emp._id];
+        const isDeactivated = emp.active === false;
+        return `<div class="emp-card ${isActive?'active-shift':''} ${isDeactivated?'opacity:0.5':''}" data-empid="${emp._id}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
             <div style="flex:1;min-width:0">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <span style="font-weight:700;font-size:15px;color:var(--textPrimary)">${esc(emp.name||'')}</span>
-                <span class="emp-badge ${isActive?'online':'offline'}">${isActive?'<span class="live-dot"></span>On Shift':'Offline'}</span>
+                <span class="emp-badge ${isActive?'online':'offline'}">${isActive?'<span class="live-dot"></span>On Shift':isDeactivated?'Deactivated':'Offline'}</span>
+                ${!isLinked && !isDeactivated ? '<span class="emp-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)">⚠ No Access</span>' : ''}
+                ${isLinked ? '<span class="emp-badge" style="background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.2)">✓ Access OK</span>' : ''}
               </div>
               <div style="font-size:12px;color:var(--textMuted);margin-top:2px">${esc(emp.email||'')} · ${esc(emp.role||'Employee')}</div>
               <div style="font-size:11px;color:#a78bfa;margin-top:3px">${salaryLabel}: $${(emp.salaryRate||0).toFixed(2)}</div>
+              ${!isLinked && !isDeactivated ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:11px;color:#f87171">
+                This employee cannot log in yet. <button class="emp-fix-link-btn" data-empid="${emp._id}" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:2px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:4px">Fix Now</button>
+              </div>` : ''}
               ${isActive ? `<div style="margin-top:8px"><div style="font-size:10px;color:var(--textMuted);margin-bottom:2px">Current shift</div><div class="shift-timer" style="font-size:16px" id="ot_${emp._id}">${formatHHMM(activeDurMs)}</div></div>` : ''}
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">
@@ -7605,6 +7657,21 @@
       });
       wrap.querySelectorAll('.emp-edit-btn').forEach(btn => {
         btn.onclick = () => showAddEmployeeModal(employees.find(e => e._id === btn.dataset.empid));
+      });
+      // Fix link buttons — write the missing employeeLinks doc on click
+      wrap.querySelectorAll('.emp-fix-link-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const emp = employees.find(e => e._id === btn.dataset.empid);
+          if (!emp) return;
+          btn.textContent = 'Fixing…'; btn.disabled = true;
+          try {
+            await writeEmployeeLink(emp, emp._id);
+            await refreshEmployeeList();
+          } catch(e) {
+            btn.textContent = 'Fix Now'; btn.disabled = false;
+            alert('Failed: ' + e.message);
+          }
+        };
       });
     }
 
@@ -7948,14 +8015,7 @@
           empId = ref.id;
         }
         // Write/update employeeLinks so the employee can log in without collectionGroup query
-        const linkKey = emailToKey(email);
-        await db.collection('employeeLinks').doc(linkKey).set({
-          email:      email,
-          ownerUid:   state.empOrgId,
-          employeeId: empId,
-          active:     true,
-          updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-        });
+        await writeEmployeeLink({ email, active: true }, empId);
         modal.remove();
         await refreshEmployeeList();
       };
@@ -7966,8 +8026,7 @@
           if (!confirm(newActive ? 'Re-activate this employee?' : 'Deactivate this employee?')) return;
           await db.collection(empPath()).doc(existing._id).update({ active: newActive });
           // Mirror active state to employeeLinks so login is blocked/allowed immediately
-          const linkKey = emailToKey(existing.email);
-          await db.collection('employeeLinks').doc(linkKey).update({ active: newActive });
+          await writeEmployeeLink({ email: existing.email, active: newActive }, existing._id);
           modal.remove();
           await refreshEmployeeList();
         };
