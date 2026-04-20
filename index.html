@@ -1168,12 +1168,12 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
       measurementId: "G-0LMKKJRY4X"
     };
 
@@ -1734,7 +1734,11 @@
         case 'analytics': app.innerHTML = renderHeader() + renderAnalyticsPage(); bindHeader(); bindAnalyticsPage(); break;
         case 'globalAnalytics': app.innerHTML = renderHeader() + renderGlobalAnalyticsPage(); bindHeader(); bindGlobalAnalyticsPage(); break;
         case 'employees': renderEmployeesPage(); break;
-        case 'employment': renderEmploymentPage(); break;
+        case 'employment':
+          // Stop owner listener if navigating away from employees page
+          if (_empShiftListener) { _empShiftListener(); _empShiftListener = null; }
+          renderEmploymentPage();
+          break;
       }
       if (state.masterGamesModalOpen) { renderMasterGamesModal(); bindMasterGamesModal(); }
       // Push history state when view, company, or tab changes
@@ -1796,6 +1800,23 @@
     // RENDER: ACCESS DENIED
     // ============================================================
     function renderAccessDenied() {
+      // Employees should never see the subscription page — show a clear message
+      if (state.empRole === 'employee') {
+        return `<div class="login-page">
+          <div class="login-box fade-in" style="max-width:440px;width:100%;text-align:center">
+            <div style="margin-bottom:32px">
+              <div style="font-family:'Orbitron',monospace;font-size:28px;color:var(--purpleLight);margin-bottom:8px">GAMEBILL</div>
+            </div>
+            <div class="card" style="padding:32px 24px">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--red);letter-spacing:1px;margin-bottom:8px">ACCESS SUSPENDED</div>
+              <div style="font-size:13px;color:var(--textMuted);line-height:1.7">Your employer's subscription has expired or been deactivated.<br>Please contact your employer to restore access.</div>
+            </div>
+            <button id="adSignOut" style="margin-top:18px;width:100%;padding:12px;border-radius:10px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.06);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif">Sign Out</button>
+            <p style="margin-top:14px;font-size:11px;color:var(--textMuted)">Signed in as ${state.user ? state.user.email : ''}</p>
+          </div>
+        </div>`;
+      }
       const daysLeft = state.accessDaysLeft;
       const expiry = state.accessExpiry;
       const expiryStr = expiry ? new Date(expiry.seconds * 1000).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'}) : '';
@@ -7043,7 +7064,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7535,7 +7556,7 @@
     async function renderEmployeesPage() {
       const app = $('#app');
       app.innerHTML = renderHeader() + `<div class="page fade-in" id="empPageWrap">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
           <div>
             <div class="emp-section-title" style="margin:0 0 4px">MANAGE EMPLOYEES</div>
             <div style="font-size:12px;color:var(--textMuted)">Organization workforce management</div>
@@ -7551,13 +7572,101 @@
             </button>
           </div>
         </div>
+        <div id="empDashboardSummary"><div class="card" style="text-align:center;padding:18px;color:var(--textMuted);font-size:12px">Loading summary…</div></div>
+        <div class="emp-section-title" style="margin-top:20px">EMPLOYEE LIST</div>
         <div id="empListWrap"><div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:13px">Loading employees…</div></div>
       </div>`;
       bindHeader();
       await ensureOrgDoc();
-      await refreshEmployeeList();
+      await Promise.all([refreshEmployeeList(), refreshOwnerDashboard()]);
       document.getElementById('btnAddEmployee').onclick = () => showAddEmployeeModal();
       document.getElementById('btnSyncAllLinks').onclick = () => syncAllEmployeeLinks();
+      // Live listener: refresh dashboard when any shift changes
+      if (_empShiftListener) _empShiftListener();
+      _empShiftListener = db.collection(shiftPath())
+        .where('status', '==', 'active')
+        .onSnapshot(() => {
+          refreshEmployeeList();
+          refreshOwnerDashboard();
+        }, () => {});
+    }
+
+    let _empShiftListener = null;
+
+    async function refreshOwnerDashboard() {
+      const wrap = document.getElementById('empDashboardSummary');
+      if (!wrap) return;
+
+      const today = new Date(); today.setHours(23,59,59,999);
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+      const [employees, activeShift, allShifts] = await Promise.all([
+        fetchEmployees(),
+        getActiveShift(),
+        fetchShifts(monthStart, today, null),
+      ]);
+
+      const activeEmpName = activeShift
+        ? (employees.find(e => e._id === activeShift.employeeId)?.name || 'Unknown')
+        : null;
+
+      // Total hours & unpaid salary per employee this month
+      let totalHours = 0, totalUnpaid = 0, totalPaid = 0;
+      const empSummaries = await Promise.all(employees.map(async emp => {
+        const empShifts = allShifts.filter(s => s.employeeId === emp._id);
+        const ms = empShifts.reduce((s, sh) => s + (sh.durationMs||0), 0);
+        const earned = calcEarnings(emp, ms);
+        totalHours += hoursFromMs(ms);
+
+        // Check paid amount this month
+        const payments = await fetchSalaryPayments(emp._id);
+        const paidThisMonth = payments
+          .filter(p => p.paidByOwner && p.paidAt?.toDate && p.paidAt.toDate() >= monthStart)
+          .reduce((s, p) => s + (p.amount||0), 0);
+        const unpaid = Math.max(0, earned - paidThisMonth);
+        totalUnpaid += unpaid;
+        totalPaid += paidThisMonth;
+        return { emp, ms, earned, unpaid };
+      }));
+
+      const dateStr = monthStart.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – Today';
+
+      wrap.innerHTML = `
+        <div class="emp-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+          <div class="emp-stat">
+            <div class="es-label">Total Employees</div>
+            <div class="es-value">${employees.filter(e=>e.active!==false).length}</div>
+          </div>
+          <div class="emp-stat">
+            <div class="es-label">On Shift</div>
+            <div class="es-value" style="color:${activeEmpName?'#34d399':'var(--textMuted)'}">${activeEmpName ? '<span class="live-dot" style="margin-right:4px"></span>' + activeEmpName.split(' ')[0] : 'None'}</div>
+          </div>
+          <div class="emp-stat">
+            <div class="es-label">Hours (${dateStr})</div>
+            <div class="es-value">${totalHours.toFixed(1)}h</div>
+          </div>
+          <div class="emp-stat">
+            <div class="es-label">Unpaid Salary</div>
+            <div class="es-value" style="color:${totalUnpaid>0?'#f87171':'#34d399'}">$${totalUnpaid.toFixed(2)}</div>
+          </div>
+        </div>
+        ${empSummaries.filter(s=>s.earned>0||s.ms>0).length > 0 ? `
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:10px 14px;background:rgba(18,14,38,0.6);font-size:10px;font-weight:700;color:var(--textMuted);text-transform:uppercase;letter-spacing:0.8px;display:grid;grid-template-columns:1fr auto auto auto;gap:8px">
+            <span>Employee</span><span style="text-align:right">Hours</span><span style="text-align:right">Earned</span><span style="text-align:right">Unpaid</span>
+          </div>
+          ${empSummaries.sort((a,b)=>b.unpaid-a.unpaid).map(({emp,ms,earned,unpaid})=>`
+          <div class="salary-row" style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center">
+            <div>
+              <div style="font-weight:600;font-size:13px">${esc(emp.name||'')}</div>
+              <div style="font-size:10px;color:var(--textMuted)">${esc(emp.role||'Employee')}</div>
+            </div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#22d3ee;text-align:right">${hoursFromMs(ms).toFixed(1)}h</div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#fbbf24;text-align:right">$${earned.toFixed(2)}</div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:${unpaid>0?'#f87171':'#34d399'};text-align:right">$${unpaid.toFixed(2)}</div>
+          </div>`).join('')}
+        </div>` : '<div style="text-align:center;padding:14px;color:var(--textMuted);font-size:12px">No shifts recorded this month yet.</div>'}
+      `;
     }
 
     // Write a single employeeLinks doc for a given employee record
@@ -7678,6 +7787,8 @@
     // ============================================================
     // RENDER: EMPLOYEE SELF-SERVICE PAGE
     // ============================================================
+    let _empSelfListener = null;
+
     async function renderEmploymentPage() {
       const app = $('#app');
       app.innerHTML = renderHeader() + `<div class="page fade-in" id="empSelfWrap">
@@ -7686,6 +7797,15 @@
       </div>`;
       bindHeader();
       await refreshEmploymentSelf();
+      // Live listener: refresh when any shift changes (e.g. owner ends shift, another employee shifts in/out)
+      if (_empSelfListener) _empSelfListener();
+      _empSelfListener = db.collection(shiftPath())
+        .where('status', '==', 'active')
+        .onSnapshot(snap => {
+          // Only auto-refresh UI if user is not mid-action (timer running is fine)
+          const myShiftActive = snap.docs.some(d => d.data().employeeId === state.empEmployeeDoc?._id);
+          if (!myShiftActive) refreshEmploymentSelf();
+        }, () => {});
     }
 
     async function refreshEmploymentSelf() {
@@ -7988,7 +8108,12 @@
           <button class="btn btn-ghost btn-full" id="cancelAddEmp">Cancel</button>
           <button class="btn btn-green btn-full" id="saveAddEmp">${isEdit?'Save Changes':'Add Employee'}</button>
         </div>
-        ${isEdit ? `<button class="btn btn-full" id="toggleEmpActive" style="margin-top:8px;background:${existing.active===false?'rgba(52,211,153,0.1)':'rgba(239,68,68,0.1)'};color:${existing.active===false?'#34d399':'#f87171'};border:1px solid ${existing.active===false?'rgba(52,211,153,0.3)':'rgba(239,68,68,0.3)'}">${existing.active===false?'Re-activate Employee':'Deactivate Employee'}</button>` : ''}
+        ${isEdit ? `
+          <button class="btn btn-full" id="toggleEmpActive" style="margin-top:8px;background:${existing.active===false?'rgba(52,211,153,0.1)':'rgba(239,68,68,0.1)'};color:${existing.active===false?'#34d399':'#f87171'};border:1px solid ${existing.active===false?'rgba(52,211,153,0.3)':'rgba(239,68,68,0.3)'}">${existing.active===false?'Re-activate Employee':'Deactivate Employee'}</button>
+          <button class="btn btn-full" id="btnDeleteEmp" style="margin-top:8px;background:rgba(185,28,28,0.12);color:#fca5a5;border:1px solid rgba(185,28,28,0.3)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Delete Employee Permanently
+          </button>` : ''}
       </div>`;
       document.body.appendChild(modal);
       modal.onclick = e => { if (e.target === modal) modal.remove(); };
@@ -8025,10 +8150,23 @@
           const newActive = existing.active === false;
           if (!confirm(newActive ? 'Re-activate this employee?' : 'Deactivate this employee?')) return;
           await db.collection(empPath()).doc(existing._id).update({ active: newActive });
-          // Mirror active state to employeeLinks so login is blocked/allowed immediately
           await writeEmployeeLink({ email: existing.email, active: newActive }, existing._id);
           modal.remove();
           await refreshEmployeeList();
+        };
+        document.getElementById('btnDeleteEmp').onclick = async () => {
+          if (!confirm(`Permanently delete ${existing.name}? This cannot be undone. All their shifts and salary records will remain but the employee account will be removed.`)) return;
+          try {
+            // Delete the employee doc
+            await db.collection(empPath()).doc(existing._id).delete();
+            // Delete the employeeLinks doc so they can't log in
+            const linkKey = emailToKey(existing.email);
+            try { await db.collection('employeeLinks').doc(linkKey).delete(); } catch(e) {}
+            modal.remove();
+            await refreshEmployeeList();
+          } catch(e) {
+            alert('Delete failed: ' + e.message);
+          }
         };
       }
     }
