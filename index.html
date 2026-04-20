@@ -1168,12 +1168,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -2353,13 +2354,11 @@
     }
 
     function updatePanelSubscription() {
-      // Hide subscription and owner-only sections for employees
+      // For employees: only hide the subscription card (they don't manage subscriptions)
+      // All other menu items remain visible — employees use the full app
       if (state.empRole === 'employee') {
-        const hideIds = ['panelSubCard','menuGlobalAnalytics','menuGenReport','menuInvoiceSettings','menuExport','menuImport','menuClearBillRange','menuDeleteAll'];
-        hideIds.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-        // Also hide the quick summary panel
-        const qs = document.querySelector('.account-panel-body > div:nth-child(3)');
-        if (qs) qs.style.display = 'none';
+        const subCard = document.getElementById('panelSubCard');
+        if (subCard) subCard.style.display = 'none';
         return;
       }
       const statusEl = document.getElementById('panelSubStatus');
@@ -7108,7 +7107,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7291,9 +7290,18 @@
             return;
           }
 
-          console.log('[Auth] Employee authorized ✓ — going to employment page');
-          state.view = 'employment';
+          console.log('[Auth] Employee authorized ✓ — loading full app');
+          // Employees get the full app experience — load their own data
+          state.gbUsername = '';
+          state.accessDaysLeft = 0;
+          state.accessExpiry = null;
+          state.accessUnlimited = true; // access already validated via owner
+          await loadAllData(false);
+          loadInvoiceSettings().catch(() => {});
+          state.view = 'companies';
           render();
+          _lastSyncedTime = new Date();
+          setupListeners();
           setTimeout(() => checkPopupMessages(user.uid), 600);
           return;
         }
@@ -8044,7 +8052,14 @@
       const wrap = document.getElementById('empSelfContent');
       if (!wrap) return;
       const emp = state.empEmployeeDoc;
-      if (!emp) { wrap.innerHTML = '<div class="card" style="padding:28px;text-align:center;color:var(--red)">Employee record not found.</div>'; return; }
+      if (!emp) {
+        wrap.innerHTML = '<div class="card" style="padding:28px;text-align:center;color:var(--red)">Employee record not found. Please sign out and sign in again.</div>';
+        return;
+      }
+      if (!state.empOrgId) {
+        wrap.innerHTML = '<div class="card" style="padding:28px;text-align:center;color:var(--red)">Organization not found. Please sign out and sign in again.</div>';
+        return;
+      }
 
       const activeShift = await getActiveShift();
       const myShift     = activeShift && activeShift.employeeId === emp._id ? activeShift : null;
