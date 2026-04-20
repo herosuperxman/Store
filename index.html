@@ -1168,12 +1168,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -7138,7 +7139,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7621,6 +7622,17 @@
                 state.empOrgId       = link.ownerUid;
                 state.empEmployeeDoc = { _id: empDoc.id, ...empDoc.data() };
                 console.log('[resolveRole] ✓ Resolved as EMPLOYEE for org:', link.ownerUid);
+                // Write employeeUids/{uid} so Firestore rules can do uid-based access checks
+                // without needing to parse email strings
+                try {
+                  await db.collection('employeeUids').doc(user.uid).set({
+                    ownerUid:   link.ownerUid,
+                    employeeId: empDoc.id,
+                    active:     true,
+                    email:      user.email,
+                    updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+                  });
+                } catch(e) { console.warn('[resolveRole] employeeUids write failed:', e.message); }
                 return;
               }
             } catch(e) {
@@ -8083,12 +8095,10 @@
       const wrap = document.getElementById('empSelfContent');
       if (!wrap) return;
 
-      // If empEmployeeDoc not loaded yet, try to reload from Firestore
+      // Re-resolve role if missing
       if (!state.empEmployeeDoc || !state.empOrgId) {
-        wrap.innerHTML = '<div class="card" style="padding:18px;text-align:center;color:var(--textMuted);font-size:13px">Loading employment data…</div>';
-        if (state.user) {
-          try { await resolveEmployeeRole(state.user); } catch(e) {}
-        }
+        wrap.innerHTML = '<div class="card" style="padding:18px;text-align:center;color:var(--textMuted);font-size:13px">Loading…</div>';
+        if (state.user) { try { await resolveEmployeeRole(state.user); } catch(e) {} }
         if (!state.empEmployeeDoc || !state.empOrgId) {
           wrap.innerHTML = '<div class="card" style="padding:28px;text-align:center;color:var(--red);font-size:13px">Employee record not found.<br><span style="font-size:11px;color:var(--textMuted)">Please sign out and sign in again.</span></div>';
           return;
@@ -8097,19 +8107,20 @@
 
       const emp = state.empEmployeeDoc;
 
-      const activeShift = await getActiveShift();
-      const myShift     = activeShift && activeShift.employeeId === emp._id ? activeShift : null;
-      const blocked     = activeShift && !myShift; // another employee on shift
+      // Fetch shift/salary data — each wrapped so one failure doesn't break the whole page
+      let activeShift = null, shifts = [], payments = [];
+      try { activeShift = await getActiveShift(); } catch(e) { console.warn('[empSelf] getActiveShift failed:', e.code, e.message); }
+      const myShift = activeShift && activeShift.employeeId === emp._id ? activeShift : null;
+      const blocked  = activeShift && !myShift;
 
-      // Date range: start of month → now
       const today = new Date(); today.setHours(23,59,59,999);
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const shifts = await fetchShifts(monthStart, today, emp._id);
-      const totalMs = shifts.reduce((s, sh) => s + (sh.durationMs || 0), 0);
-      const earnings = calcEarnings(emp, totalMs);
-      const payments = await fetchSalaryPayments(emp._id);
+      try { shifts = await fetchShifts(monthStart, today, emp._id); } catch(e) { console.warn('[empSelf] fetchShifts failed:', e.code, e.message); }
+      try { payments = await fetchSalaryPayments(emp._id); } catch(e) { console.warn('[empSelf] fetchSalaryPayments failed:', e.code, e.message); }
 
-      const startMs = myShift?.startTime?.toDate ? myShift.startTime.toDate().getTime() : 0;
+      const totalMs  = shifts.reduce((s, sh) => s + (sh.durationMs || 0), 0);
+      const earnings = calcEarnings(emp, totalMs);
+      const startMs  = myShift?.startTime?.toDate ? myShift.startTime.toDate().getTime() : 0;
       const liveDurMs = myShift ? Date.now() - startMs : 0;
       const salaryLabel = { hourly:'Hourly', daily:'Daily', weekly:'Weekly', biweekly:'Bi-Weekly', monthly:'Monthly' }[emp.salaryType] || emp.salaryType;
 
@@ -8434,6 +8445,12 @@
           if (!confirm(newActive ? 'Re-activate this employee?' : 'Deactivate this employee?')) return;
           await db.collection(empPath()).doc(existing._id).update({ active: newActive });
           await writeEmployeeLink({ email: existing.email, active: newActive }, existing._id);
+          // Also update employeeUids active flag (best-effort)
+          try {
+            const euSnap = await db.collection('employeeUids')
+              .where('employeeId','==',existing._id).limit(1).get();
+            if (!euSnap.empty) await euSnap.docs[0].ref.update({ active: newActive });
+          } catch(e) {}
           modal.remove();
           await refreshEmployeeList();
         };
