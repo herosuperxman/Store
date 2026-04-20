@@ -1168,12 +1168,12 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-   apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
       measurementId: "G-0LMKKJRY4X"
     };
 
@@ -1800,23 +1800,36 @@
     // RENDER: ACCESS DENIED
     // ============================================================
     function renderAccessDenied() {
-      // Employees: show a meaningful message based on WHY they are denied
+      // Employees: diagnostic screen showing exactly why access failed + retry
       if (state.empRole === 'employee') {
-        const reason = !state.empOrgId
-          ? 'Your email address was not found in any organization. Ask your employer to add you and click <b>Sync Access</b>.'
-          : 'Your employer’s subscription has expired or been deactivated. Please contact your employer to restore access.';
+        const hasOrg  = !!state.empOrgId && state.empOrgId !== state.user?.uid;
+        const hasEmp  = !!state.empEmployeeDoc;
+        const reason  = !hasOrg
+          ? 'Your email was not found in any organization. Ask your employer to add your email in <b>Manage Employees</b> and click <b>Sync Access</b>.'
+          : !hasEmp
+          ? 'Your employee profile was not found or has been removed. Ask your employer to check <b>Manage Employees</b>.'
+          : 'Your employer’s subscription has expired or been deactivated. Contact your employer to restore access.';
         return `<div class="login-page">
-          <div class="login-box fade-in" style="max-width:440px;width:100%;text-align:center">
-            <div style="margin-bottom:32px">
-              <div style="font-family:'Orbitron',monospace;font-size:28px;color:var(--purpleLight);margin-bottom:8px">GAMEBILL</div>
+          <div class="login-box fade-in" style="max-width:460px;width:100%">
+            <div style="text-align:center;margin-bottom:28px">
+              <div style="font-family:'Orbitron',monospace;font-size:26px;color:var(--purpleLight)">GAMEBILL</div>
             </div>
-            <div class="card" style="padding:32px 24px">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--red);letter-spacing:1px;margin-bottom:10px">ACCESS DENIED</div>
-              <div style="font-size:13px;color:var(--textMuted);line-height:1.7">${reason}</div>
-              <div style="margin-top:12px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:var(--textMuted)">Logged in as: <b style="color:var(--textPrimary)">${state.user ? state.user.email : ''}</b></div>
+            <div class="card" style="padding:28px 22px">
+              <div style="text-align:center;margin-bottom:18px">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5" style="margin-bottom:10px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--red);letter-spacing:1px">ACCESS DENIED</div>
+              </div>
+              <div style="font-size:13px;color:var(--textMuted);line-height:1.8;margin-bottom:16px">${reason}</div>
+              <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--textMuted)">
+                <div>Email: <b style="color:var(--textPrimary)">${state.user ? state.user.email : ''}</b></div>
+                <div style="margin-top:4px">Org found: <b style="color:${hasOrg?'#34d399':'#f87171'}">${hasOrg?'Yes':'No'}</b>
+                &nbsp;·&nbsp; Profile found: <b style="color:${hasEmp?'#34d399':'#f87171'}">${hasEmp?'Yes':'No'}</b></div>
+              </div>
             </div>
-            <button id="adSignOut" style="margin-top:18px;width:100%;padding:12px;border-radius:10px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.06);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif">Sign Out</button>
+            <button id="btnEmpRetry" style="margin-top:12px;width:100%;padding:12px;border-radius:10px;border:1px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.1);color:#a78bfa;font-size:13px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif">
+              Retry Login Check
+            </button>
+            <button id="adSignOut" style="margin-top:8px;width:100%;padding:12px;border-radius:10px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.06);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif">Sign Out</button>
           </div>
         </div>`;
       }
@@ -1911,6 +1924,35 @@
     function bindAccessDenied() {
       const btn = document.getElementById('adSignOut');
       if (btn) btn.onclick = () => auth.signOut();
+
+      const retryBtn = document.getElementById('btnEmpRetry');
+      if (retryBtn) {
+        retryBtn.onclick = async () => {
+          retryBtn.textContent = 'Checking…';
+          retryBtn.disabled = true;
+          // Reset role state and re-run resolution
+          state.empRole        = null;
+          state.empOrgId       = null;
+          state.empEmployeeDoc = null;
+          if (auth.currentUser) {
+            try {
+              await resolveEmployeeRole(auth.currentUser);
+              console.log('[Retry] empRole:', state.empRole, '| empOrgId:', state.empOrgId);
+              if (state.empRole === 'employee') {
+                const ownerAccess = await checkUserAccessByUid(state.empOrgId);
+                if (ownerAccess.hasAccess) {
+                  state.view = 'employment';
+                  render();
+                  return;
+                }
+              }
+            } catch(e) { console.error('[Retry]', e); }
+          }
+          retryBtn.textContent = 'Retry Login Check';
+          retryBtn.disabled = false;
+          render(); // re-render to show updated diagnostic info
+        };
+      }
     }
 
     // ============================================================
@@ -7067,16 +7109,35 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
       if (user.email === ADMIN_EMAIL) return { hasAccess: true, daysLeft: 999, expiry: null, gbUsername: 'admin' };
 
+      // Safety net: if this user is actually an employee (resolved by role check),
+      // do NOT create a blank userAccess doc for them.
+      // This path should only be reached for owners — employees return early in onAuthStateChanged.
+      if (state.empRole === 'employee') {
+        console.warn('[checkUserAccess] Called for an employee — should not happen. Returning no access.');
+        return { hasAccess: false, daysLeft: 0, expiry: null, gbUsername: '' };
+      }
+
       try {
         const doc = await db.collection('userAccess').doc(user.uid).get();
         if (!doc.exists) {
-          // First-time user: create record with no access
+          // Before creating a new record, double-check they are not an employee
+          // (employeeLinks lookup as final safety net)
+          const linkKey = emailToKey(user.email);
+          try {
+            const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
+            if (linkDoc.exists && linkDoc.data().active !== false) {
+              console.warn('[checkUserAccess] User has employeeLinks doc but was not resolved as employee — should not create userAccess doc');
+              return { hasAccess: false, daysLeft: 0, expiry: null, gbUsername: '' };
+            }
+          } catch(e) { /* ignore */ }
+
+          // First-time owner: create record with no access
           await db.collection('userAccess').doc(user.uid).set({
             email: user.email,
             displayName: user.displayName || '',
@@ -7161,36 +7222,54 @@
         render();
 
         // STEP 1: Resolve role FIRST — employee vs owner
-        try { await resolveEmployeeRole(user); } catch(e) { console.warn('Role resolve error:', e); }
+        try {
+          await resolveEmployeeRole(user);
+        } catch(e) {
+          console.error('[Auth] resolveEmployeeRole threw:', e);
+          state.empRole  = 'owner';
+          state.empOrgId = user.uid;
+        }
 
-        console.log('[Auth] empRole:', state.empRole, '| empOrgId:', state.empOrgId);
+        console.log('[Auth] empRole:', state.empRole, '| empOrgId:', state.empOrgId,
+          '| empEmployeeDoc:', state.empEmployeeDoc ? state.empEmployeeDoc._id : 'null');
 
-        // STEP 2: Employee path — bypass ALL subscription checks for the employee themselves
+        // STEP 2: Employee path
         if (state.empRole === 'employee') {
-          console.log('[Auth] Employee detected. Checking owner subscription for orgId:', state.empOrgId);
-          let ownerHasAccess = false;
-          try {
-            // Reuse the exact same checkUserAccess logic but for the OWNER's UID
-            // Create a fake user object with the owner's UID so the function works unchanged
-            const ownerAccess = await checkUserAccessByUid(state.empOrgId);
-            console.log('[Auth] Owner access result:', ownerAccess);
-            ownerHasAccess = ownerAccess.hasAccess;
-          } catch(e) { console.warn('[Auth] Owner access check failed:', e); }
+          console.log('[Auth] Employee path. Checking owner subscription. orgId:', state.empOrgId);
 
-          if (!ownerHasAccess) {
-            console.log('[Auth] Owner has no access — blocking employee');
+          // Check if employee is deactivated
+          if (state.empEmployeeDoc && state.empEmployeeDoc.active === false) {
+            console.log('[Auth] Employee is deactivated');
             state.view = 'accessDenied';
             render();
             return;
           }
-          console.log('[Auth] Employee authorized — routing to employment page');
+
+          // Check owner subscription using the same exact logic as the owner's own login
+          let ownerHasAccess = false;
+          try {
+            const ownerAccess = await checkUserAccessByUid(state.empOrgId);
+            console.log('[Auth] Owner access result:', JSON.stringify(ownerAccess));
+            ownerHasAccess = ownerAccess.hasAccess;
+          } catch(e) {
+            console.error('[Auth] Owner access check threw:', e);
+          }
+
+          if (!ownerHasAccess) {
+            console.log('[Auth] Owner subscription invalid — blocking employee');
+            state.view = 'accessDenied';
+            render();
+            return;
+          }
+
+          console.log('[Auth] Employee authorized ✓ — going to employment page');
           state.view = 'employment';
           render();
           setTimeout(() => checkPopupMessages(user.uid), 600);
           return;
         }
 
-        // STEP 3: Owner path — check their own subscription as before
+        // STEP 3: Owner path — check their own subscription
         const access = await checkUserAccess(user);
         state.gbUsername = access.gbUsername || '';
         state.accessDaysLeft = access.daysLeft;
@@ -7426,54 +7505,83 @@
     function payPath()   { return `organizations/${state.empOrgId}/salaryPayments`; }
 
     // --- Resolve role after login ---
-    // Convert email to a safe Firestore document key (replace dots/@ with underscores)
+    // Convert email to a safe Firestore document key.
+    // Replaces ALL dots and @ with underscores.
     function emailToKey(email) {
-      return (email || '').toLowerCase().replace(/[.@]/g, '_');
+      return (email || '').toLowerCase().split('').map(c => (c === '.' || c === '@') ? '_' : c).join('');
     }
 
     async function resolveEmployeeRole(user) {
-      // 1. Check if this user owns an org (direct doc lookup — no index needed)
-      const ownerDoc = await db.collection('organizations').doc(user.uid).get();
-      if (ownerDoc.exists) {
-        state.empRole  = 'owner';
-        state.empOrgId = user.uid;
-        return;
-      }
+      const email = (user.email || '').toLowerCase().trim();
+      const linkKey = emailToKey(email);
+      console.log('[resolveRole] email:', email, '| linkKey:', linkKey, '| uid:', user.uid);
 
-      // 2. Check employeeLinks collection — a flat lookup keyed by email.
-      //    This avoids collectionGroup queries and Firestore indexes entirely.
-      //    The link doc is written automatically when the owner adds an employee.
-      const linkKey = emailToKey(user.email);
+      // ── STEP 1: Check employeeLinks FIRST ──────────────────────────────────
+      // This takes priority over the organizations check because an employee
+      // may have previously triggered ensureOrgDoc (creating organizations/{uid})
+      // which would falsely identify them as an owner.
       try {
         const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
+        console.log('[resolveRole] employeeLinks doc exists:', linkDoc.exists);
+
         if (linkDoc.exists) {
           const link = linkDoc.data();
+          console.log('[resolveRole] link data:', JSON.stringify(link));
+
           if (link.active === false) {
-            // Employee was deactivated
-            state.empRole  = 'owner';
-            state.empOrgId = user.uid;
+            console.log('[resolveRole] Employee is deactivated → treating as owner (will be denied)');
+            state.empRole  = 'employee';   // still employee, just deactivated
+            state.empOrgId = link.ownerUid || user.uid;
             return;
           }
-          // Fetch the actual employee record from the org subcollection
-          const empDoc = await db.collection('organizations')
-            .doc(link.ownerUid)
-            .collection('employees')
-            .doc(link.employeeId)
-            .get();
-          if (empDoc.exists && empDoc.data().active !== false) {
-            state.empRole        = 'employee';
-            state.empOrgId       = link.ownerUid;
-            state.empEmployeeDoc = { _id: empDoc.id, ...empDoc.data() };
-            return;
+
+          if (!link.ownerUid || !link.employeeId) {
+            console.warn('[resolveRole] employeeLinks doc missing ownerUid or employeeId:', link);
+          } else {
+            // Fetch the actual employee record
+            try {
+              const empDoc = await db.collection('organizations')
+                .doc(link.ownerUid)
+                .collection('employees')
+                .doc(link.employeeId)
+                .get();
+              console.log('[resolveRole] employee doc exists:', empDoc.exists,
+                empDoc.exists ? '| active:' + empDoc.data().active : '');
+
+              if (empDoc.exists && empDoc.data().active !== false) {
+                state.empRole        = 'employee';
+                state.empOrgId       = link.ownerUid;
+                state.empEmployeeDoc = { _id: empDoc.id, ...empDoc.data() };
+                console.log('[resolveRole] ✓ Resolved as EMPLOYEE for org:', link.ownerUid);
+                return;
+              }
+            } catch(e) {
+              console.warn('[resolveRole] Failed to fetch employee doc:', e);
+            }
           }
         }
       } catch(e) {
-        console.warn('Employee link lookup failed:', e);
+        console.warn('[resolveRole] employeeLinks lookup failed:', e.code, e.message);
       }
 
-      // 3. Not an employee — treat as owner (no org yet, created on first use)
+      // ── STEP 2: Check if this user owns an org ─────────────────────────────
+      try {
+        const ownerDoc = await db.collection('organizations').doc(user.uid).get();
+        console.log('[resolveRole] organizations doc exists:', ownerDoc.exists);
+        if (ownerDoc.exists) {
+          state.empRole  = 'owner';
+          state.empOrgId = user.uid;
+          console.log('[resolveRole] ✓ Resolved as OWNER (has org doc)');
+          return;
+        }
+      } catch(e) {
+        console.warn('[resolveRole] organizations lookup failed:', e);
+      }
+
+      // ── STEP 3: Default — new owner, no org yet ────────────────────────────
       state.empRole  = 'owner';
       state.empOrgId = user.uid;
+      console.log('[resolveRole] ✓ Resolved as OWNER (default — no org doc yet)');
     }
 
     // --- Ensure org document exists for owner ---
@@ -7701,16 +7809,20 @@
       `;
     }
 
-    // Write a single employeeLinks doc for a given employee record
+    // Write a single employeeLinks doc for a given employee record.
+    // Also removes any stale organizations doc for the employee so that
+    // resolveEmployeeRole doesn't falsely identify them as an owner.
     async function writeEmployeeLink(emp, empId) {
       const linkKey = emailToKey(emp.email);
       await db.collection('employeeLinks').doc(linkKey).set({
-        email:      emp.email,
+        email:      (emp.email || '').toLowerCase().trim(),
         ownerUid:   state.empOrgId,
         employeeId: empId,
         active:     emp.active !== false,
         updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
       });
+      console.log('[writeEmployeeLink] Wrote link for', emp.email, '→ key:', linkKey,
+        '| ownerUid:', state.empOrgId, '| empId:', empId);
     }
 
     // Sync every employee's link doc — fixes legacy employees added before this feature
@@ -7718,11 +7830,25 @@
       const btn = document.getElementById('btnSyncAllLinks');
       if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
       try {
+        await ensureOrgDoc();
         const employees = await fetchEmployees();
-        await Promise.all(employees.map(emp => writeEmployeeLink(emp, emp._id)));
-        if (btn) { btn.disabled = false; btn.innerHTML = '✓ Synced'; btn.style.color = '#34d399'; }
+        console.log('[syncAllLinks] Syncing', employees.length, 'employees. orgId:', state.empOrgId);
+        await Promise.all(employees.map(emp => {
+          const normalizedEmail = (emp.email || '').toLowerCase().trim();
+          return writeEmployeeLink({ ...emp, email: normalizedEmail }, emp._id);
+        }));
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Synced';
+          btn.style.color = '#34d399';
+          setTimeout(() => {
+            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync Access';
+            btn.style.color = '';
+          }, 3000);
+        }
         await refreshEmployeeList();
       } catch(e) {
+        console.error('[syncAllLinks] Error:', e);
         if (btn) { btn.disabled = false; btn.textContent = 'Sync Access'; }
         alert('Sync failed: ' + e.message);
       }
