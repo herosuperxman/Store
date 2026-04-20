@@ -1168,12 +1168,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -7108,7 +7109,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7177,36 +7178,66 @@
       }
     }
 
-    // Like checkUserAccess but takes a UID directly and never creates a userAccess doc.
-    // Used to check the OWNER's subscription when an employee logs in.
-    async function checkUserAccessByUid(uid) {
+    // Check owner access for an employee login.
+    // Reads the ownerAccess fields embedded in the employee's own employeeLinks doc
+    // (written by owner at sync time) — avoids cross-user userAccess reads which
+    // are blocked by Firestore security rules.
+    async function checkUserAccessByUid(ownerUid) {
+      // Primary: read embedded access from employeeLinks doc (employee can read their own)
       try {
-        const doc = await db.collection('userAccess').doc(uid).get();
-        console.log('[checkUserAccessByUid] uid:', uid, '| doc.exists:', doc.exists);
-        if (!doc.exists) {
-          console.warn('[checkUserAccessByUid] No userAccess doc found for owner uid:', uid);
-          return { hasAccess: false };
+        const linkKey = emailToKey((state.user?.email || '').toLowerCase().trim());
+        const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
+        console.log('[checkAccess] employeeLinks read — exists:', linkDoc.exists, '| key:', linkKey);
+        if (linkDoc.exists) {
+          const link = linkDoc.data();
+          console.log('[checkAccess] link data:', JSON.stringify({
+            ownerHasAccess: link.ownerHasAccess,
+            ownerAccessExpiry: link.ownerAccessExpiry,
+            accessGrantedAt: link.accessGrantedAt,
+          }));
+          // ownerHasAccess is written by owner at sync time
+          if (link.ownerHasAccess === true) {
+            console.log('[checkAccess] ✓ Access granted via embedded ownerHasAccess flag');
+            return { hasAccess: true };
+          }
+          // Fallback: check expiry date embedded at sync time
+          if (link.ownerAccessExpiry) {
+            const exp = link.ownerAccessExpiry.toDate ? link.ownerAccessExpiry.toDate() : new Date(link.ownerAccessExpiry);
+            const daysLeft = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+            console.log('[checkAccess] ownerAccessExpiry daysLeft:', daysLeft);
+            if (daysLeft > 0) return { hasAccess: true };
+          }
         }
-        const data = doc.data();
-        console.log('[checkUserAccessByUid] owner data:', JSON.stringify({
-          isDisabled: data.isDisabled,
-          isUnlimited: data.isUnlimited,
-          hasExpiryDate: !!data.expiryDate,
-          expiryDate: data.expiryDate ? (data.expiryDate.toDate ? data.expiryDate.toDate().toISOString() : data.expiryDate) : null,
-        }));
-
-        if (data.isDisabled) return { hasAccess: false };
-        if (data.isUnlimited) return { hasAccess: true };
-        if (!data.expiryDate) return { hasAccess: false };
-
-        const exp = data.expiryDate.toDate ? data.expiryDate.toDate() : new Date(data.expiryDate);
-        const daysLeft = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
-        console.log('[checkUserAccessByUid] daysLeft:', daysLeft);
-        return { hasAccess: daysLeft > 0 };
       } catch(e) {
-        console.error('[checkUserAccessByUid] Error:', e);
-        return { hasAccess: false };
+        console.error('[checkAccess] employeeLinks read failed:', e.code, e.message);
       }
+
+      // Fallback: try reading userAccess directly (works if security rules allow it)
+      try {
+        const doc = await db.collection('userAccess').doc(ownerUid).get();
+        console.log('[checkAccess] userAccess fallback — exists:', doc.exists);
+        if (doc.exists) {
+          const data = doc.data();
+          console.log('[checkAccess] userAccess data:', JSON.stringify({
+            isDisabled: data.isDisabled,
+            isUnlimited: data.isUnlimited,
+            expiryDate: data.expiryDate ? (data.expiryDate.toDate ? data.expiryDate.toDate().toISOString() : String(data.expiryDate)) : null,
+          }));
+          if (data.isDisabled) return { hasAccess: false };
+          if (data.isUnlimited) return { hasAccess: true };
+          if (data.expiryDate) {
+            const exp = data.expiryDate.toDate ? data.expiryDate.toDate() : new Date(data.expiryDate);
+            const days = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+            console.log('[checkAccess] userAccess daysLeft:', days);
+            if (days > 0) return { hasAccess: true };
+          }
+        }
+      } catch(e) {
+        console.warn('[checkAccess] userAccess read blocked (expected if security rules deny cross-user reads):', e.code);
+      }
+
+      console.log('[checkAccess] No access found via any method');
+      return { hasAccess: false };
     }
 
     auth.onAuthStateChanged(async (user) => {
@@ -7809,19 +7840,64 @@
     }
 
     // Write a single employeeLinks doc for a given employee record.
-    // Also removes any stale organizations doc for the employee so that
-    // resolveEmployeeRole doesn't falsely identify them as an owner.
+    // Embeds the owner's current access status so employees can verify
+    // access without needing to read the owner's userAccess doc directly
+    // (which is blocked by Firestore security rules for cross-user reads).
     async function writeEmployeeLink(emp, empId) {
-      const linkKey = emailToKey(emp.email);
+      const email = (emp.email || '').toLowerCase().trim();
+      const linkKey = emailToKey(email);
+
+      // Read owner's current access to embed in the link doc
+      let ownerHasAccess = false;
+      let ownerAccessExpiry = null;
+      try {
+        const ownerDoc = await db.collection('userAccess').doc(state.user.uid).get();
+        if (ownerDoc.exists) {
+          const od = ownerDoc.data();
+          if (od.isDisabled) {
+            ownerHasAccess = false;
+          } else if (od.isUnlimited) {
+            ownerHasAccess = true;
+          } else if (od.expiryDate) {
+            const exp = od.expiryDate.toDate ? od.expiryDate.toDate() : new Date(od.expiryDate);
+            const days = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+            ownerHasAccess = days > 0;
+            ownerAccessExpiry = od.expiryDate;
+          }
+          // Backend stores "unlimited" as far-future date (100 years), not isUnlimited flag
+          // Check for that pattern too
+          if (!ownerHasAccess && od.expiryDate) {
+            const exp = od.expiryDate.toDate ? od.expiryDate.toDate() : new Date(od.expiryDate);
+            const daysLeft = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+            if (daysLeft > 36500) { // >100 years = unlimited
+              ownerHasAccess = true;
+            } else if (daysLeft > 0) {
+              ownerHasAccess = true;
+            }
+            ownerAccessExpiry = od.expiryDate;
+          }
+        }
+        console.log('[writeEmployeeLink] Owner access snapshot: hasAccess=', ownerHasAccess,
+          '| expiry=', ownerAccessExpiry ? (ownerAccessExpiry.toDate ? ownerAccessExpiry.toDate().toISOString() : ownerAccessExpiry) : null);
+      } catch(e) {
+        console.warn('[writeEmployeeLink] Could not read owner userAccess:', e.message);
+        // If we can't read it, assume owner has access (they are logged in and using the app)
+        ownerHasAccess = true;
+      }
+
       await db.collection('employeeLinks').doc(linkKey).set({
-        email:      (emp.email || '').toLowerCase().trim(),
-        ownerUid:   state.empOrgId,
-        employeeId: empId,
-        active:     emp.active !== false,
-        updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        email:             email,
+        ownerUid:          state.user.uid,  // always use current logged-in user's UID
+        employeeId:        empId,
+        active:            emp.active !== false,
+        ownerHasAccess:    ownerHasAccess,
+        ownerAccessExpiry: ownerAccessExpiry,
+        accessGrantedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt:         firebase.firestore.FieldValue.serverTimestamp(),
       });
-      console.log('[writeEmployeeLink] Wrote link for', emp.email, '→ key:', linkKey,
-        '| ownerUid:', state.empOrgId, '| empId:', empId);
+      console.log('[writeEmployeeLink] ✓ Wrote link for', email,
+        '→ key:', linkKey, '| ownerUid:', state.user.uid, '| empId:', empId,
+        '| ownerHasAccess:', ownerHasAccess);
     }
 
     // Sync every employee's link doc — fixes legacy employees added before this feature
