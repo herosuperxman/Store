@@ -1168,12 +1168,12 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-    apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
       measurementId: "G-0LMKKJRY4X"
     };
 
@@ -1800,8 +1800,11 @@
     // RENDER: ACCESS DENIED
     // ============================================================
     function renderAccessDenied() {
-      // Employees should never see the subscription page — show a clear message
+      // Employees: show a meaningful message based on WHY they are denied
       if (state.empRole === 'employee') {
+        const reason = !state.empOrgId
+          ? 'Your email address was not found in any organization. Ask your employer to add you and click <b>Sync Access</b>.'
+          : 'Your employer’s subscription has expired or been deactivated. Please contact your employer to restore access.';
         return `<div class="login-page">
           <div class="login-box fade-in" style="max-width:440px;width:100%;text-align:center">
             <div style="margin-bottom:32px">
@@ -1809,11 +1812,11 @@
             </div>
             <div class="card" style="padding:32px 24px">
               <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.5" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--red);letter-spacing:1px;margin-bottom:8px">ACCESS SUSPENDED</div>
-              <div style="font-size:13px;color:var(--textMuted);line-height:1.7">Your employer's subscription has expired or been deactivated.<br>Please contact your employer to restore access.</div>
+              <div style="font-family:'Orbitron',monospace;font-size:14px;color:var(--red);letter-spacing:1px;margin-bottom:10px">ACCESS DENIED</div>
+              <div style="font-size:13px;color:var(--textMuted);line-height:1.7">${reason}</div>
+              <div style="margin-top:12px;padding:10px 14px;background:rgba(0,0,0,0.2);border-radius:8px;font-size:11px;color:var(--textMuted)">Logged in as: <b style="color:var(--textPrimary)">${state.user ? state.user.email : ''}</b></div>
             </div>
             <button id="adSignOut" style="margin-top:18px;width:100%;padding:12px;border-radius:10px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.06);color:var(--red);font-size:13px;font-weight:600;cursor:pointer;font-family:'Rajdhani',sans-serif">Sign Out</button>
-            <p style="margin-top:14px;font-size:11px;color:var(--textMuted)">Signed in as ${state.user ? state.user.email : ''}</p>
           </div>
         </div>`;
       }
@@ -7064,7 +7067,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7114,6 +7117,38 @@
       }
     }
 
+    // Like checkUserAccess but takes a UID directly and never creates a userAccess doc.
+    // Used to check the OWNER's subscription when an employee logs in.
+    async function checkUserAccessByUid(uid) {
+      try {
+        const doc = await db.collection('userAccess').doc(uid).get();
+        console.log('[checkUserAccessByUid] uid:', uid, '| doc.exists:', doc.exists);
+        if (!doc.exists) {
+          console.warn('[checkUserAccessByUid] No userAccess doc found for owner uid:', uid);
+          return { hasAccess: false };
+        }
+        const data = doc.data();
+        console.log('[checkUserAccessByUid] owner data:', JSON.stringify({
+          isDisabled: data.isDisabled,
+          isUnlimited: data.isUnlimited,
+          hasExpiryDate: !!data.expiryDate,
+          expiryDate: data.expiryDate ? (data.expiryDate.toDate ? data.expiryDate.toDate().toISOString() : data.expiryDate) : null,
+        }));
+
+        if (data.isDisabled) return { hasAccess: false };
+        if (data.isUnlimited) return { hasAccess: true };
+        if (!data.expiryDate) return { hasAccess: false };
+
+        const exp = data.expiryDate.toDate ? data.expiryDate.toDate() : new Date(data.expiryDate);
+        const daysLeft = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
+        console.log('[checkUserAccessByUid] daysLeft:', daysLeft);
+        return { hasAccess: daysLeft > 0 };
+      } catch(e) {
+        console.error('[checkUserAccessByUid] Error:', e);
+        return { hasAccess: false };
+      }
+    }
+
     auth.onAuthStateChanged(async (user) => {
       if (user) {
         state.user = {
@@ -7125,40 +7160,37 @@
         state.view = 'loading';
         render();
 
-        // STEP 1: Resolve role FIRST (employee vs owner) — must happen before access check
-        //         so employees are never blocked by the subscription gate.
-        try { await resolveEmployeeRole(user); } catch(e) { console.warn('Role resolve:', e); }
+        // STEP 1: Resolve role FIRST — employee vs owner
+        try { await resolveEmployeeRole(user); } catch(e) { console.warn('Role resolve error:', e); }
 
-        // STEP 2: If this is an employee, validate against the OWNER'S subscription
+        console.log('[Auth] empRole:', state.empRole, '| empOrgId:', state.empOrgId);
+
+        // STEP 2: Employee path — bypass ALL subscription checks for the employee themselves
         if (state.empRole === 'employee') {
+          console.log('[Auth] Employee detected. Checking owner subscription for orgId:', state.empOrgId);
           let ownerHasAccess = false;
           try {
-            const ownerAccessDoc = await db.collection('userAccess').doc(state.empOrgId).get();
-            if (ownerAccessDoc.exists) {
-              const od = ownerAccessDoc.data();
-              if (od.isUnlimited) {
-                ownerHasAccess = true;
-              } else if (od.expiryDate) {
-                const exp = od.expiryDate.toDate ? od.expiryDate.toDate() : new Date(od.expiryDate);
-                const daysLeft = Math.ceil((exp - new Date()) / (1000 * 60 * 60 * 24));
-                ownerHasAccess = daysLeft > 0;
-              }
-            }
-          } catch(e) { console.warn('Owner access check for employee:', e); }
+            // Reuse the exact same checkUserAccess logic but for the OWNER's UID
+            // Create a fake user object with the owner's UID so the function works unchanged
+            const ownerAccess = await checkUserAccessByUid(state.empOrgId);
+            console.log('[Auth] Owner access result:', ownerAccess);
+            ownerHasAccess = ownerAccess.hasAccess;
+          } catch(e) { console.warn('[Auth] Owner access check failed:', e); }
 
           if (!ownerHasAccess) {
+            console.log('[Auth] Owner has no access — blocking employee');
             state.view = 'accessDenied';
             render();
             return;
           }
-          // Employee is authorized — go to employment page (no billing data needed)
+          console.log('[Auth] Employee authorized — routing to employment page');
           state.view = 'employment';
           render();
           setTimeout(() => checkPopupMessages(user.uid), 600);
           return;
         }
 
-        // STEP 3: Owner — check their own subscription as before
+        // STEP 3: Owner path — check their own subscription as before
         const access = await checkUserAccess(user);
         state.gbUsername = access.gbUsername || '';
         state.accessDaysLeft = access.daysLeft;
