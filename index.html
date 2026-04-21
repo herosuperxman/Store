@@ -1198,12 +1198,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -1272,9 +1273,10 @@
     function userPath() {
       // Cashiers share the owner's data path so all data is in sync
       if (state.empRole === 'employee' && state.empOrgId) {
-        return `users/${state.empOrgId}`;
+        return 'users/' + state.empOrgId;
       }
-      return `users/${state.user.uid}`;
+      if (state.user) return 'users/' + state.user.uid;
+      return 'users/undefined';
     }
 
     // The data owner UID — used for localStorage cache keying
@@ -2204,14 +2206,22 @@
               </div>
             </div>
                         <div class="account-panel-divider" id="panelQuickSummaryDiv"></div>
-            <div id="menuGlobalAnalytics" style="padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(6,182,212,0.08));border:1px solid rgba(124,58,237,0.2);margin-bottom:10px;cursor:pointer;transition:all 0.25s;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px">
-              <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div>
-              <div style="flex:1"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:14px;color:#e8e0ff;letter-spacing:1px">ANALYTICS</div><div style="font-size:10px;color:var(--textMuted);margin-top:2px">Global overview & insights</div></div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
-            </div>
-            <div style="height:1px;background:linear-gradient(to right,transparent,rgba(124,58,237,0.3),transparent);margin:4px 0 10px"></div>
-            <div id="menuManageEmployees" style="padding:11px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.18),rgba(236,72,153,0.1),rgba(167,139,250,0.12));border:1px solid rgba(167,139,250,0.35);margin-bottom:8px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(124,58,237,0.12)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:#c084fc;font-size:13px">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
+            <div class="account-panel-item" id="menuGlobalAnalytics"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg> Analytics</div>
+            <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:6px 0"></div>
+            <div id="menuManageEmployees" style="padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(236,72,153,0.08));border:1px solid rgba(167,139,250,0.3);margin-bottom:6px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:#c084fc;font-size:13px">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
+            <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:2px 0 8px"></div>
             <div class="account-panel-item" id="menuGenReport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Generate Report</div>
+            <!-- Cashier shift controls — shown only for cashier accounts -->
+            <div id="menuShiftSection" style="display:none">
+              <div class="account-panel-divider" style="margin:8px 0 6px"></div>
+              <div id="menuShiftCard" style="border-radius:12px;background:rgba(18,14,38,0.6);border:1px solid rgba(120,100,200,0.2);padding:12px 14px;margin-bottom:6px">
+                <div style="font-size:9px;color:var(--textMuted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;margin-bottom:8px">My Shift</div>
+                <div id="menuShiftStatus" style="font-size:12px;color:var(--textMuted);margin-bottom:8px">Loading…</div>
+                <div id="menuShiftTimer" style="font-family:'Orbitron',monospace;font-size:18px;font-weight:900;color:#34d399;display:none;margin-bottom:8px;text-shadow:0 0 12px rgba(52,211,153,0.3)">00:00</div>
+                <button id="menuShiftInBtn" class="btn btn-green btn-full btn-sm" style="display:none;justify-content:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> Shift In</button>
+                <button id="menuShiftOutBtn" class="btn btn-full btn-sm" style="display:none;justify-content:center;gap:6px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.08));border:1px solid rgba(239,68,68,0.3);color:#f87171"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Shift Out</button>
+              </div>
+            </div>
             <div class="account-panel-item" id="menuInvoiceSettings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Invoice Settings</div>
             <div class="account-panel-divider"></div>
             <div class="account-panel-item" id="menuExport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export Data</div>
@@ -2234,11 +2244,12 @@
         const empMenuItem = document.getElementById('menuManageEmployees');
         if (empMenuItem) {
           const labelText = state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers';
-          // Update just the text node (keep the SVG icon)
-          const lastChild = empMenuItem.lastChild;
-          if (lastChild && lastChild.nodeType === 3) lastChild.textContent = ' ' + labelText;
+          const span = empMenuItem.querySelector('span');
+          if (span) span.textContent = labelText;
         }
         updatePanelSubscription();
+        // Refresh shift status for cashiers each time panel opens
+        if (state.empRole === 'employee') updateMenuShiftStatus();
       };
       const closePanel = () => {
         const p = document.getElementById('accountPanel');
@@ -2420,12 +2431,23 @@
       const gaEl = document.getElementById('menuGlobalAnalytics');
       if (gaEl) gaEl.style.display = isEmpAcc ? 'none' : '';
 
-      // For employees: only hide the subscription card
+      // Cashier-specific panel controls
       if (state.empRole === 'employee') {
         const subCard = document.getElementById('panelSubCard');
         if (subCard) subCard.style.display = 'none';
+        // Show shift section for cashiers
+        const shiftSec = document.getElementById('menuShiftSection');
+        if (shiftSec) shiftSec.style.display = '';
+        // Hide generate report for cashiers
+        const grEl = document.getElementById('menuGenReport');
+        if (grEl) grEl.style.display = 'none';
+        // Update shift status
+        updateMenuShiftStatus();
         return;
       }
+      // Hide shift section for owners
+      const shiftSec = document.getElementById('menuShiftSection');
+      if (shiftSec) shiftSec.style.display = 'none';
       const statusEl = document.getElementById('panelSubStatus');
       const daysNumEl = document.getElementById('panelSubDaysNum');
       const daysTextEl = document.getElementById('panelSubDaysText');
@@ -3414,22 +3436,9 @@
           <button class="btn btn-ghost btn-sm" id="backBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg></button>
           <h2 id="companyHeading" style="font-family:'Orbitron',monospace;font-size:18px;color:var(--purpleLight);flex:1">${esc(c.name)}</h2>
           <span class="badge company-header-status ${isActive ? 'badge-green' : 'badge-red'}">${isActive ? 'Active' : 'Inactive'}</span>
-          <button class="company-settings-gear ${isActive ? 'gear-active' : 'gear-inactive'}" id="companySettingsGear" title="Company Settings" style="border:none;cursor:pointer;display:flex;align-items:center;gap:5px">
-            <svg width="18" height="16" viewBox="0 0 28 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <!-- Game controller body -->
-              <rect x="4" y="9" width="20" height="11" rx="4" stroke="currentColor"/>
-              <!-- Left d-pad: vertical -->
-              <line x1="9" y1="11.5" x2="9" y2="16.5" stroke="currentColor"/>
-              <!-- Left d-pad: horizontal -->
-              <line x1="6.5" y1="14" x2="11.5" y2="14" stroke="currentColor"/>
-              <!-- Right buttons: circle -->
-              <circle cx="19" cy="14" r="1.1" stroke="currentColor"/>
-              <circle cx="21.5" cy="12" r="1.1" stroke="currentColor"/>
-              <!-- Gear badge — top-right corner overlay -->
-              <circle cx="23" cy="4" r="1.5" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M23 1.2v1.1M23 6.5v-1.1M25.5 4h-1.1M20.5 4h1.1M24.9 2.1l-.8.8M21.9 5.1l-.8.8M24.9 5.9l-.8-.8M21.9 2.9l-.8-.8" stroke="currentColor" stroke-width="1.3"/>
-            </svg>
-            <span class="gear-text">SETTINGS</span>
+          <button class="company-settings-gear ${isActive ? 'gear-active' : 'gear-inactive'}" id="companySettingsGear" title="Settings" style="border:none;cursor:pointer;display:flex;align-items:center;gap:5px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="gear-text">Settings</span>
           </button>
         </div>
         <div class="tabs">
@@ -6489,7 +6498,7 @@
         +'<div class="analytics-card ac-balance" data-gcard="balance" style="background:'+balG+'"><div class="ac-label">'+balLabel+'</div><div class="'+acV('$'+balMainAmount.toFixed(2))+'">$'+balMainAmount.toFixed(2)+'</div><div class="ac-sub">'+balSub+'</div></div>'
         +'<div class="analytics-card ac-profit" data-gcard="profit"><div class="ac-label">GROSS PROFIT</div><div class="'+acV(gpS+'$'+Math.abs(grossProfit).toFixed(2))+'" id="gaGpVal" style="color:'+gpC+'">'+gpS+'$'+grossProfit.toFixed(2)+'</div><div class="ac-sub" id="gaGpSub">Profit: '+plS+'$'+d.gPr.toFixed(2)+' − OpEx: $'+opExTotal.toFixed(2)+'</div></div>'
         +'<div class="analytics-card" data-gcard="cost" style="background:linear-gradient(135deg,#78350f,#92400e,#b45309)"><div class="ac-label">TOTAL COST</div><div class="'+acV('$'+d.gCost.toFixed(2))+'">$'+d.gCost.toFixed(2)+'</div><div class="ac-sub">All games combined</div></div>'
-        +(state.empRole!=='employee'?'<div class="analytics-card" data-gcard="opex" style="background:linear-gradient(135deg,#92400e,#b45309,#f59e0b);cursor:pointer;border:1px solid rgba(251,191,36,0.25)"><div class="ac-label" style="color:rgba(255,255,255,0.75)">OPERATING EXPENSES</div><div class="'+acV('$'+opExTotal.toFixed(2))+'" id="gaOpExVal" style="color:#fff">$'+opExTotal.toFixed(2)+'</div><div class="ac-sub" id="gaOpExSub" style="color:rgba(255,255,255,0.6)">'+(opEx.loaded?'Paid: $'+opEx.paid.toFixed(2)+' · To Pay: $'+opEx.unpaid.toFixed(2):'Loading…')+'</div></div>':'')
+        +(state.empRole!=='employee'?'<div class="analytics-card" data-gcard="opex" style="background:linear-gradient(135deg,#d97706,#f59e0b,#fbbf24);cursor:pointer;border:1px solid rgba(251,191,36,0.4);box-shadow:0 4px 20px rgba(251,191,36,0.15)"><div class="ac-label" style="color:rgba(0,0,0,0.55)">OPERATING EXPENSES</div><div class="'+acV('$'+opExTotal.toFixed(2))+'" id="gaOpExVal" style="color:#000;font-weight:900">$'+opExTotal.toFixed(2)+'</div><div class="ac-sub" id="gaOpExSub" style="color:rgba(0,0,0,0.5)">'+(opEx.loaded?'Paid: $'+opEx.paid.toFixed(2)+' · To Pay: $'+opEx.unpaid.toFixed(2):'Loading…')+'</div></div>':'')
         +'</div>'
         +'<div class="analytics-chart-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h4 style="margin:0">TREND</h4><div style="display:flex;gap:2px;background:rgba(15,12,28,0.5);border-radius:8px;padding:3px;border:1px solid var(--glassBorder);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)"><button class="btn btn-sm ga-agg '+(agg==='D'?'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;background:var(--cyan);color:#000':'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace')+'" data-agg="D">D</button><button class="btn btn-sm ga-agg '+(agg==='W'?'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;background:var(--cyan);color:#000':'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace')+'" data-agg="W">W</button><button class="btn btn-sm ga-agg '+(agg==='M'?'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;background:var(--cyan);color:#000':'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace')+'" data-agg="M">M</button></div></div><div style="position:relative;height:260px;overflow-x:auto"><div style="min-width:'+(Math.max(d.dLab.length*40,300))+'px;height:100%"><canvas id="gaLineChart"></canvas></div></div></div>'
         +'<div style="margin-bottom:14px"><div style="display:flex;gap:2px;background:rgba(15,12,28,0.5);border-radius:8px;padding:3px;border:1px solid var(--glassBorder);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);margin-bottom:12px"><button class="btn btn-sm ga-section btn-cyan" data-sec="companies" style="flex:1;padding:6px;font-size:11px;border-radius:6px">Companies</button><button class="btn btn-sm ga-section btn-outline" data-sec="games" style="flex:1;padding:6px;font-size:11px;border-radius:6px">Games</button><button class="btn btn-sm ga-section btn-outline" data-sec="users" style="flex:1;padding:6px;font-size:11px;border-radius:6px">Top Users</button></div><input class="input" id="gaRankSearch" placeholder="Search companies..." style="font-size:11px;padding:7px 12px;margin-bottom:8px" /><div id="gaRankSection" style="max-height:400px;overflow-y:auto"></div></div>'
@@ -7385,7 +7394,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7458,6 +7467,62 @@
     // Reads the ownerAccess fields embedded in the cashier's own employeeLinks doc
     // (written by owner at sync time) — avoids cross-user userAccess reads which
     // are blocked by Firestore security rules.
+    // ─── Panel shift status for cashier accounts ────────────────────────────────
+    let _menuShiftInterval = null;
+
+    async function updateMenuShiftStatus() {
+      const statusEl = document.getElementById('menuShiftStatus');
+      const timerEl  = document.getElementById('menuShiftTimer');
+      const inBtn    = document.getElementById('menuShiftInBtn');
+      const outBtn   = document.getElementById('menuShiftOutBtn');
+      if (!statusEl) return;
+      const emp = state.empEmployeeDoc;
+      if (!emp) { statusEl.textContent = 'Loading…'; return; }
+      let activeShifts = [];
+      try { activeShifts = await getActiveShifts(); } catch(e) {}
+      const myShift = activeShifts.find(s => s.employeeId === emp._id);
+      if (myShift) {
+        const startMs = myShift.startTime?.toDate ? myShift.startTime.toDate().getTime() : Date.now();
+        statusEl.textContent = 'Currently on shift';
+        statusEl.style.color = '#34d399';
+        if (timerEl) { timerEl.style.display = ''; timerEl.textContent = formatHHMM(Date.now() - startMs); }
+        if (inBtn)  inBtn.style.display  = 'none';
+        if (outBtn) {
+          outBtn.style.display = 'flex';
+          outBtn.onclick = async () => {
+            outBtn.disabled = true; outBtn.textContent = 'Shifting out…';
+            try { await shiftOut(myShift._id, myShift.startTime); } catch(e) { alert('Error: ' + e.message); }
+            outBtn.disabled = false;
+            updateMenuShiftStatus();
+            if (state.view === 'employment') refreshEmploymentSelf();
+          };
+        }
+        clearInterval(_menuShiftInterval);
+        _menuShiftInterval = setInterval(() => {
+          const el = document.getElementById('menuShiftTimer');
+          if (!el) { clearInterval(_menuShiftInterval); return; }
+          el.textContent = formatHHMM(Date.now() - startMs);
+        }, 1000);
+      } else {
+        statusEl.textContent = 'Not on shift';
+        statusEl.style.color = 'var(--textMuted)';
+        if (timerEl) timerEl.style.display = 'none';
+        if (outBtn) outBtn.style.display = 'none';
+        if (inBtn) {
+          inBtn.style.display = 'flex';
+          inBtn.onclick = async () => {
+            inBtn.disabled = true; inBtn.textContent = 'Shifting in…';
+            try { await shiftIn(emp._id, emp.name || state.user.displayName || ''); }
+            catch(e) { alert('Error: ' + e.message); inBtn.disabled = false; inBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> Shift In'; return; }
+            updateMenuShiftStatus();
+            if (state.view === 'employment') refreshEmploymentSelf();
+          };
+        }
+        clearInterval(_menuShiftInterval);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────────
+
     async function checkUserAccessByUid(ownerUid) {
       // Primary: read embedded access from employeeLinks doc (cashier can read their own)
       try {
@@ -7829,6 +7894,10 @@
     // State for cashier page date range
     if (!state.empDateFrom) state.empDateFrom = empDefaultFrom();
     if (!state.empDateTo)   state.empDateTo   = empDefaultTo();
+    function initEmpDateRange() {
+      state.empDateFrom = empDefaultFrom();
+      state.empDateTo   = empDefaultTo();
+    }
 
     // --- Resolve role after login ---
     // Convert email to a safe Firestore document key.
@@ -8484,6 +8553,8 @@
       await ensureOrgDoc();
       await Promise.all([refreshEmployeeList(), refreshOwnerDashboard()]);
       document.getElementById('empBackBtn').onclick = () => { state.view = 'companies'; render(); };
+      // Reset to defaults on every page open
+      initEmpDateRange();
       document.getElementById('empOwnerFrom').value = state.empDateFrom;
       document.getElementById('empOwnerTo').value   = state.empDateTo;
       document.getElementById('empOwnerApply').onclick = () => {
@@ -8559,6 +8630,11 @@
     async function refreshOwnerDashboard() {
       const wrap = document.getElementById('empDashboardSummary');
       if (!wrap) return;
+
+      // Ensure org doc exists for owners
+      if (state.empRole !== 'employee') {
+        try { await ensureOrgDoc(); } catch(e) {}
+      }
 
       const fromDate = state.empDateFrom ? new Date(state.empDateFrom + 'T00:00:00') : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const toDate   = state.empDateTo   ? new Date(state.empDateTo + 'T23:59:59')   : new Date();
