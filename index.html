@@ -1198,12 +1198,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-    apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -2205,28 +2206,31 @@
               </div>
             </div>
                         <div class="account-panel-divider" id="panelQuickSummaryDiv"></div>
-            <div class="account-panel-item" id="menuGlobalAnalytics"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg> Analytics</div>
+            <div id="menuGlobalAnalytics" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.14),rgba(6,182,212,0.1));border:1px solid rgba(124,58,237,0.22);margin-bottom:10px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(8px)">
+              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div>
+              <div style="flex:1"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#e8e0ff;letter-spacing:0.5px">ANALYTICS</div><div style="font-size:10px;color:var(--textMuted);margin-top:1px">Global overview & insights</div></div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+            </div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:6px 0"></div>
-            <div id="menuManageEmployees" style="padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(167,139,250,0.1));border:1px solid rgba(167,139,250,0.35);margin-bottom:6px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:#c084fc;font-size:13px" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
+            <div id="menuManageEmployees" style="padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(167,139,250,0.1));border:1px solid rgba(167,139,250,0.35);margin-bottom:6px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:2px 0 8px"></div>
             <div class="account-panel-item" id="menuGenReport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Generate Report</div>
             <!-- Cashier shift controls — shown only for cashier accounts -->
             <div id="menuShiftSection" style="display:none">
               <div style="height:1px;background:linear-gradient(to right,transparent,rgba(6,182,212,0.3),transparent);margin:8px 0 10px"></div>
-              <div id="menuShiftCard" style="border-radius:14px;background:linear-gradient(135deg,rgba(6,182,212,0.25),rgba(14,116,144,0.3));border:1px solid rgba(6,182,212,0.45);padding:14px 14px 12px;margin-bottom:6px;box-shadow:0 4px 16px rgba(6,182,212,0.12)">
-                <div style="font-size:11px;color:#67e8f9;text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:8px">MY SHIFT</div>
-                <div id="menuShiftStatus" style="font-size:13px;color:#e0f7fa;font-weight:600;margin-bottom:8px">Loading…</div>
-                <div id="menuShiftTimer" style="font-family:'Orbitron',monospace;font-size:20px;font-weight:900;color:#fff;display:none;margin-bottom:10px;text-shadow:0 0 16px rgba(6,182,212,0.6);letter-spacing:2px">00:00:00</div>
-                <button id="menuShiftInBtn" class="btn btn-green btn-full btn-sm" style="display:none;justify-content:center;gap:6px;font-weight:700"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> Shift In</button>
-                <button id="menuShiftOutBtn" class="btn btn-full btn-sm" style="display:none;justify-content:center;gap:6px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;font-weight:700"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Shift Out</button>
+              <div id="menuShiftCard" style="border-radius:16px;background:linear-gradient(145deg,#0e7490,#0891b2,#06b6d4);border:1px solid rgba(103,232,249,0.35);padding:16px 16px 14px;margin-bottom:8px;box-shadow:0 6px 24px rgba(6,182,212,0.3),inset 0 1px 0 rgba(255,255,255,0.15)">
+                <div style="font-size:12px;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:1.2px;font-weight:800;margin-bottom:10px">MY SHIFT</div>
+                <div id="menuShiftStatus" style="font-size:13px;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:8px">Loading…</div>
+                <div id="menuShiftTimer" style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#fff;display:none;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,0.25);line-height:1.1;margin-bottom:4px">00:00:00</div>
+                <div id="menuShiftEarnings" style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:700;display:none;margin-bottom:10px">$0.00 earned</div>
+                <button id="menuShiftInBtn" style="display:none;width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;font-family:'Orbitron',monospace;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:0.5px;box-shadow:0 3px 12px rgba(16,185,129,0.4);display:none;align-items:center;justify-content:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> SHIFT IN</button>
+                <button id="menuShiftOutBtn" style="display:none;width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;border:none;font-family:'Orbitron',monospace;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:0.5px;box-shadow:0 3px 12px rgba(239,68,68,0.4);align-items:center;justify-content:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> SHIFT OUT</button>
               </div>
             </div>
-            <div id="menuEmpBottomSep" style="height:1px;background:linear-gradient(to right,transparent,rgba(6,182,212,0.3),transparent);margin:2px 0 8px;display:none"></div>
             <div class="account-panel-item" id="menuInvoiceSettings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Invoice Settings</div>
             <div class="account-panel-divider"></div>
             <div class="account-panel-item" id="menuExport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export Data</div>
             <div class="account-panel-item" id="menuImport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Import Data</div>
-            <div class="account-panel-divider"></div>
             <div class="account-panel-item" id="menuClearBillRange" style="color:#fbbf24;display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Clear Bills by Date Range</div>
             <div class="account-panel-item" id="menuDeleteAll" style="color:var(--red);display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete All Data</div>
             <div class="account-panel-divider"></div>
@@ -2259,9 +2263,12 @@
           empMenuItem.style.border     = '1px solid rgba(167,139,250,0.35)';
           empMenuItem.style.boxShadow  = '';
           const svg = empMenuItem.querySelector('svg');
-          if (svg) svg.setAttribute('stroke','#c084fc');
-          if (empLabel) empLabel.style.color = '#c084fc';
+          if (svg) svg.setAttribute('stroke','#a78bfa');
+          if (empLabel) empLabel.style.color = '';
         }
+        // Always ensure subscription card visibility is correct
+        const psc = document.getElementById('panelSubCard');
+        if (psc) psc.style.display = state.empRole === 'employee' ? 'none' : '';
         updatePanelSubscription();
         // Refresh shift status for cashiers each time panel opens
         if (state.empRole === 'employee') updateMenuShiftStatus();
@@ -2434,6 +2441,9 @@
       show('menuGenReport',       !isEmpAcc);
       show('panelSubCard',        !isEmpAcc);
       show('menuShiftSection',     isEmpAcc);
+      // Hide username setup for cashier accounts
+      const usEl = document.getElementById('menuGbUsername');
+      if (usEl) usEl.style.display = isEmpAcc ? 'none' : '';
 
       if (isEmpAcc) { updateMenuShiftStatus(); return; }
 
@@ -6485,7 +6495,7 @@
         +'<div class="analytics-card ac-loaded" data-gcard="loaded"><div class="ac-label">TOTAL LOADED</div><div class="'+acV(tPts.toFixed(0)+' PTS')+'">'+tPts.toFixed(0)+' PTS</div><div class="ac-sub">Gross: '+(d.gL).toFixed(0)+' · Redeemed: '+d.gR.toFixed(0)+'</div></div>'
         +'<div class="analytics-card ac-received" data-gcard="received"><div class="ac-label">RECEIVED</div><div class="'+acV('$'+d.gRv.toFixed(2))+'">$'+d.gRv.toFixed(2)+'</div><div class="ac-sub">Tap for details</div></div>'
         +'<div class="analytics-card ac-balance" data-gcard="balance" style="background:'+balG+'"><div class="ac-label">'+balLabel+'</div><div class="'+acV('$'+balMainAmount.toFixed(2))+'">$'+balMainAmount.toFixed(2)+'</div><div class="ac-sub">'+balSub+'</div></div>'
-        +'<div class="analytics-card ac-profit" data-gcard="profit"><div class="ac-label">GROSS PROFIT</div><div class="'+acV(gpS+'$'+Math.abs(grossProfit).toFixed(2))+'" id="gaGpVal" style="color:'+gpC+'">'+gpS+'$'+grossProfit.toFixed(2)+'</div><div class="ac-sub" id="gaGpSub">Profit: '+plS+'$'+d.gPr.toFixed(2)+' − OpEx: $'+opExTotal.toFixed(2)+'</div></div>'
+        +'<div class="analytics-card ac-profit" data-gcard="profit"><div class="ac-label">PROFIT / LOSS</div><div class="'+acV(plS+'$'+Math.abs(d.gPr).toFixed(2))+'" id="gaGpVal" style="color:'+gpC+'">'+plS+'$'+d.gPr.toFixed(2)+'</div><div class="ac-sub" id="gaGpSub">Gross Profit: '+gpS+'$'+Math.abs(grossProfit).toFixed(2)+'</div></div>'
         +'<div class="analytics-card" data-gcard="cost" style="background:linear-gradient(135deg,#78350f,#92400e,#b45309)"><div class="ac-label">TOTAL COST</div><div class="'+acV('$'+d.gCost.toFixed(2))+'">$'+d.gCost.toFixed(2)+'</div><div class="ac-sub">All games combined</div></div>'
         +(state.empRole!=='employee'?'<div class="analytics-card" data-gcard="opex" style="background:linear-gradient(135deg,rgba(219,39,119,0.85),rgba(236,72,153,0.7));cursor:pointer;border:1px solid rgba(236,72,153,0.4);box-shadow:0 4px 20px rgba(236,72,153,0.15)"><div class="ac-label">OPERATING EXPENSES</div><div class="'+acV('$'+opExTotal.toFixed(2))+'" id="gaOpExVal">$'+opExTotal.toFixed(2)+'</div><div class="ac-sub" id="gaOpExSub">'+(opEx.loaded?'Paid: $'+opEx.paid.toFixed(2)+' · To Pay: $'+opEx.unpaid.toFixed(2):'Loading…')+'</div></div>':'')
         +'</div>'
@@ -6642,7 +6652,7 @@
         footer = '<div style="padding:12px;border-top:1px solid rgba(120,100,200,0.15);font-weight:700;color:#fbbf24">Total Cost: $'+d.gCost.toFixed(2)+'</div>';
         // Will bind click after modal is created
       } else if (type === 'profit') {
-        title = 'GROSS PROFIT';
+        title = 'PROFIT / LOSS';
         rows = d.tC.map(function(c,i){var pc=c[1].pr>=0?'#34d399':'#ef4444';return '<div class="analytics-detail-item"><span style="font-weight:700;color:#a78bfa;min-width:20px">#'+(i+1)+'</span><span style="flex:1;font-weight:600">'+esc(c[0])+'</span><span style="color:'+pc+';font-weight:700">'+(c[1].pr>=0?'+':'')+c[1].pr.toFixed(2)+'</span><span style="color:var(--textMuted);font-size:10px">Cost: $'+c[1].cost.toFixed(2)+'</span></div>'}).join('');
         var opEx2 = window._gaOpEx || {total:0,paid:0,unpaid:0};
         var grossP = d.gPr - opEx2.total;
@@ -6674,9 +6684,9 @@
         }).join('');
         if (!rows) rows = '<div class="analytics-nodata">No cashier data in this period</div>';
         footer = '<div style="padding:12px;border-top:1px solid rgba(120,100,200,0.15)">'
-          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--textMuted);font-size:12px">Total Paid</span><span style="color:#34d399;font-weight:700">$'+(opData.paid||0).toFixed(2)+'</span></div>'
-          +'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--textMuted);font-size:12px">Total To Pay</span><span style="color:#f87171;font-weight:700">$'+(opData.unpaid||0).toFixed(2)+'</span></div>'
-          +'<div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;padding-top:8px;border-top:1px solid rgba(120,100,200,0.15)"><span>Total OpEx</span><span style="color:#fbbf24">$'+(opData.total||0).toFixed(2)+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--textMuted);font-size:12px">Paid</span><span style="color:#34d399;font-weight:700">$'+(opData.paid||0).toFixed(2)+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--textMuted);font-size:12px">To Pay</span><span style="color:#f87171;font-weight:700">$'+(opData.unpaid||0).toFixed(2)+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-weight:800;font-size:15px;padding-top:8px;border-top:1px solid rgba(120,100,200,0.15)"><span>Total</span><span style="color:#ec4899">$'+(opData.total||0).toFixed(2)+'</span></div>'
           +'</div>';
       }
       if (!rows) rows = '<div class="analytics-nodata">No data</div>';
@@ -7384,7 +7394,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7461,54 +7471,89 @@
     let _menuShiftInterval = null;
 
     async function updateMenuShiftStatus() {
-      const statusEl = document.getElementById('menuShiftStatus');
-      const timerEl  = document.getElementById('menuShiftTimer');
-      const inBtn    = document.getElementById('menuShiftInBtn');
-      const outBtn   = document.getElementById('menuShiftOutBtn');
+      const statusEl   = document.getElementById('menuShiftStatus');
+      const timerEl    = document.getElementById('menuShiftTimer');
+      const earningsEl = document.getElementById('menuShiftEarnings');
+      const inBtn      = document.getElementById('menuShiftInBtn');
+      const outBtn     = document.getElementById('menuShiftOutBtn');
       if (!statusEl) return;
+
       const emp = state.empEmployeeDoc;
       if (!emp) { statusEl.textContent = 'Loading…'; return; }
+
       let activeShifts = [];
       try { activeShifts = await getActiveShifts(); } catch(e) {}
       const myShift = activeShifts.find(s => s.employeeId === emp._id);
+
+      clearInterval(_menuShiftInterval);
+
       if (myShift) {
+        // Store startMs once — all subsequent ticks use local Date.now() only (no Firestore reads)
         const startMs = myShift.startTime?.toDate ? myShift.startTime.toDate().getTime() : Date.now();
-        statusEl.textContent = 'Currently on shift';
-        statusEl.style.color = '#34d399';
-        if (timerEl) { timerEl.style.display = ''; timerEl.textContent = formatHHMMSS(Date.now() - startMs); }
+
+        statusEl.textContent = 'On shift';
+        statusEl.style.color = 'rgba(255,255,255,0.9)';
+        if (timerEl)    { timerEl.style.display    = 'block'; timerEl.textContent    = formatHHMMSS(Date.now() - startMs); }
+        if (earningsEl) { earningsEl.style.display = 'block'; earningsEl.textContent = '$' + calcEarnings(emp, Date.now()-startMs).toFixed(2) + ' earned'; }
         if (inBtn)  inBtn.style.display  = 'none';
         if (outBtn) {
           outBtn.style.display = 'flex';
+          outBtn.disabled = false;
+          outBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> SHIFT OUT';
           outBtn.onclick = async () => {
-            outBtn.disabled = true; outBtn.textContent = 'Shifting out…';
+            outBtn.disabled = true;
+            outBtn.textContent = 'Ending shift…';
             try { await shiftOut(myShift._id, myShift.startTime); } catch(e) { alert('Error: ' + e.message); }
             outBtn.disabled = false;
-            updateMenuShiftStatus();
-            if (state.view === 'employment') refreshEmploymentSelf();
+            outBtn.style.display = 'none';
+            if (inBtn)      { inBtn.style.display = 'flex'; }
+            if (timerEl)    timerEl.style.display    = 'none';
+            if (earningsEl) earningsEl.style.display = 'none';
+            statusEl.textContent = 'Not on shift';
+            clearInterval(_menuShiftInterval);
+            // Refresh after brief delay to get updated state
+            setTimeout(() => updateMenuShiftStatus(), 400);
+            if (state.view === 'employment') setTimeout(() => refreshEmploymentSelf(), 400);
           };
         }
-        clearInterval(_menuShiftInterval);
+
+        // Tick every second — pure local calculation, zero Firestore reads
         _menuShiftInterval = setInterval(() => {
-          const el = document.getElementById('menuShiftTimer');
-          if (!el) { clearInterval(_menuShiftInterval); return; }
-          el.textContent = formatHHMMSS(Date.now() - startMs);
+          const tEl = document.getElementById('menuShiftTimer');
+          const eEl = document.getElementById('menuShiftEarnings');
+          if (!tEl) { clearInterval(_menuShiftInterval); return; }
+          const elapsed = Date.now() - startMs;
+          tEl.textContent = formatHHMMSS(elapsed);
+          if (eEl) eEl.textContent = '$' + calcEarnings(emp, elapsed).toFixed(2) + ' earned';
         }, 1000);
+
       } else {
         statusEl.textContent = 'Not on shift';
-        statusEl.style.color = 'var(--textMuted)';
-        if (timerEl) timerEl.style.display = 'none';
+        statusEl.style.color = 'rgba(255,255,255,0.65)';
+        if (timerEl)    timerEl.style.display    = 'none';
+        if (earningsEl) earningsEl.style.display = 'none';
         if (outBtn) outBtn.style.display = 'none';
         if (inBtn) {
           inBtn.style.display = 'flex';
+          inBtn.disabled = false;
+          inBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> SHIFT IN';
           inBtn.onclick = async () => {
-            inBtn.disabled = true; inBtn.textContent = 'Shifting in…';
-            try { await shiftIn(emp._id, emp.name || state.user.displayName || ''); }
-            catch(e) { alert('Error: ' + e.message); inBtn.disabled = false; inBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> Shift In'; return; }
-            updateMenuShiftStatus();
-            if (state.view === 'employment') refreshEmploymentSelf();
+            inBtn.disabled = true;
+            inBtn.textContent = 'Starting shift…';
+            try {
+              await shiftIn(emp._id, emp.name || state.user.displayName || '');
+              // After shift in, immediately update UI locally then refresh
+              inBtn.style.display = 'none';
+              statusEl.textContent = 'On shift';
+              setTimeout(() => updateMenuShiftStatus(), 400);
+              if (state.view === 'employment') setTimeout(() => refreshEmploymentSelf(), 400);
+            } catch(e) {
+              alert('Error: ' + e.message);
+              inBtn.disabled = false;
+              inBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> SHIFT IN';
+            }
           };
         }
-        clearInterval(_menuShiftInterval);
       }
     }
     // ─────────────────────────────────────────────────────────────────────────────
@@ -7870,7 +7915,7 @@
 
     // --- Firestore path helpers ---
     function orgPath()   { return `organizations/${state.empOrgId}`; }
-    function empPath()   { return `organizations/${state.empOrgId}/cashiers`; }
+    function empPath()   { return `organizations/${state.empOrgId}/employees`; }
     function shiftPath() { return `organizations/${state.empOrgId}/shifts`; }
     function payPath()   { return `organizations/${state.empOrgId}/salaryPayments`; }
 
@@ -8637,17 +8682,16 @@
 
       // Ensure org doc exists for owners
       if (state.empRole !== 'employee') {
-        try { await ensureOrgDoc(); } catch(e) {}
+        try { await ensureOrgDoc(); } catch(e) { console.warn('ensureOrgDoc:', e); }
       }
 
       const fromDate = state.empDateFrom ? new Date(state.empDateFrom + 'T00:00:00') : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const toDate   = state.empDateTo   ? new Date(state.empDateTo + 'T23:59:59')   : new Date();
 
-      const [cashiers, activeShifts, allShifts] = await Promise.all([
-        fetchEmployees(),
-        getActiveShifts().catch(()=>[]),
-        fetchShifts(fromDate, toDate, null),
-      ]);
+      let cashiers = [], activeShifts = [], allShifts = [];
+      try { cashiers = await fetchEmployees(); } catch(e) { console.warn('fetchEmployees:', e.code, e.message); }
+      try { activeShifts = await getActiveShifts(); } catch(e) { console.warn('getActiveShifts:', e.code, e.message); }
+      try { allShifts = await fetchShifts(fromDate, toDate, null); } catch(e) { console.warn('fetchShifts:', e.code, e.message); }
       const activeShift   = activeShifts[0] || null;
       const activeEmpObjs = activeShifts.map(s => cashiers.find(e => e._id === s.employeeId)).filter(Boolean);
       const activeCount   = activeEmpObjs.length;
@@ -8664,7 +8708,8 @@
         totalHours += hoursFromMs(ms);
 
         // Check paid amount this month
-        const payments = await fetchSalaryPayments(emp._id);
+        let payments = [];
+        try { payments = await fetchSalaryPayments(emp._id); } catch(e) { console.warn('pay fetch:', e.code); }
         const paidThisRange = payments
           .filter(p => p.paidByOwner && p.paidAt?.toDate && p.paidAt.toDate() >= fromDate && p.paidAt.toDate() <= toDate)
           .reduce((s, p) => s + (p.amount||0), 0);
@@ -9047,14 +9092,16 @@
             ? shifts.sort((a,b)=>(b.startTime?.seconds||0)-(a.startTime?.seconds||0)).slice(0,30).map(sh => {
                 const d   = sh.startTime?.toDate ? sh.startTime.toDate() : new Date();
                 const end = sh.endTime?.toDate   ? sh.endTime.toDate()   : null;
+                const delSvgStr = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/></svg>';
                 return `<div class="salary-row">
                   <div style="flex:1;min-width:0">
                     <div style="font-weight:600;font-size:12px">${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
                     <div style="font-size:10px;color:var(--textMuted)">${d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}${end?' → '+end.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}):''}</div>
                   </div>
-                  <div style="text-align:right;flex-shrink:0">
-                    <div style="font-weight:700;color:#22d3ee;font-family:'Orbitron',monospace;font-size:11px">${formatDuration(sh.durationMs||0)}</div>
-                    <div style="font-size:10px;color:#fbbf24">$${calcEarnings(emp, sh.durationMs||0).toFixed(2)}</div>
+                  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+                    <span style="font-weight:700;color:#22d3ee;font-family:'Orbitron',monospace;font-size:11px">${formatDuration(sh.durationMs||0)}</span>
+                    <span style="font-size:11px;color:#fbbf24;font-weight:700">$${calcEarnings(emp, sh.durationMs||0).toFixed(2)}</span>
+                    <button class="emp-del-shift-btn" data-shiftid="${sh._id}" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:7px;padding:5px 7px;cursor:pointer;color:#f87171;line-height:0;flex-shrink:0">${delSvgStr}</button>
                   </div>
                 </div>`;
               }).join('')
@@ -9091,6 +9138,18 @@
           } catch(e) { alert('Error: ' + e.message); }
         };
       }
+
+      // Delete individual shifts
+      wrap.querySelectorAll('.emp-del-shift-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete this shift record?')) return;
+          try {
+            await db.collection(shiftPath()).doc(btn.dataset.shiftid).delete();
+            await refreshEmploymentSelf();
+          } catch(err) { alert('Delete failed: ' + err.message); }
+        };
+      });
 
       // Mark salary received
       wrap.querySelectorAll('[id^="markRcv_"]').forEach(btn => {
