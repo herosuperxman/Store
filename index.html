@@ -806,82 +806,112 @@
     }
 
     /* ============================================================
-       EMPLOYEE MANAGEMENT STYLES
+       CASHIER MANAGEMENT STYLES — iOS Liquid Glass + Color Variety
        ============================================================ */
+
+    /* Card color palette — each cashier card gets a tinted glass color */
     .emp-card {
-      border-radius:16px; padding:16px; margin-bottom:12px;
-      background:rgba(16,12,34,0.6); border:1px solid rgba(130,110,210,0.18);
-      backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-      transition:border-color 0.2s;
+      border-radius:18px; padding:18px; margin-bottom:14px; cursor:pointer;
+      background:rgba(20,14,40,0.55);
+      border:1px solid rgba(140,120,220,0.2);
+      backdrop-filter:blur(20px) saturate(1.4);
+      -webkit-backdrop-filter:blur(20px) saturate(1.4);
+      box-shadow:0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+      transition:transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+      position:relative; overflow:hidden;
     }
+    .emp-card::before {
+      content:''; position:absolute; inset:0; border-radius:inherit;
+      background:linear-gradient(135deg,rgba(255,255,255,0.04) 0%,transparent 60%);
+      pointer-events:none;
+    }
+    .emp-card:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08); }
+    .emp-card:active { transform:scale(0.98); }
+    .emp-card.clr-0 { border-color:rgba(124,58,237,0.35); background:rgba(124,58,237,0.08); }
+    .emp-card.clr-1 { border-color:rgba(6,182,212,0.35); background:rgba(6,182,212,0.07); }
+    .emp-card.clr-2 { border-color:rgba(236,72,153,0.32); background:rgba(236,72,153,0.07); }
+    .emp-card.clr-3 { border-color:rgba(245,158,11,0.32); background:rgba(245,158,11,0.07); }
+    .emp-card.clr-4 { border-color:rgba(52,211,153,0.32); background:rgba(52,211,153,0.07); }
+    .emp-card.clr-5 { border-color:rgba(99,102,241,0.35); background:rgba(99,102,241,0.08); }
     .emp-card.active-shift {
-      border-color:rgba(52,211,153,0.45);
-      box-shadow:0 0 18px rgba(52,211,153,0.12);
+      border-color:rgba(52,211,153,0.5) !important;
+      box-shadow:0 0 0 1px rgba(52,211,153,0.2), 0 8px 32px rgba(52,211,153,0.12), inset 0 1px 0 rgba(255,255,255,0.08);
     }
+    .emp-card-accent {
+      position:absolute; top:0; left:0; width:4px; height:100%; border-radius:18px 0 0 18px;
+    }
+    .clr-0 .emp-card-accent { background:linear-gradient(180deg,#7c3aed,#a78bfa); }
+    .clr-1 .emp-card-accent { background:linear-gradient(180deg,#06b6d4,#67e8f9); }
+    .clr-2 .emp-card-accent { background:linear-gradient(180deg,#ec4899,#f9a8d4); }
+    .clr-3 .emp-card-accent { background:linear-gradient(180deg,#f59e0b,#fcd34d); }
+    .clr-4 .emp-card-accent { background:linear-gradient(180deg,#34d399,#6ee7b7); }
+    .clr-5 .emp-card-accent { background:linear-gradient(180deg,#6366f1,#a5b4fc); }
     .emp-badge {
-      font-size:9px; padding:2px 8px; border-radius:6px; font-weight:800;
-      text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:4px;
+      font-size:10px; padding:3px 9px; border-radius:7px; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.4px; display:inline-flex; align-items:center; gap:4px;
     }
     .emp-badge.online { background:rgba(52,211,153,0.18); color:#34d399; border:1px solid rgba(52,211,153,0.3); }
-    .emp-badge.offline { background:rgba(100,100,120,0.18); color:#94a3b8; border:1px solid rgba(100,100,130,0.2); }
+    .emp-badge.offline { background:rgba(100,100,120,0.15); color:#94a3b8; border:1px solid rgba(100,100,130,0.18); }
     .shift-timer {
-      font-family:'Orbitron',monospace; font-size:22px; font-weight:900;
+      font-family:'Orbitron',monospace; font-size:24px; font-weight:900;
       color:#34d399; text-align:center; letter-spacing:2px;
-      text-shadow:0 0 16px rgba(52,211,153,0.4);
+      text-shadow:0 0 20px rgba(52,211,153,0.45);
     }
     .shift-btn-in {
-      background:linear-gradient(135deg,#059669,#34d399); color:#fff; border:none;
-      border-radius:14px; padding:14px 28px; font-family:'Orbitron',monospace;
+      background:linear-gradient(135deg,#059669,#10b981); color:#fff; border:none;
+      border-radius:14px; padding:15px 28px; font-family:'Orbitron',monospace;
       font-size:13px; font-weight:800; letter-spacing:1px; cursor:pointer;
-      box-shadow:0 4px 18px rgba(52,211,153,0.3); transition:all 0.2s;
+      box-shadow:0 4px 20px rgba(16,185,129,0.35); transition:all 0.2s;
       width:100%; -webkit-tap-highlight-color:transparent;
     }
-    .shift-btn-in:hover { filter:brightness(1.1); transform:translateY(-1px); }
-    .shift-btn-in:active { transform:scale(0.97); }
+    .shift-btn-in:hover { filter:brightness(1.08); transform:translateY(-1px); }
+    .shift-btn-in:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
     .shift-btn-out {
-      background:linear-gradient(135deg,#dc2626,#f87171); color:#fff; border:none;
-      border-radius:14px; padding:14px 28px; font-family:'Orbitron',monospace;
+      background:linear-gradient(135deg,#b91c1c,#ef4444); color:#fff; border:none;
+      border-radius:14px; padding:15px 28px; font-family:'Orbitron',monospace;
       font-size:13px; font-weight:800; letter-spacing:1px; cursor:pointer;
-      box-shadow:0 4px 18px rgba(239,68,68,0.3); transition:all 0.2s;
+      box-shadow:0 4px 20px rgba(239,68,68,0.35); transition:all 0.2s;
       width:100%; -webkit-tap-highlight-color:transparent;
     }
-    .shift-btn-out:hover { filter:brightness(1.1); transform:translateY(-1px); }
-    .shift-btn-out:active { transform:scale(0.97); }
+    .shift-btn-out:hover { filter:brightness(1.08); transform:translateY(-1px); }
     .emp-stat-grid {
       display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0;
     }
     .emp-stat {
-      background:rgba(18,14,38,0.5); border-radius:12px; padding:12px 10px; text-align:center;
-      border:1px solid rgba(130,110,210,0.12);
+      background:rgba(18,14,38,0.5); border-radius:12px; padding:13px 10px; text-align:center;
+      border:1px solid rgba(130,110,210,0.15);
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
     }
-    .emp-stat .es-label { font-size:9px; color:var(--textMuted); text-transform:uppercase; letter-spacing:0.8px; font-weight:700; margin-bottom:4px; }
-    .emp-stat .es-value { font-family:'Orbitron',monospace; font-size:14px; font-weight:800; color:var(--textPrimary); }
+    .emp-stat .es-label { font-size:9px; color:var(--textMuted); text-transform:uppercase; letter-spacing:0.8px; font-weight:700; margin-bottom:5px; }
+    .emp-stat .es-value { font-family:'Orbitron',monospace; font-size:15px; font-weight:800; color:var(--textPrimary); }
     .salary-row {
-      display:flex; align-items:center; justify-content:space-between; padding:10px 14px;
-      border-bottom:1px solid rgba(120,100,200,0.1); font-size:13px;
+      display:flex; align-items:center; justify-content:space-between; padding:12px 16px;
+      border-bottom:1px solid rgba(120,100,200,0.1); font-size:14px;
     }
     .salary-row:last-child { border-bottom:none; }
     .pay-pill {
       font-size:10px; padding:3px 10px; border-radius:8px; font-weight:700;
-      text-transform:uppercase; letter-spacing:0.4px;
+      text-transform:uppercase; letter-spacing:0.4px; cursor:default;
     }
-    .pay-pill.paid { background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.25); }
-    .pay-pill.unpaid { background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.2); }
+    .pay-pill.paid     { background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.25); }
+    .pay-pill.unpaid   { background:rgba(239,68,68,0.12);  color:#f87171; border:1px solid rgba(239,68,68,0.2); }
     .pay-pill.received { background:rgba(124,58,237,0.15); color:#a78bfa; border:1px solid rgba(124,58,237,0.25); }
     .emp-section-title {
-      font-family:'Orbitron',monospace; font-size:11px; font-weight:800;
-      color:var(--purpleLight); letter-spacing:1px; text-transform:uppercase;
-      margin:18px 0 10px; display:flex; align-items:center; gap:8px;
+      font-family:'Orbitron',monospace; font-size:12px; font-weight:800;
+      color:var(--purpleLight); letter-spacing:1.2px; text-transform:uppercase;
+      margin:20px 0 12px; display:flex; align-items:center; gap:8px;
     }
     .emp-section-title::after {
-      content:''; flex:1; height:1px; background:linear-gradient(to right,rgba(124,58,237,0.3),transparent);
+      content:''; flex:1; height:1px;
+      background:linear-gradient(to right,rgba(124,58,237,0.35),transparent);
     }
     .live-dot {
       width:8px; height:8px; border-radius:50%; background:#34d399;
-      animation:pulse 1.5s ease-in-out infinite; display:inline-block; flex-shrink:0;
+      animation:pulse 1.4s ease-in-out infinite; display:inline-block; flex-shrink:0;
     }
     @media (max-width:600px) {
       .emp-stat-grid { grid-template-columns:repeat(2,1fr); }
+      .emp-card { padding:14px 14px 14px 18px; }
     }
     /* ============================================================ */
 
@@ -1168,12 +1198,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -1240,7 +1271,7 @@
     // FIREBASE DATA HELPERS
     // ============================================================
     function userPath() {
-      // Employees share the owner's data path so all data is in sync
+      // Cashiers share the owner's data path so all data is in sync
       if (state.empRole === 'employee' && state.empOrgId) {
         return `users/${state.empOrgId}`;
       }
@@ -1743,7 +1774,7 @@
         case 'globalAnalytics': app.innerHTML = renderHeader() + renderGlobalAnalyticsPage(); bindHeader(); bindGlobalAnalyticsPage(); break;
         case 'employees': renderEmployeesPage(); break;
         case 'employment':
-          // Stop owner listener if navigating away from employees page
+          // Stop owner listener if navigating away from cashiers page
           if (_empShiftListener) { _empShiftListener(); _empShiftListener = null; }
           renderEmploymentPage();
           break;
@@ -1808,14 +1839,14 @@
     // RENDER: ACCESS DENIED
     // ============================================================
     function renderAccessDenied() {
-      // Employees: diagnostic screen showing exactly why access failed + retry
+      // Cashiers: diagnostic screen showing exactly why access failed + retry
       if (state.empRole === 'employee') {
         const hasOrg  = !!state.empOrgId && state.empOrgId !== state.user?.uid;
         const hasEmp  = !!state.empEmployeeDoc;
         const reason  = !hasOrg
-          ? 'Your email was not found in any organization. Ask your employer to add your email in <b>Manage Employees</b> and click <b>Sync Access</b>.'
+          ? 'Your email was not found in any organization. Ask your employer to add your email in <b>Manage Cashiers</b> and click <b>Sync Access</b>.'
           : !hasEmp
-          ? 'Your employee profile was not found or has been removed. Ask your employer to check <b>Manage Employees</b>.'
+          ? 'Your cashier profile was not found or has been removed. Ask your employer to check <b>Manage Cashiers</b>.'
           : 'Your employer’s subscription has expired or been deactivated. Contact your employer to restore access.';
         return `<div class="login-page">
           <div class="login-box fade-in" style="max-width:460px;width:100%">
@@ -2160,7 +2191,7 @@
                 <span id="panelSubExpiryLabel"></span>
               </div>
             </div>
-            <div style="padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(34,211,238,0.06));border:1px solid rgba(124,58,237,0.15);margin-bottom:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
+            <div id="panelQuickSummary" style="padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(34,211,238,0.06));border:1px solid rgba(124,58,237,0.15);margin-bottom:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)">
               <div style="font-size:10px;color:#c4b5fd;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:8px">Quick Summary</div>
               <div style="display:flex;gap:12px">
                 <div style="flex:1">
@@ -2168,18 +2199,19 @@
                   <div style="font-size:15px;font-weight:700;color:#34d399;font-family:'Orbitron',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="panelRevenue">$0</div>
                 </div>
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:10px;color:#22d3ee;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:2px">Profit/Loss</div>
+                  <div style="font-size:10px;color:#22d3ee;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:2px" id="panelPLLabel">Profit/Loss</div>
                   <div style="font-size:15px;font-weight:700;color:#34d399;font-family:'Orbitron',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="panelPL">$0</div>
                 </div>
               </div>
             </div>
-            <div class="account-panel-divider"></div>
+                        <div class="account-panel-divider" id="panelQuickSummaryDiv"></div>
             <div id="menuGlobalAnalytics" style="padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(6,182,212,0.08));border:1px solid rgba(124,58,237,0.2);margin-bottom:10px;cursor:pointer;transition:all 0.25s;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px">
               <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div>
               <div style="flex:1"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:14px;color:#e8e0ff;letter-spacing:1px">ANALYTICS</div><div style="font-size:10px;color:var(--textMuted);margin-top:2px">Global overview & insights</div></div>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
             </div>
-            <div id="menuManageEmployees" style="padding:11px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(167,139,250,0.07));border:1px solid rgba(124,58,237,0.25);margin-bottom:8px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:600;color:#a78bfa;font-size:13px">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Employees'}</span></div>
+            <div style="height:1px;background:linear-gradient(to right,transparent,rgba(124,58,237,0.3),transparent);margin:4px 0 10px"></div>
+            <div id="menuManageEmployees" style="padding:11px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.18),rgba(236,72,153,0.1),rgba(167,139,250,0.12));border:1px solid rgba(167,139,250,0.35);margin-bottom:8px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(124,58,237,0.12)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:#c084fc;font-size:13px">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
             <div class="account-panel-item" id="menuGenReport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Generate Report</div>
             <div class="account-panel-item" id="menuInvoiceSettings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Invoice Settings</div>
             <div class="account-panel-divider"></div>
@@ -2199,10 +2231,10 @@
         const o = document.getElementById('accountPanelOverlay');
         if (p) p.classList.add('open');
         if (o) o.classList.add('open');
-        // Update the Manage Employees/Employment label based on current role
+        // Update the Manage Cashiers/Employment label based on current role
         const empMenuItem = document.getElementById('menuManageEmployees');
         if (empMenuItem) {
-          const labelText = state.empRole === 'employee' ? 'Manage Employment' : 'Manage Employees';
+          const labelText = state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers';
           // Update just the text node (keep the SVG icon)
           const lastChild = empMenuItem.lastChild;
           if (lastChild && lastChild.nodeType === 3) lastChild.textContent = ' ' + labelText;
@@ -2364,10 +2396,30 @@
 
     function updatePanelSubscription() {
       // Show/hide owner-only items based on role
+      const isEmpAcc = state.empRole === 'employee';
       const delEl = document.getElementById('menuDeleteAll');
-      if (delEl) delEl.style.display = state.empRole === 'employee' ? 'none' : '';
+      if (delEl) delEl.style.display = isEmpAcc ? 'none' : '';
       const clearEl = document.getElementById('menuClearBillRange');
-      if (clearEl) clearEl.style.display = state.empRole === 'employee' ? 'none' : '';
+      if (clearEl) clearEl.style.display = isEmpAcc ? 'none' : '';
+      // Hide Quick Summary for cashier accounts
+      const quickSummaryCard = document.getElementById('panelQuickSummary');
+      if (quickSummaryCard) quickSummaryCard.style.display = isEmpAcc ? 'none' : '';
+      // Hide P/L divider too
+      const qsd = document.getElementById('panelQuickSummaryDiv');
+      if (qsd) qsd.style.display = isEmpAcc ? 'none' : '';
+      // Hide Profit/Loss in settings panel for cashiers
+      const plWrap = document.getElementById('settingsPLWrap');
+      if (plWrap) plWrap.style.display = isEmpAcc ? 'none' : '';
+      const plDivider = plWrap ? plWrap.previousElementSibling : null;
+      if (plDivider && plDivider.style && plDivider.tagName==='DIV' && plDivider.style.width==='1px') plDivider.style.display = isEmpAcc ? 'none' : '';
+      // Hide export/import for cashier accounts
+      const exportEl = document.getElementById('menuExport');
+      const importEl = document.getElementById('menuImport');
+      if (exportEl) exportEl.style.display = isEmpAcc ? 'none' : '';
+      if (importEl) importEl.style.display = isEmpAcc ? 'none' : '';
+      // Hide global analytics for cashier accounts
+      const gaEl = document.getElementById('menuGlobalAnalytics');
+      if (gaEl) gaEl.style.display = isEmpAcc ? 'none' : '';
 
       // For employees: only hide the subscription card
       if (state.empRole === 'employee') {
@@ -2963,7 +3015,7 @@
           const opExData = window._gaOpEx || state.globalOpEx || null;
           if (opExData && opExData.empData && opExData.empData.length) {
             csv += '\n\nOPERATING EXPENSES (SALARY)\n';
-            csv += 'Employee,Role,Salary Type,Rate,Hours,Earned,Paid,To Pay\n';
+            csv += 'Cashier,Role,Salary Type,Rate,Hours,Earned,Paid,To Pay\n';
             opExData.empData.forEach(e => {
               const sl = {hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'}[e.salaryType]||e.salaryType;
               csv += [e.name,e.role,sl,'$'+e.salaryRate.toFixed(2),(e.totalMs/3600000).toFixed(2),'$'+e.earned.toFixed(2),'$'+e.paid.toFixed(2),'$'+e.unpaid.toFixed(2)].join(',')+'\n';
@@ -3117,7 +3169,7 @@
       if ($('#mgNewCostRate')) $('#mgNewCostRate').onkeydown = (e) => { if (e.key === 'Enter') mgAddHandler(); };
       if ($('#mgAdd')) {
         $('#mgAdd').onclick = async () => {
-          if (state.empRole === 'employee') return; // locked for employees
+          if (state.empRole === 'employee') return; // locked for cashiers
           const name = $('#mgNewName').value.trim();
           const pts = parseFloat($('#mgNewPoints').value) || 0;
           if (!name) return;
@@ -3192,7 +3244,7 @@
         const btn = $('#mgDetailSave');
         btn.disabled = true; btn.innerHTML = 'Saving...';
         if (isEmp) {
-          // Employee: only update remainingPoints
+          // Cashier: only update remainingPoints
           await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).update({ remainingPoints: newPts }));
         } else {
           // Owner: full edit
@@ -3384,7 +3436,7 @@
         <div class="tabs">
           <button class="tab tab-green ${state.companyTab==='billing'?'active':''}" data-tab="billing"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg> Billing</button>
           <button class="tab tab-cyan ${state.companyTab==='games'?'active':''}" data-tab="games"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="16" cy="11" r="0.5" fill="currentColor"/><circle cx="18" cy="13" r="0.5" fill="currentColor"/></svg> Games Config</button>
-          <button class="tab tab-purple ${state.companyTab==='analytics'?'active':''}" data-tab="analytics"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg> Analytics</button>
+          <button class="tab tab-purple ${state.companyTab==='analytics'?'active':''}" data-tab="analytics"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${state.empRole==='employee'?'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M6 8h.01M9 8h.01M6 12h12"/>':'<path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/>'}</svg> ${state.empRole==='employee'?'Balance':'Analytics'}</button>
         </div>
         <div id="tabContent">
           ${state.companyTab === 'billing' ? '<div id="billingContent">' + renderBilling(c) + '</div>' : ''}
@@ -3607,7 +3659,7 @@
                   <span style="color:${i.pl>=0?'#34d399':'var(--red)'}">P/L $${i.pl.toFixed(2)}</span>
                 </div>`).join('')}
                 ${b.extraFeeAmount > 0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid rgba(245,158,11,0.2);color:#fbbf24;font-weight:600"><span>Extra Fee ('+b.extraFeePercent+'%)</span><span>$'+(b.extraFeeAmount).toFixed(2)+'</span></div>' : ''}
-                ${b.extraFeeProfit ? '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;color:var(--textMuted)"><span>Fee Profit</span><span style="color:#34d399">$'+(b.extraFeeProfit).toFixed(2)+'</span></div>' : ''}
+                ${(state.empRole !== 'employee' && b.extraFeeProfit) ? '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;color:var(--textMuted)"><span>Fee Profit</span><span style="color:#34d399">$'+(b.extraFeeProfit).toFixed(2)+'</span></div>' : ''}
                 ${b.creditApplied > 0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid rgba(16,185,129,0.2);color:#34d399;font-weight:600"><span>Credit Applied</span><span>-$'+(b.creditApplied).toFixed(2)+'</span></div>' : ''}
                 <div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid rgba(120,100,200,0.2);font-weight:700;font-size:13px"><span style="color:var(--textSecondary)">Final Amount</span><span style="color:#34d399">$${((b.totalDollars||0)+(b.extraFeeAmount||0)-(b.creditApplied||0)).toFixed(2)}</span></div>
               </div>
@@ -5612,16 +5664,22 @@
       var bV=d.totalBalance;var bS='$'+Math.abs(bV).toFixed(2);
       var bSub=bV>0?'Outstanding':bV<0?'Credit available':'Settled';
       var bG=bV>0?'linear-gradient(135deg,#991b1b,#db2777,#f472b6)':bV<0?'linear-gradient(135deg,#047857,#059669,#34d399)':'linear-gradient(135deg,#be185d,#db2777,#f472b6)';
-      return '<div class="analytics-container"><div class="analytics-date-range"><div style="flex:1;min-width:0"><span class="label" style="font-size:9px;margin-bottom:3px">FROM</span><input class="input" type="date" id="analyticsFrom" value="'+_analyticsDateFrom+'"/></div><div style="flex:1;min-width:0"><span class="label" style="font-size:9px;margin-bottom:3px">TO</span><input class="input" type="date" id="analyticsTo" value="'+_analyticsDateTo+'"/></div><button class="btn btn-purple btn-sm" id="analyticsApplyRange" style="align-self:flex-end">Apply</button></div><div class="analytics-summary">'
-        +'<div class="analytics-card ac-loaded" data-card="loaded"><div class="ac-label">TOTAL LOADED</div><div class="'+acV(lS)+'">'+lS+'</div><div class="ac-sub">'+lSub+'</div></div>'
+      // Cashier accounts see Balance view only — no profit/cost/charts/report
+      var isEmp = state.empRole === 'employee';
+      var baseCards = '<div class="analytics-card ac-loaded" data-card="loaded"><div class="ac-label">TOTAL LOADED</div><div class="'+acV(lS)+'">'+lS+'</div><div class="ac-sub">'+lSub+'</div></div>'
         +'<div class="analytics-card ac-redeemed" data-card="redeemed"><div class="ac-label">TOTAL REDEEMED</div><div class="'+acV(rS)+'">'+rS+'</div><div class="ac-sub">'+rSub+'</div></div>'
         +'<div class="analytics-card ac-received" data-card="received"><div class="ac-label">PAYMENTS RECEIVED</div><div class="'+acV('$'+d.totalReceived.toFixed(2))+'">$'+d.totalReceived.toFixed(2)+'</div><div class="ac-sub">Tap for details →</div></div>'
-        +'<div class="analytics-card ac-balance" data-card="balance" style="background:'+bG+'"><div class="ac-label">'+(bV<0?'CREDIT BALANCE':'OUTSTANDING BALANCE')+'</div><div class="'+acV(bS)+'">'+bS+'</div><div class="ac-sub">'+bSub+'</div></div>'
-        +'<div class="analytics-card ac-profit" data-card="profit"><div class="ac-label">PROFIT / LOSS</div><div class="'+acV(plS+'$'+Math.abs(d.totalProfit).toFixed(2))+'" style="color:'+plC+'">'+plS+'$'+d.totalProfit.toFixed(2)+'</div><div class="ac-sub">Cost: $'+d.totalCost.toFixed(2)+'</div></div>'
-        +'<div class="analytics-card ac-report" data-card="report"><div class="ac-label">GENERATE REPORT</div><div class="ac-value" style="font-size:clamp(12px,3vw,15px)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>EXPORT CSV</div><div class="ac-sub">All report types</div></div></div>'
-        +'<div class="analytics-chart-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h4 style="margin:0">REVENUE & PROFIT TREND</h4><div id="compAggToggle" style="display:flex;gap:2px;background:rgba(15,12,28,0.5);border-radius:8px;padding:3px;border:1px solid var(--glassBorder);backdrop-filter:blur(10px)"><button class="btn btn-sm ca-agg" data-agg="D" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;'+(state.analyticsAgg==='D'?'background:var(--cyan);color:#000':'')+'">D</button><button class="btn btn-sm ca-agg" data-agg="W" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;'+(state.analyticsAgg==='W'?'background:var(--cyan);color:#000':'')+'">W</button><button class="btn btn-sm ca-agg" data-agg="M" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;'+(state.analyticsAgg==='M'?'background:var(--cyan);color:#000':'')+'">M</button></div></div><div style="position:relative;height:250px"><canvas id="analyticsLineChart"></canvas></div></div>'
+        +'<div class="analytics-card ac-balance" data-card="balance" style="background:'+bG+'"><div class="ac-label">'+(bV<0?'CREDIT BALANCE':'OUTSTANDING BALANCE')+'</div><div class="'+acV(bS)+'">'+bS+'</div><div class="ac-sub">'+bSub+'</div></div>';
+      var ownerCards = '<div class="analytics-card ac-profit" data-card="profit"><div class="ac-label">PROFIT / LOSS</div><div class="'+acV(plS+'$'+Math.abs(d.totalProfit).toFixed(2))+'" style="color:'+plC+'">'+plS+'$'+d.totalProfit.toFixed(2)+'</div><div class="ac-sub">Cost: $'+d.totalCost.toFixed(2)+'</div></div>'
+        +'<div class="analytics-card ac-report" data-card="report"><div class="ac-label">GENERATE REPORT</div><div class="ac-value" style="font-size:clamp(12px,3vw,15px)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>EXPORT CSV</div><div class="ac-sub">All report types</div></div>';
+      var charts = '<div class="analytics-chart-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h4 style="margin:0">REVENUE & PROFIT TREND</h4><div id="compAggToggle" style="display:flex;gap:2px;background:rgba(15,12,28,0.5);border-radius:8px;padding:3px;border:1px solid var(--glassBorder);backdrop-filter:blur(10px)"><button class="btn btn-sm ca-agg" data-agg="D" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;'+(state.analyticsAgg==='D'?'background:var(--cyan);color:#000':'')+'">D</button><button class="btn btn-sm ca-agg" data-agg="W" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;'+(state.analyticsAgg==='W'?'background:var(--cyan);color:#000':'')+'">W</button><button class="btn btn-sm ca-agg" data-agg="M" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;'+(state.analyticsAgg==='M'?'background:var(--cyan);color:#000':'')+'">M</button></div></div><div style="position:relative;height:250px"><canvas id="analyticsLineChart"></canvas></div></div>'
         +'<div class="analytics-charts-grid"><div class="analytics-chart-wrap" style="margin-bottom:0"><h4>REVENUE BY GAME</h4><div style="position:relative;height:220px"><canvas id="analyticsBarChart"></canvas></div></div><div class="analytics-chart-wrap" style="margin-bottom:0"><h4>PROFIT BY GAME</h4><div style="position:relative;height:220px"><canvas id="analyticsPieChart"></canvas></div></div></div>'
-        +renderTopUsers(d)
+        +renderTopUsers(d);
+      return '<div class="analytics-container"><div class="analytics-date-range"><div style="flex:1;min-width:0"><span class="label" style="font-size:9px;margin-bottom:3px">FROM</span><input class="input" type="date" id="analyticsFrom" value="'+_analyticsDateFrom+'"/></div><div style="flex:1;min-width:0"><span class="label" style="font-size:9px;margin-bottom:3px">TO</span><input class="input" type="date" id="analyticsTo" value="'+_analyticsDateTo+'"/></div><button class="btn btn-purple btn-sm" id="analyticsApplyRange" style="align-self:flex-end">Apply</button></div><div class="analytics-summary">'
+        +baseCards
+        +(isEmp ? '' : ownerCards)
+        +'</div>'
+        +(isEmp ? '' : charts)
         +'</div>';
     }
 
@@ -6318,9 +6376,9 @@
     async function computeOperatingExpenses(fromDate, toDate) {
       try {
         const employees = await fetchEmployees();
-        if (!employees.length) return { total: 0, empData: [], paid: 0, unpaid: 0 };
+        if (!cashiers.length) return { total: 0, empData: [], paid: 0, unpaid: 0 };
         const allShifts  = await fetchShifts(fromDate, toDate, null);
-        const empData = await Promise.all(employees.filter(e => e.active !== false).map(async emp => {
+        const empData = await Promise.all(cashiers.filter(e => e.active !== false).map(async emp => {
           const empShifts = allShifts.filter(s => s.employeeId === emp._id);
           const totalMs   = empShifts.reduce((s, sh) => s + (sh.durationMs || 0), 0);
           const earned    = calcEarnings(emp, totalMs);
@@ -6338,7 +6396,7 @@
           const unpaid = Math.max(0, earned - paid);
           return {
             _id: emp._id, name: emp.name || '', email: emp.email || '',
-            role: emp.role || 'Employee', salaryType: emp.salaryType,
+            role: emp.role || 'Cashier', salaryType: emp.salaryType,
             salaryRate: emp.salaryRate || 0, totalMs, earned,
             paid, unpaid, shifts: empShifts.length, payments,
           };
@@ -6432,7 +6490,7 @@
         +'<div class="analytics-card ac-balance" data-gcard="balance" style="background:'+balG+'"><div class="ac-label">'+balLabel+'</div><div class="'+acV('$'+balMainAmount.toFixed(2))+'">$'+balMainAmount.toFixed(2)+'</div><div class="ac-sub">'+balSub+'</div></div>'
         +'<div class="analytics-card ac-profit" data-gcard="profit"><div class="ac-label">GROSS PROFIT</div><div class="'+acV(gpS+'$'+Math.abs(grossProfit).toFixed(2))+'" id="gaGpVal" style="color:'+gpC+'">'+gpS+'$'+grossProfit.toFixed(2)+'</div><div class="ac-sub" id="gaGpSub">Profit: '+plS+'$'+d.gPr.toFixed(2)+' − OpEx: $'+opExTotal.toFixed(2)+'</div></div>'
         +'<div class="analytics-card" data-gcard="cost" style="background:linear-gradient(135deg,#78350f,#92400e,#b45309)"><div class="ac-label">TOTAL COST</div><div class="'+acV('$'+d.gCost.toFixed(2))+'">$'+d.gCost.toFixed(2)+'</div><div class="ac-sub">All games combined</div></div>'
-        +(state.empRole!=='employee'?'<div class="analytics-card" data-gcard="opex" style="background:linear-gradient(135deg,#78350f,#854d0e,#d97706);cursor:pointer"><div class="ac-label" style="color:#fef08a">OPERATING EXPENSES</div><div class="'+acV('$'+opExTotal.toFixed(2))+'" id="gaOpExVal" style="color:#fef08a">$'+opExTotal.toFixed(2)+'</div><div class="ac-sub" id="gaOpExSub">'+(opEx.loaded?'Paid: $'+opEx.paid.toFixed(2)+' · To Pay: $'+opEx.unpaid.toFixed(2):'Loading…')+'</div></div>':'')
+        +(state.empRole!=='employee'?'<div class="analytics-card" data-gcard="opex" style="background:linear-gradient(135deg,#92400e,#b45309,#f59e0b);cursor:pointer;border:1px solid rgba(251,191,36,0.25)"><div class="ac-label" style="color:rgba(255,255,255,0.75)">OPERATING EXPENSES</div><div class="'+acV('$'+opExTotal.toFixed(2))+'" id="gaOpExVal" style="color:#fff">$'+opExTotal.toFixed(2)+'</div><div class="ac-sub" id="gaOpExSub" style="color:rgba(255,255,255,0.6)">'+(opEx.loaded?'Paid: $'+opEx.paid.toFixed(2)+' · To Pay: $'+opEx.unpaid.toFixed(2):'Loading…')+'</div></div>':'')
         +'</div>'
         +'<div class="analytics-chart-wrap"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h4 style="margin:0">TREND</h4><div style="display:flex;gap:2px;background:rgba(15,12,28,0.5);border-radius:8px;padding:3px;border:1px solid var(--glassBorder);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)"><button class="btn btn-sm ga-agg '+(agg==='D'?'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;background:var(--cyan);color:#000':'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace')+'" data-agg="D">D</button><button class="btn btn-sm ga-agg '+(agg==='W'?'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;background:var(--cyan);color:#000':'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace')+'" data-agg="W">W</button><button class="btn btn-sm ga-agg '+(agg==='M'?'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace;background:var(--cyan);color:#000':'" style="padding:5px 12px;font-size:10px;border-radius:6px;font-family:Orbitron,monospace')+'" data-agg="M">M</button></div></div><div style="position:relative;height:260px;overflow-x:auto"><div style="min-width:'+(Math.max(d.dLab.length*40,300))+'px;height:100%"><canvas id="gaLineChart"></canvas></div></div></div>'
         +'<div style="margin-bottom:14px"><div style="display:flex;gap:2px;background:rgba(15,12,28,0.5);border-radius:8px;padding:3px;border:1px solid var(--glassBorder);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);margin-bottom:12px"><button class="btn btn-sm ga-section btn-cyan" data-sec="companies" style="flex:1;padding:6px;font-size:11px;border-radius:6px">Companies</button><button class="btn btn-sm ga-section btn-outline" data-sec="games" style="flex:1;padding:6px;font-size:11px;border-radius:6px">Games</button><button class="btn btn-sm ga-section btn-outline" data-sec="users" style="flex:1;padding:6px;font-size:11px;border-radius:6px">Top Users</button></div><input class="input" id="gaRankSearch" placeholder="Search companies..." style="font-size:11px;padding:7px 12px;margin-bottom:8px" /><div id="gaRankSection" style="max-height:400px;overflow-y:auto"></div></div>'
@@ -6607,7 +6665,7 @@
             +'<span style="font-family:Orbitron,monospace;font-size:12px;color:#fbbf24;font-weight:700">$'+e.earned.toFixed(2)+'</span>'
             +'</div>'
             +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-            +'<span style="font-size:10px;color:var(--textMuted)">'+esc(e.role||'Employee')+'</span>'
+            +'<span style="font-size:10px;color:var(--textMuted)">'+esc(e.role||'Cashier')+'</span>'
             +'<span style="font-size:10px;color:#a78bfa">'+sl+': $'+e.salaryRate.toFixed(2)+'</span>'
             +'<span style="font-size:10px;color:#22d3ee">'+e.shifts+' shifts · '+(e.totalMs/3600000).toFixed(1)+'h</span>'
             +'</div>'
@@ -6617,7 +6675,7 @@
             +'</div>'
             +'</div>';
         }).join('');
-        if (!rows) rows = '<div class="analytics-nodata">No employee data in this period</div>';
+        if (!rows) rows = '<div class="analytics-nodata">No cashier data in this period</div>';
         footer = '<div style="padding:12px;border-top:1px solid rgba(120,100,200,0.15)">'
           +'<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--textMuted);font-size:12px">Total Paid</span><span style="color:#34d399;font-weight:700">$'+(opData.paid||0).toFixed(2)+'</span></div>'
           +'<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:var(--textMuted);font-size:12px">Total To Pay</span><span style="color:#f87171;font-weight:700">$'+(opData.unpaid||0).toFixed(2)+'</span></div>'
@@ -6640,7 +6698,7 @@
       var ov = document.createElement('div'); ov.className='modal-overlay'; ov.id='gaDetailModal';
       var grossProfit = d.gPr - opEx.total;
       var gSign = grossProfit >= 0 ? '+' : '';
-      var rows = opEx.employees.length ? opEx.employees.map(function(e) {
+      var rows = opEx.cashiers.length ? opEx.cashiers.map(function(e) {
         var salLabel = {hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'}[e.emp.salaryType]||e.emp.salaryType;
         var rows2 = e.periods.map(function(p){
           var sc = p.unpaid>0?'#f87171':'#34d399';
@@ -7194,7 +7252,7 @@
               <div id="settingsRevenue" style="font-size:16px;font-weight:700;color:#34d399;font-family:'Orbitron',monospace">$0</div>
             </div>
             <div style="width:1px;background:rgba(120,100,200,0.2)"></div>
-            <div style="flex:1;text-align:center">
+            <div style="flex:1;text-align:center" id="settingsPLWrap">
               <div style="font-size:10px;color:#22d3ee;text-transform:uppercase;margin-bottom:2px;font-weight:700">Profit / Loss</div>
               <div id="settingsPL" style="font-size:16px;font-weight:700;font-family:'Orbitron',monospace">$0</div>
             </div>
@@ -7328,30 +7386,30 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
       if (user.email === ADMIN_EMAIL) return { hasAccess: true, daysLeft: 999, expiry: null, gbUsername: 'admin' };
 
-      // Safety net: if this user is actually an employee (resolved by role check),
+      // Safety net: if this user is actually an cashier (resolved by role check),
       // do NOT create a blank userAccess doc for them.
-      // This path should only be reached for owners — employees return early in onAuthStateChanged.
+      // This path should only be reached for owners — cashiers return early in onAuthStateChanged.
       if (state.empRole === 'employee') {
-        console.warn('[checkUserAccess] Called for an employee — should not happen. Returning no access.');
+        console.warn('[checkUserAccess] Called for an cashier — should not happen. Returning no access.');
         return { hasAccess: false, daysLeft: 0, expiry: null, gbUsername: '' };
       }
 
       try {
         const doc = await db.collection('userAccess').doc(user.uid).get();
         if (!doc.exists) {
-          // Before creating a new record, double-check they are not an employee
+          // Before creating a new record, double-check they are not an cashier
           // (employeeLinks lookup as final safety net)
           const linkKey = emailToKey(user.email);
           try {
             const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
             if (linkDoc.exists && linkDoc.data().active !== false) {
-              console.warn('[checkUserAccess] User has employeeLinks doc but was not resolved as employee — should not create userAccess doc');
+              console.warn('[checkUserAccess] User has employeeLinks doc but was not resolved as cashier — should not create userAccess doc');
               return { hasAccess: false, daysLeft: 0, expiry: null, gbUsername: '' };
             }
           } catch(e) { /* ignore */ }
@@ -7397,12 +7455,12 @@
       }
     }
 
-    // Check owner access for an employee login.
-    // Reads the ownerAccess fields embedded in the employee's own employeeLinks doc
+    // Check owner access for an cashier login.
+    // Reads the ownerAccess fields embedded in the cashier's own employeeLinks doc
     // (written by owner at sync time) — avoids cross-user userAccess reads which
     // are blocked by Firestore security rules.
     async function checkUserAccessByUid(ownerUid) {
-      // Primary: read embedded access from employeeLinks doc (employee can read their own)
+      // Primary: read embedded access from employeeLinks doc (cashier can read their own)
       try {
         const linkKey = emailToKey((state.user?.email || '').toLowerCase().trim());
         const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
@@ -7470,7 +7528,7 @@
         state.view = 'loading';
         render();
 
-        // STEP 1: Resolve role FIRST — employee vs owner
+        // STEP 1: Resolve role FIRST — cashier vs owner
         try {
           await resolveEmployeeRole(user);
         } catch(e) {
@@ -7482,13 +7540,13 @@
         console.log('[Auth] empRole:', state.empRole, '| empOrgId:', state.empOrgId,
           '| empEmployeeDoc:', state.empEmployeeDoc ? state.empEmployeeDoc._id : 'null');
 
-        // STEP 2: Employee path
+        // STEP 2: Cashier path
         if (state.empRole === 'employee') {
-          console.log('[Auth] Employee path. Checking owner subscription. orgId:', state.empOrgId);
+          console.log('[Auth] Cashier path. Checking owner subscription. orgId:', state.empOrgId);
 
-          // Check if employee is deactivated
+          // Check if cashier is deactivated
           if (state.empEmployeeDoc && state.empEmployeeDoc.active === false) {
-            console.log('[Auth] Employee is deactivated');
+            console.log('[Auth] Cashier is deactivated');
             state.view = 'accessDenied';
             render();
             return;
@@ -7505,14 +7563,14 @@
           }
 
           if (!ownerHasAccess) {
-            console.log('[Auth] Owner subscription invalid — blocking employee');
+            console.log('[Auth] Owner subscription invalid — blocking cashier');
             state.view = 'accessDenied';
             render();
             return;
           }
 
-          console.log('[Auth] Employee authorized ✓ — loading full app');
-          // Employees get the full app experience — load their own data
+          console.log('[Auth] Cashier authorized ✓ — loading full app');
+          // Cashiers get the full app experience — load their own data
           state.gbUsername = '';
           state.accessDaysLeft = 0;
           state.accessExpiry = null;
@@ -7751,14 +7809,14 @@
     // --- State extensions ---
     state.empRole        = null;   // 'owner' | 'employee' | null
     state.empOrgId       = null;   // org doc id (owner's uid)
-    state.empEmployeeDoc = null;   // employee doc data (if user is employee)
+    state.empEmployeeDoc = null;   // cashier doc data (if user is cashier)
     state.empView        = 'dashboard'; // 'dashboard' | 'employees' | 'salary'
 
     let _shiftTimerInterval = null;
 
     // --- Firestore path helpers ---
     function orgPath()   { return `organizations/${state.empOrgId}`; }
-    function empPath()   { return `organizations/${state.empOrgId}/employees`; }
+    function empPath()   { return `organizations/${state.empOrgId}/cashiers`; }
     function shiftPath() { return `organizations/${state.empOrgId}/shifts`; }
     function payPath()   { return `organizations/${state.empOrgId}/salaryPayments`; }
 
@@ -7769,7 +7827,7 @@
     function empDefaultTo() {
       return new Date().toISOString().slice(0,10);
     }
-    // State for employee page date range
+    // State for cashier page date range
     if (!state.empDateFrom) state.empDateFrom = empDefaultFrom();
     if (!state.empDateTo)   state.empDateTo   = empDefaultTo();
 
@@ -7786,7 +7844,7 @@
       console.log('[resolveRole] email:', email, '| linkKey:', linkKey, '| uid:', user.uid);
 
       // ── STEP 1: Check employeeLinks FIRST ──────────────────────────────────
-      // This takes priority over the organizations check because an employee
+      // This takes priority over the organizations check because an cashier
       // may have previously triggered ensureOrgDoc (creating organizations/{uid})
       // which would falsely identify them as an owner.
       try {
@@ -7798,8 +7856,8 @@
           console.log('[resolveRole] link data:', JSON.stringify(link));
 
           if (link.active === false) {
-            console.log('[resolveRole] Employee is deactivated → treating as owner (will be denied)');
-            state.empRole  = 'employee';   // still employee, just deactivated
+            console.log('[resolveRole] Cashier is deactivated → treating as owner (will be denied)');
+            state.empRole  = 'employee';   // still cashier, just deactivated
             state.empOrgId = link.ownerUid || user.uid;
             return;
           }
@@ -7807,14 +7865,14 @@
           if (!link.ownerUid || !link.employeeId) {
             console.warn('[resolveRole] employeeLinks doc missing ownerUid or employeeId:', link);
           } else {
-            // Fetch the actual employee record
+            // Fetch the actual cashier record
             try {
               const empDoc = await db.collection('organizations')
                 .doc(link.ownerUid)
                 .collection('employees')
                 .doc(link.employeeId)
                 .get();
-              console.log('[resolveRole] employee doc exists:', empDoc.exists,
+              console.log('[resolveRole] cashier doc exists:', empDoc.exists,
                 empDoc.exists ? '| active:' + empDoc.data().active : '');
 
               if (empDoc.exists && empDoc.data().active !== false) {
@@ -7836,7 +7894,7 @@
                 return;
               }
             } catch(e) {
-              console.warn('[resolveRole] Failed to fetch employee doc:', e);
+              console.warn('[resolveRole] Failed to fetch cashier doc:', e);
             }
           }
         }
@@ -7881,7 +7939,7 @@
     // --- Salary calculation helpers ---
     function hoursFromMs(ms) { return ms / 3600000; }
 
-    // Get the salary period label for a date given the employee's salary type
+    // Get the salary period label for a date given the cashier's salary type
     function getSalaryPeriodKey(date, salaryType) {
       const d = date instanceof Date ? date : new Date(date);
       const y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
@@ -7926,7 +7984,7 @@
         }));
     }
 
-    // Group shifts into salary periods based on employee salary type.
+    // Group shifts into salary periods based on cashier salary type.
     // Returns array of { label, shifts, durationMs, earned, periodStart, periodEnd }
     function getSalaryPeriods(emp, shifts) {
       if (!shifts.length) return [];
@@ -8323,19 +8381,26 @@
     }
 
     // --- Active shift helpers ---
+    // Returns all active shifts (multiple cashiers can be on shift simultaneously)
+    async function getActiveShifts() {
+      try {
+        const snap = await db.collection(shiftPath()).where('status', '==', 'active').get();
+        if (snap.empty) return [];
+        return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      } catch(e) { return []; }
+    }
+
+    // Legacy helper — returns first active shift or null
     async function getActiveShift() {
-      const snap = await db.collection(shiftPath())
-        .where('status', '==', 'active')
-        .limit(1)
-        .get();
-      if (snap.empty) return null;
-      return { _id: snap.docs[0].id, ...snap.docs[0].data() };
+      const shifts = await getActiveShifts();
+      return shifts.length ? shifts[0] : null;
     }
 
     async function shiftIn(empId, empName) {
-      // Double check no active shift
-      const active = await getActiveShift();
-      if (active) throw new Error('Another employee is currently on shift: ' + (active.employeeName || active.employeeId));
+      // Only prevent THIS cashier from double-shifting in
+      const shifts = await getActiveShifts();
+      const mine = shifts.find(s => s.employeeId === empId);
+      if (mine) throw new Error('You are already on shift. Shift out first.');
       const now = firebase.firestore.FieldValue.serverTimestamp();
       await db.collection(shiftPath()).add({
         employeeId:   empId,
@@ -8358,7 +8423,7 @@
       });
     }
 
-    // --- Fetch all employees for owner ---
+    // --- Fetch all cashiers for owner ---
     async function fetchEmployees() {
       const snap = await db.collection(empPath()).get();
       return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
@@ -8392,8 +8457,7 @@
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <button class="btn btn-ghost btn-sm" id="empBackBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
           <div style="flex:1">
-            <div class="emp-section-title" style="margin:0 0 2px">MANAGE EMPLOYEES</div>
-            <div style="font-size:11px;color:var(--textMuted)">Organization workforce management</div>
+            <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:800;color:var(--purpleLight);letter-spacing:1px;text-transform:uppercase">MANAGE CASHIERS</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:8px">
@@ -8404,7 +8468,7 @@
             </button>
             <button class="btn btn-green btn-sm" id="btnAddEmployee" style="gap:6px">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Add Employee
+              Add Cashier
             </button>
           </div>
         </div>
@@ -8415,7 +8479,7 @@
         </div>
         <div id="empDashboardSummary"><div class="card" style="text-align:center;padding:18px;color:var(--textMuted);font-size:12px">Loading summary…</div></div>
         <div class="emp-section-title" style="margin-top:20px">EMPLOYEE LIST</div>
-        <div id="empListWrap"><div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:13px">Loading employees…</div></div>
+        <div id="empListWrap"><div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:13px">Loading cashiers…</div></div>
       </div>`;
       bindHeader();
       await ensureOrgDoc();
@@ -8430,6 +8494,29 @@
       };
       document.getElementById('btnAddEmployee').onclick = () => showAddEmployeeModal();
       document.getElementById('btnSyncAllLinks').onclick = () => syncAllEmployeeLinks();
+      // Bind On Shift card click
+      const onShiftCard = document.getElementById('dashOnShiftCard');
+      if (onShiftCard) {
+        onShiftCard.onclick = async () => {
+          const shifts = await getActiveShifts().catch(()=>[]);
+          const emps   = await fetchEmployees().catch(()=>[]);
+          if (!shifts.length) return;
+          const rows = shifts.map(s => {
+            const emp = emps.find(e => e._id === s.employeeId);
+            const ms  = s.startTime?.toDate ? Date.now() - s.startTime.toDate().getTime() : 0;
+            const svgDot = '<svg width="8" height="8" style="margin-right:6px;flex-shrink:0"><circle cx="4" cy="4" r="4" fill="#34d399"/></svg>';
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.1)">
+              <div style="display:flex;align-items:center">${svgDot}<span style="font-weight:700;font-size:14px">${esc(emp?.name||s.employeeName||'Unknown')}</span></div>
+              <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399">${formatHHMM(ms)}</div>
+            </div>`;
+          }).join('');
+          let m = document.createElement('div');
+          m.className = 'modal-overlay';
+          m.innerHTML = `<div class="modal fade-in" style="max-width:380px"><div class="modal-header"><h3 class="modal-title">ON SHIFT NOW</h3><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-overlay').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="card" style="padding:0;overflow:hidden">${rows}</div></div>`;
+          document.body.appendChild(m);
+          m.onclick = e => { if (e.target===m) m.remove(); };
+        };
+      }
       // Live listener: refresh dashboard when any shift changes
       if (_empShiftListener) _empShiftListener();
       _empShiftListener = db.collection(shiftPath())
@@ -8477,19 +8564,21 @@
       const fromDate = state.empDateFrom ? new Date(state.empDateFrom + 'T00:00:00') : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
       const toDate   = state.empDateTo   ? new Date(state.empDateTo + 'T23:59:59')   : new Date();
 
-      const [employees, activeShift, allShifts] = await Promise.all([
+      const [cashiers, activeShifts, allShifts] = await Promise.all([
         fetchEmployees(),
-        getActiveShift(),
+        getActiveShifts().catch(()=>[]),
         fetchShifts(fromDate, toDate, null),
       ]);
-
-      const activeEmpObj  = activeShift ? employees.find(e => e._id === activeShift.employeeId) : null;
-      const activeEmpName = activeEmpObj?.name || (activeShift ? 'Unknown' : null);
+      const activeShift   = activeShifts[0] || null;
+      const activeEmpObjs = activeShifts.map(s => cashiers.find(e => e._id === s.employeeId)).filter(Boolean);
+      const activeCount   = activeEmpObjs.length;
+      const activeEmpName = activeCount === 1 ? activeEmpObjs[0].name
+                          : activeCount  >  1 ? activeCount + ' cashiers' : null;
       const activeStartMs = activeShift?.startTime?.toDate ? activeShift.startTime.toDate().getTime() : 0;
 
-      // Total hours & unpaid salary per employee this month
+      // Total hours & unpaid salary per cashier this month
       let totalHours = 0, totalUnpaid = 0, totalPaid = 0;
-      const empSummaries = await Promise.all(employees.map(async emp => {
+      const empSummaries = await Promise.all(cashiers.map(async emp => {
         const empShifts = allShifts.filter(s => s.employeeId === emp._id);
         const ms = empShifts.reduce((s, sh) => s + (sh.durationMs||0), 0);
         const earned = calcEarnings(emp, ms);
@@ -8511,13 +8600,18 @@
       wrap.innerHTML = `
         <div class="emp-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
           <div class="emp-stat">
-            <div class="es-label">Total Employees</div>
-            <div class="es-value">${employees.filter(e=>e.active!==false).length}</div>
+            <div class="es-label">Total Cashiers</div>
+            <div class="es-value">${cashiers.filter(e=>e.active!==false).length}</div>
           </div>
-          <div class="emp-stat" style="${activeEmpName?'border-color:rgba(52,211,153,0.3)':''}">
+          <div class="emp-stat" id="dashOnShiftCard" style="cursor:pointer;${activeCount>0?'border-color:rgba(52,211,153,0.3)':''}">
             <div class="es-label">On Shift Now</div>
-            <div class="es-value" style="color:${activeEmpName?'#34d399':'var(--textMuted)'};font-size:${activeEmpName?'11px':'14px'}">${activeEmpName ? '<span class="live-dot" style="margin-right:4px"></span>' + activeEmpName : 'None'}</div>
-            ${activeShift && activeShift.startTime ? `<div style="font-family:'Orbitron',monospace;font-size:11px;color:#34d399;margin-top:3px" id="ownerLiveTimer" data-start="${activeShift.startTime.toDate ? activeShift.startTime.toDate().getTime() : 0}">${formatHHMM(Date.now() - (activeShift.startTime.toDate ? activeShift.startTime.toDate().getTime() : 0))}</div>` : ''}
+            <div class="es-value" style="color:${activeCount>0?'#34d399':'var(--textMuted)'};font-size:${activeCount>1?'18px':activeCount===1?'12px':'15px'}">${
+              activeCount===0 ? 'None'
+              : activeCount===1 ? '<svg width=\"7\" height=\"7\" style=\"margin-right:3px\"><circle cx=\"3.5\" cy=\"3.5\" r=\"3.5\" fill=\"#34d399\"/></svg>' + activeEmpObjs[0].name.split(' ')[0]
+              : '<svg width=\"7\" height=\"7\" style=\"margin-right:3px\"><circle cx=\"3.5\" cy=\"3.5\" r=\"3.5\" fill=\"#34d399\"/></svg>' + activeCount
+            }</div>
+            ${activeCount===1 ? '<div style=\"font-family:Orbitron,monospace;font-size:11px;color:#34d399;margin-top:3px\" id=\"ownerLiveTimer\" data-start=\"'+activeShift.startTime.toDate().getTime()+'\">'+formatHHMM(Date.now()-activeShift.startTime.toDate().getTime())+'</div>' : ''}
+            ${activeCount>1 ? '<div style=\"font-size:9px;color:var(--textMuted);margin-top:2px\">Tap for details</div>' : ''}
           </div>
           <div class="emp-stat">
             <div class="es-label">Hours (${dateStr})</div>
@@ -8531,13 +8625,13 @@
         ${empSummaries.filter(s=>s.earned>0||s.ms>0).length > 0 ? `
         <div class="card" style="padding:0;overflow:hidden">
           <div style="padding:10px 14px;background:rgba(18,14,38,0.6);font-size:10px;font-weight:700;color:var(--textMuted);text-transform:uppercase;letter-spacing:0.8px;display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px">
-            <span>Employee</span><span style="text-align:right">Hours</span><span style="text-align:right">Earned</span><span style="text-align:right">Paid</span><span style="text-align:right">Unpaid</span>
+            <span>Cashier</span><span style="text-align:right">Hours</span><span style="text-align:right">Earned</span><span style="text-align:right">Paid</span><span style="text-align:right">Unpaid</span>
           </div>
           ${empSummaries.sort((a,b)=>b.unpaid-a.unpaid).map(({emp,ms,earned,unpaid,paidThisRange})=>`
           <div class="salary-row" style="cursor:pointer" onclick="_openEmpDetail('${emp._id}')">
             <div style="flex:1;min-width:0">
               <div style="font-weight:600;font-size:13px">${esc(emp.name||'')}</div>
-              <div style="font-size:10px;color:var(--textMuted)">${esc(emp.role||'Employee')} · ${({hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'})[emp.salaryType]||emp.salaryType}</div>
+              <div style="font-size:10px;color:var(--textMuted)">${esc(emp.role||'Cashier')} · ${({hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'})[emp.salaryType]||emp.salaryType}</div>
             </div>
             <div style="font-family:'Orbitron',monospace;font-size:11px;color:#22d3ee;min-width:38px;text-align:right">${hoursFromMs(ms).toFixed(1)}h</div>
             <div style="font-family:'Orbitron',monospace;font-size:11px;color:#fbbf24;min-width:52px;text-align:right">$${earned.toFixed(2)}</div>
@@ -8556,11 +8650,11 @@
     // Global helper called from inline onclick in dashboard rows
     async function _openEmpDetail(empId) {
       const employees = await fetchEmployees();
-      showEmployeeDetailModal(empId, employees);
+      showEmployeeDetailModal(empId, cashiers);
     }
 
-    // Write a single employeeLinks doc for a given employee record.
-    // Embeds the owner's current access status so employees can verify
+    // Write a single employeeLinks doc for a given cashier record.
+    // Embeds the owner's current access status so cashiers can verify
     // access without needing to read the owner's userAccess doc directly
     // (which is blocked by Firestore security rules for cross-user reads).
     async function writeEmployeeLink(emp, empId) {
@@ -8620,15 +8714,15 @@
         '| ownerHasAccess:', ownerHasAccess);
     }
 
-    // Sync every employee's link doc — fixes legacy employees added before this feature
+    // Sync every cashier's link doc — fixes legacy cashiers added before this feature
     async function syncAllEmployeeLinks() {
       const btn = document.getElementById('btnSyncAllLinks');
       if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
       try {
         await ensureOrgDoc();
         const employees = await fetchEmployees();
-        console.log('[syncAllLinks] Syncing', employees.length, 'employees. orgId:', state.empOrgId);
-        await Promise.all(employees.map(emp => {
+        console.log('[syncAllLinks] Syncing', cashiers.length, 'cashiers. orgId:', state.empOrgId);
+        await Promise.all(cashiers.map(emp => {
           const normalizedEmail = (emp.email || '').toLowerCase().trim();
           return writeEmployeeLink({ ...emp, email: normalizedEmail }, emp._id);
         }));
@@ -8652,14 +8746,14 @@
     async function refreshEmployeeList() {
       const wrap = document.getElementById('empListWrap');
       if (!wrap) return;
-      const employees = await fetchEmployees();
-      const activeShift = await getActiveShift();
+      const [employees, activeShifts] = await Promise.all([
+        fetchEmployees(),
+        getActiveShifts().catch(()=>[]),
+      ]);
       if (!employees.length) {
-        wrap.innerHTML = '<div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:13px">No employees yet. Add your first employee above.</div>';
+        wrap.innerHTML = '<div class="card" style="text-align:center;padding:28px;color:var(--textMuted);font-size:14px">No cashiers yet. Add your first cashier above.</div>';
         return;
       }
-
-      // Check which employees are missing their employeeLinks doc
       const linkChecks = await Promise.all(employees.map(async emp => {
         try {
           const doc = await db.collection('employeeLinks').doc(emailToKey(emp.email)).get();
@@ -8670,69 +8764,73 @@
       linkChecks.forEach(c => { linkMap[c.empId] = c.linked; });
 
       const now = Date.now();
-      wrap.innerHTML = employees.map(emp => {
-        const isActive = activeShift && activeShift.employeeId === emp._id;
-        const activeDurMs = isActive && activeShift.startTime
-          ? now - (activeShift.startTime.toDate ? activeShift.startTime.toDate().getTime() : 0)
-          : 0;
-        const salaryLabel = { hourly:'Hourly', daily:'Daily', weekly:'Weekly', biweekly:'Bi-Weekly', monthly:'Monthly' }[emp.salaryType] || emp.salaryType;
-        const isLinked = linkMap[emp._id];
+      const colors = ['clr-0','clr-1','clr-2','clr-3','clr-4','clr-5'];
+
+      wrap.innerHTML = employees.map((emp, idx) => {
+        const myShift     = activeShifts.find(s => s.employeeId === emp._id);
+        const isActive    = !!myShift;
+        const activeDurMs = isActive && myShift.startTime?.toDate ? now - myShift.startTime.toDate().getTime() : 0;
+        const clr         = colors[idx % colors.length];
         const isDeactivated = emp.active === false;
-        return `<div class="emp-card ${isActive?'active-shift':''} ${isDeactivated?'opacity:0.5':''}" data-empid="${emp._id}">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        const isLinked    = linkMap[emp._id];
+        const slLabel     = {hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'}[emp.salaryType] || (emp.salaryType||'');
+        const warnSvg     = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+        const editSvg     = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+        return `<div class="emp-card ${clr}${isActive?' active-shift':''}" data-empid="${emp._id}" style="${isDeactivated?'opacity:0.55;':''}cursor:pointer">
+          <div class="emp-card-accent"></div>
+          <div style="padding-left:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
             <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <span style="font-weight:700;font-size:15px;color:var(--textPrimary)">${esc(emp.name||'')}</span>
-                <span class="emp-badge ${isActive?'online':'offline'}">${isActive?'<span class="live-dot"></span>On Shift':isDeactivated?'Deactivated':'Offline'}</span>
-                ${!isLinked && !isDeactivated ? '<span class="emp-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)">⚠ No Access</span>' : ''}
-                ${isLinked ? '<span class="emp-badge" style="background:rgba(52,211,153,0.1);color:#34d399;border:1px solid rgba(52,211,153,0.2)">✓ Access OK</span>' : ''}
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+                <span style="font-weight:800;font-size:17px;color:var(--textPrimary)">${esc(emp.name||'')}</span>
+                <span class="emp-badge ${isActive?'online':'offline'}">${isActive?'<svg width="7" height="7" style="margin-right:3px"><circle cx="3.5" cy="3.5" r="3.5" fill=\"#34d399\"/></svg>On Shift':isDeactivated?'Deactivated':'Off Shift'}</span>
+                ${!isLinked && !isDeactivated ? '<span class="emp-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)">'+warnSvg+' No Access</span>' : ''}
               </div>
-              <div style="font-size:12px;color:var(--textMuted);margin-top:2px">${esc(emp.email||'')} · ${esc(emp.role||'Employee')}</div>
-              <div style="font-size:11px;color:#a78bfa;margin-top:3px">${salaryLabel}: $${(emp.salaryRate||0).toFixed(2)}</div>
-              ${!isLinked && !isDeactivated ? `<div style="margin-top:8px;padding:8px 10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;font-size:11px;color:#f87171">
-                This employee cannot log in yet. <button class="emp-fix-link-btn" data-empid="${emp._id}" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:2px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;margin-left:4px">Fix Now</button>
-              </div>` : ''}
-              ${isActive ? `<div style="margin-top:8px"><div style="font-size:10px;color:var(--textMuted);margin-bottom:2px">Current shift</div><div class="shift-timer" style="font-size:16px" id="ot_${emp._id}">${formatHHMM(activeDurMs)}</div></div>` : ''}
+              <div style="font-size:13px;color:var(--textMuted);margin-bottom:3px">${esc(emp.role||'Cashier')} &nbsp;·&nbsp; <span style="color:#a78bfa">${slLabel}: $${(emp.salaryRate||0).toFixed(2)}</span></div>
+              <div style="font-size:11px;color:rgba(148,163,184,0.6)">${esc(emp.email||'')}</div>
+              ${!isLinked && !isDeactivated ? `<div style="margin-top:9px;padding:7px 10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;display:flex;align-items:center;gap:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span style="font-size:11px;color:#f87171;flex:1">Cannot log in yet</span><button class="emp-fix-link-btn" data-empid="${emp._id}" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700">Fix Now</button></div>` : ''}
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">
-              <button class="btn btn-ghost btn-sm emp-details-btn" data-empid="${emp._id}" style="color:#a78bfa;font-size:11px">Details</button>
-              <button class="btn btn-ghost btn-sm emp-edit-btn" data-empid="${emp._id}" style="color:var(--textMuted);font-size:11px">Edit</button>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;min-width:64px">
+              ${isActive ? `<div style="text-align:right"><div style="font-size:9px;color:#34d399;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px;font-weight:700">Live</div><div class="shift-timer" style="font-size:15px;line-height:1.1" id="ot_${emp._id}">${formatHHMM(activeDurMs)}</div></div>` : ''}
+              <button class="btn btn-ghost btn-sm emp-edit-btn" data-empid="${emp._id}" style="font-size:11px;padding:4px 10px;gap:4px">${editSvg} Edit</button>
             </div>
           </div>
         </div>`;
       }).join('');
 
-      // Start live timers for active employees
-      if (activeShift) {
-        const startMs = activeShift.startTime?.toDate ? activeShift.startTime.toDate().getTime() : 0;
-        clearInterval(_shiftTimerInterval);
+      // Live timers for all active cashiers
+      clearInterval(_shiftTimerInterval);
+      if (activeShifts.length) {
         _shiftTimerInterval = setInterval(() => {
-          const el = document.getElementById('ot_' + activeShift.employeeId);
-          if (!el) { clearInterval(_shiftTimerInterval); return; }
-          el.textContent = formatHHMM(Date.now() - startMs);
+          activeShifts.forEach(s => {
+            const el = document.getElementById('ot_' + s.employeeId);
+            if (!el) return;
+            const ms = s.startTime?.toDate ? Date.now() - s.startTime.toDate().getTime() : 0;
+            el.textContent = formatHHMM(ms);
+          });
         }, 1000);
       }
 
-      // Bind buttons
-      wrap.querySelectorAll('.emp-details-btn').forEach(btn => {
-        btn.onclick = () => showEmployeeDetailModal(btn.dataset.empid, employees);
+      // Card click → detail modal
+      wrap.querySelectorAll('.emp-card').forEach(card => {
+        card.onclick = (e) => {
+          if (e.target.closest('.emp-edit-btn') || e.target.closest('.emp-fix-link-btn')) return;
+          showEmployeeDetailModal(card.dataset.empid, employees);
+        };
       });
       wrap.querySelectorAll('.emp-edit-btn').forEach(btn => {
-        btn.onclick = () => showAddEmployeeModal(employees.find(e => e._id === btn.dataset.empid));
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          showAddEmployeeModal(employees.find(e2 => e2._id === btn.dataset.empid));
+        };
       });
-      // Fix link buttons — write the missing employeeLinks doc on click
       wrap.querySelectorAll('.emp-fix-link-btn').forEach(btn => {
-        btn.onclick = async () => {
-          const emp = employees.find(e => e._id === btn.dataset.empid);
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const emp = employees.find(e2 => e2._id === btn.dataset.empid);
           if (!emp) return;
           btn.textContent = 'Fixing…'; btn.disabled = true;
-          try {
-            await writeEmployeeLink(emp, emp._id);
-            await refreshEmployeeList();
-          } catch(e) {
-            btn.textContent = 'Fix Now'; btn.disabled = false;
-            alert('Failed: ' + e.message);
-          }
+          try { await writeEmployeeLink(emp, emp._id); await refreshEmployeeList(); }
+          catch(e2) { btn.textContent = 'Fix Now'; btn.disabled = false; alert('Failed: ' + e2.message); }
         };
       });
     }
@@ -8764,7 +8862,7 @@
         refreshEmploymentSelf();
       };
       await refreshEmploymentSelf();
-      // Live listener: refresh when any shift changes (e.g. owner ends shift, another employee shifts in/out)
+      // Live listener: refresh when any shift changes (e.g. owner ends shift, another cashier shifts in/out)
       if (_empSelfListener) _empSelfListener();
       _empSelfListener = db.collection(shiftPath())
         .where('status', '==', 'active')
@@ -8784,7 +8882,7 @@
         wrap.innerHTML = '<div class="card" style="padding:18px;text-align:center;color:var(--textMuted);font-size:13px">Loading…</div>';
         if (state.user) { try { await resolveEmployeeRole(state.user); } catch(e) {} }
         if (!state.empEmployeeDoc || !state.empOrgId) {
-          wrap.innerHTML = '<div class="card" style="padding:28px;text-align:center;color:var(--red);font-size:13px">Employee record not found.<br><span style="font-size:11px;color:var(--textMuted)">Please sign out and sign in again.</span></div>';
+          wrap.innerHTML = '<div class="card" style="padding:28px;text-align:center;color:var(--red);font-size:13px">Cashier record not found.<br><span style="font-size:11px;color:var(--textMuted)">Please sign out and sign in again.</span></div>';
           return;
         }
       }
@@ -8792,10 +8890,13 @@
       const emp = state.empEmployeeDoc;
 
       // Fetch shift/salary data — each wrapped so one failure doesn't break the whole page
-      let activeShift = null, shifts = [], payments = [];
-      try { activeShift = await getActiveShift(); } catch(e) { console.warn('[empSelf] getActiveShift failed:', e.code, e.message); }
-      const myShift = activeShift && activeShift.employeeId === emp._id ? activeShift : null;
-      const blocked  = activeShift && !myShift;
+      let activeShifts = [], shifts = [], payments = [];
+      try { activeShifts = await getActiveShifts(); } catch(e) { console.warn('[empSelf] getActiveShifts failed:', e.code, e.message); }
+      const myShift  = activeShifts.find(s => s.employeeId === emp._id) || null;
+      const othersOnShift = activeShifts.filter(s => s.employeeId !== emp._id);
+      // no longer blocked — multiple shifts allowed; just can't double-shift-in
+      const blocked  = false;
+      const activeShift = myShift; // alias for downstream code
 
       const today = state.empDateTo ? new Date(state.empDateTo + 'T23:59:59') : new Date(); today.setHours(23,59,59,999);
       const monthStart = state.empDateFrom ? new Date(state.empDateFrom + 'T00:00:00') : new Date(today.getFullYear(), today.getMonth(), 1);
@@ -8815,12 +8916,9 @@
                <div class="shift-timer" id="selfShiftTimer">${formatHHMM(liveDurMs)}</div>
                <div style="font-size:11px;color:var(--textMuted);margin-top:6px">Live earnings: <span style="color:#fbbf24;font-weight:700" id="selfLiveEarnings">$${calcEarnings(emp, liveDurMs).toFixed(2)}</span></div>
                <button class="shift-btn-out" style="margin-top:16px" id="btnShiftOut">SHIFT OUT</button>`
-            : `<div style="font-size:13px;color:var(--textMuted);margin-bottom:16px">${blocked ? '⚠️ Another employee is on shift. Please wait.' : 'You are currently off shift.'}</div>
-               ${blocked ? `<div style="margin:0 auto 12px;padding:10px 14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;font-size:12px;color:#fbbf24;text-align:left">
-                 <div style="font-weight:700;margin-bottom:2px">⏳ Shift in progress</div>
-                 <div style="font-size:11px;color:var(--textMuted)"><b style="color:#fbbf24">${activeShift.employeeName || 'Another employee'}</b> is currently on shift. Please wait for them to shift out.</div>
-               </div>` : ''}
-               <button class="shift-btn-in" id="btnShiftIn" ${blocked?'disabled style="opacity:0.45;cursor:not-allowed"':''}>SHIFT IN</button>`
+            : `<div style="font-size:13px;color:var(--textMuted);margin-bottom:12px">You are currently off shift.</div>
+               ${othersOnShift.length > 0 ? '<div style="margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.2);border-radius:10px;font-size:12px;color:#22d3ee"><div style="font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width=\"10\" height=\"10\"><circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#34d399\"/></svg>' + othersOnShift.length + ' other' + (othersOnShift.length>1?'s':'') + ' currently on shift</div>' + othersOnShift.map(s=>'<div style=\"font-size:11px;color:var(--textMuted)\">· '+esc(s.employeeName||'Cashier')+'</div>').join('') + '</div>' : ''}
+               <button class="shift-btn-in" id="btnShiftIn">SHIFT IN</button>`
           }
         </div>
 
@@ -8946,7 +9044,7 @@
       modal.id = 'empDetailModal';
       modal.innerHTML = `<div class="modal" style="max-width:520px;width:94vw">
         <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between">
-          <span>${esc(emp.name||'Employee')} — Details</span>
+          <span>${esc(emp.name||'Cashier')} — Details</span>
           <button class="btn btn-ghost btn-sm" id="closeEmpDetail"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
@@ -9046,7 +9144,7 @@
                   const pf = pay.periodStart?.toDate ? pay.periodStart.toDate().toLocaleDateString() : '-';
                   const pt = pay.periodEnd?.toDate   ? pay.periodEnd.toDate().toLocaleDateString()   : '-';
                   const sc = pay.receivedByEmployee ? 'received' : pay.paidByOwner ? 'paid' : 'unpaid';
-                  const sl = pay.receivedByEmployee ? 'Received by Employee' : pay.paidByOwner ? 'Paid' : 'Pending';
+                  const sl = pay.receivedByEmployee ? 'Received by Cashier' : pay.paidByOwner ? 'Paid' : 'Pending';
                   return `<div class="salary-row">
                     <div><div style="font-weight:600;font-size:12px">${pf} – ${pt}</div></div>
                     <div style="text-align:right">
@@ -9125,7 +9223,7 @@
       modal.className = 'modal-overlay';
       modal.id = 'addEmpModal';
       modal.innerHTML = `<div class="modal" style="max-width:440px;width:94vw">
-        <div class="modal-title">${isEdit ? 'Edit Employee' : 'Add Employee'}</div>
+        <div class="modal-title">${isEdit ? 'Edit Cashier' : 'Add Cashier'}</div>
         <div style="display:flex;flex-direction:column;gap:10px">
           <div>
             <label style="font-size:11px;color:var(--textMuted);display:block;margin-bottom:4px">Full Name *</label>
@@ -9133,7 +9231,7 @@
           </div>
           <div>
             <label style="font-size:11px;color:var(--textMuted);display:block;margin-bottom:4px">Google Email *</label>
-            <input class="input" type="email" id="empEmail" placeholder="employee@gmail.com" value="${esc(existing?.email||'')}" ${isEdit?'readonly style="opacity:0.6"':''} />
+            <input class="input" type="email" id="empEmail" placeholder="cashier@gmail.com" value="${esc(existing?.email||'')}" ${isEdit?'readonly style="opacity:0.6"':''} />
           </div>
           <div>
             <label style="font-size:11px;color:var(--textMuted);display:block;margin-bottom:4px">Role / Position</label>
@@ -9160,13 +9258,13 @@
         </div>
         <div style="display:flex;gap:10px;margin-top:18px">
           <button class="btn btn-ghost btn-full" id="cancelAddEmp">Cancel</button>
-          <button class="btn btn-green btn-full" id="saveAddEmp">${isEdit?'Save Changes':'Add Employee'}</button>
+          <button class="btn btn-green btn-full" id="saveAddEmp">${isEdit?'Save Changes':'Add Cashier'}</button>
         </div>
         ${isEdit ? `
-          <button class="btn btn-full" id="toggleEmpActive" style="margin-top:8px;background:${existing.active===false?'rgba(52,211,153,0.1)':'rgba(239,68,68,0.1)'};color:${existing.active===false?'#34d399':'#f87171'};border:1px solid ${existing.active===false?'rgba(52,211,153,0.3)':'rgba(239,68,68,0.3)'}">${existing.active===false?'Re-activate Employee':'Deactivate Employee'}</button>
+          <button class="btn btn-full" id="toggleEmpActive" style="margin-top:8px;background:${existing.active===false?'rgba(52,211,153,0.1)':'rgba(239,68,68,0.1)'};color:${existing.active===false?'#34d399':'#f87171'};border:1px solid ${existing.active===false?'rgba(52,211,153,0.3)':'rgba(239,68,68,0.3)'}">${existing.active===false?'Re-activate Cashier':'Deactivate Cashier'}</button>
           <button class="btn btn-full" id="btnDeleteEmp" style="margin-top:8px;background:rgba(185,28,28,0.12);color:#fca5a5;border:1px solid rgba(185,28,28,0.3)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-            Delete Employee Permanently
+            Delete Cashier Permanently
           </button>` : ''}
       </div>`;
       document.body.appendChild(modal);
@@ -9193,7 +9291,7 @@
           const ref = await db.collection(empPath()).add(data);
           empId = ref.id;
         }
-        // Write/update employeeLinks so the employee can log in without collectionGroup query
+        // Write/update employeeLinks so the cashier can log in without collectionGroup query
         await writeEmployeeLink({ email, active: true }, empId);
         modal.remove();
         await refreshEmployeeList();
@@ -9215,9 +9313,9 @@
           await refreshEmployeeList();
         };
         document.getElementById('btnDeleteEmp').onclick = async () => {
-          if (!confirm(`Permanently delete ${existing.name}? This cannot be undone. All their shifts and salary records will remain but the employee account will be removed.`)) return;
+          if (!confirm(`Permanently delete ${existing.name}? This cannot be undone. All their shifts and salary records will remain but the cashier account will be removed.`)) return;
           try {
-            // Delete the employee doc
+            // Delete the cashier doc
             await db.collection(empPath()).doc(existing._id).delete();
             // Delete the employeeLinks doc so they can't log in
             const linkKey = emailToKey(existing.email);
@@ -9238,13 +9336,13 @@
       if (state.empRole === 'employee') return { total: 0, paid: 0, unpaid: 0, employees: [] };
       if (!state.empOrgId) return { total: 0, paid: 0, unpaid: 0, employees: [] };
       try {
-        const [employees, allShifts, allPayments] = await Promise.all([
+        const [cashiers, allShifts, allPayments] = await Promise.all([
           fetchEmployees(),
           fetchShifts(fromDate, toDate, null),
           db.collection(payPath()).get().then(s => s.docs.map(d => ({_id:d.id,...d.data()}))).catch(()=>[]),
         ]);
         let total = 0, paid = 0, unpaid = 0;
-        const empDetails = employees.map(emp => {
+        const empDetails = cashiers.map(emp => {
           const empShifts = allShifts.filter(s => s.employeeId === emp._id);
           const ms = empShifts.reduce((s,sh) => s + (sh.durationMs||0), 0);
           const earned = calcEarnings(emp, ms);
