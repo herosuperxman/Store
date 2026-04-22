@@ -1220,12 +1220,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1", 
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -2227,26 +2228,26 @@
               </div>
             </div>
                         <div class="account-panel-divider" id="panelQuickSummaryDiv"></div>
-            <div id="menuGlobalAnalytics" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.14),rgba(6,182,212,0.1));border:1px solid rgba(124,58,237,0.22);margin-bottom:10px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(8px)">
-              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div id="menuGlobalAnalytics" style="padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.14),rgba(6,182,212,0.1));border:1px solid rgba(124,58,237,0.22);margin-bottom:10px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(8px);display:flex;flex-direction:row;align-items:center;gap:12px;width:100%;box-sizing:border-box">
+              <div style="width:36px;height:36px;min-width:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
               </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#e8e0ff;letter-spacing:0.5px">ANALYTICS</div>
-                <div style="font-size:10px;color:var(--textMuted);margin-top:1px">Global overview &amp; insights</div>
+              <div style="flex:1;overflow:hidden">
+                <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#e8e0ff;letter-spacing:0.5px;white-space:nowrap">ANALYTICS</div>
+                <div style="font-size:10px;color:var(--textMuted);margin-top:1px;white-space:nowrap">Global overview &amp; insights</div>
               </div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2" style="flex-shrink:0"><polyline points="9,18 15,12 9,6"/></svg>
+              <svg width="14" height="14" min-width="14" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
             </div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:6px 0"></div>
-            <div id="menuManageEmployees" style="padding:11px 14px;border-radius:14px;background:rgba(20,14,40,0.55);border:1px solid rgba(140,120,220,0.22);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 4px 14px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.05);border-bottom:3px solid rgba(124,58,237,0.45);margin-bottom:6px;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
+            <div id="menuManageEmployees" style="padding:11px 11px 11px 14px;border-radius:14px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.28);border-left:4px solid #7c3aed;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 4px 14px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.05);margin-bottom:8px;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:2px 0 8px"></div>
             <div class="account-panel-item" id="menuGenReport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Generate Report</div>
             <!-- Cashier shift controls — shown only for cashier accounts -->
             <div id="menuShiftSection" style="display:none">
               <div style="height:1px;background:linear-gradient(to right,transparent,rgba(6,182,212,0.3),transparent);margin:8px 0 10px"></div>
-              <div id="menuShiftCard" style="border-radius:16px;background:linear-gradient(145deg,#0e7490,#0891b2,#06b6d4);border:1px solid rgba(103,232,249,0.35);padding:16px 16px 14px;margin-bottom:8px;box-shadow:0 6px 24px rgba(6,182,212,0.3),inset 0 1px 0 rgba(255,255,255,0.15)">
-                <div style="font-size:12px;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:1.2px;font-weight:800;margin-bottom:10px">MY SHIFT</div>
-                <div id="menuShiftStatus" style="font-size:13px;color:rgba(255,255,255,0.9);font-weight:600;margin-bottom:8px">Loading…</div>
+              <div id="menuShiftCard" style="border-radius:14px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.3);border-left:4px solid #0891b2;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:14px 14px 12px 14px;margin-bottom:8px;box-shadow:0 4px 18px rgba(6,182,212,0.15),inset 0 1px 0 rgba(255,255,255,0.06);transition:transform 0.18s,box-shadow 0.18s">
+                <div style="font-size:12px;color:#67e8f9;text-transform:uppercase;letter-spacing:1.2px;font-weight:800;margin-bottom:8px">MY SHIFT</div>
+                <div id="menuShiftStatus" style="font-size:13px;color:rgba(255,255,255,0.8);font-weight:600;margin-bottom:6px">Loading…</div>
                 <div id="menuShiftTimer" style="font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#fff;display:none;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,0.25);line-height:1.1;margin-bottom:4px">00:00:00</div>
                 <div id="menuShiftEarnings" style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:700;display:none;margin-bottom:10px">$0.00 earned</div>
                 <button id="menuShiftInBtn" style="display:none;width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;font-family:'Orbitron',monospace;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:0.5px;box-shadow:0 3px 12px rgba(16,185,129,0.4);display:none;align-items:center;justify-content:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12,8 12,12 14,14"/></svg> SHIFT IN</button>
@@ -2262,6 +2263,7 @@
             <div class="account-panel-item" id="menuDeleteAll" style="color:var(--red);display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete All Data</div>
             <div class="account-panel-divider"></div>
             <div class="account-panel-item danger" id="menuSignOut"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sign Out</div>
+            <div class="account-panel-divider" style="margin-top:6px"></div>
           </div>`;
         document.body.appendChild(panelEl);
       }
@@ -3696,7 +3698,7 @@
                   <span style="color:var(--textMuted)">${i.username||'-'}</span>
                   <span style="color:#22d3ee">${(i.points||0)} pts</span>
                   <span style="color:#34d399">$${(i.dollars||0).toFixed(2)}</span>
-                  <span style="color:${i.pl>=0?'#34d399':'var(--red)'}">P/L $${i.pl.toFixed(2)}</span>
+                  ${state.empRole !== 'employee' ? '<span style="color:'+( i.pl>=0?'#34d399':'var(--red)')+'\">'+'P/L $'+i.pl.toFixed(2)+'</span>' : ''}
                 </div>`).join('')}
                 ${b.extraFeeAmount > 0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid rgba(245,158,11,0.2);color:#fbbf24;font-weight:600"><span>Extra Fee ('+b.extraFeePercent+'%)</span><span>$'+(b.extraFeeAmount).toFixed(2)+'</span></div>' : ''}
                 ${(state.empRole !== 'employee' && b.extraFeeProfit) ? '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:11px;color:var(--textMuted)"><span>Fee Profit</span><span style="color:#34d399">$'+(b.extraFeeProfit).toFixed(2)+'</span></div>' : ''}
@@ -7427,7 +7429,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -8852,19 +8854,19 @@
         </div>
         ${empSummaries.filter(s=>s.earned>0||s.ms>0).length > 0 ? `
         <div class="card" style="padding:0;overflow:hidden">
-          <div style="padding:10px 14px;background:rgba(18,14,38,0.6);font-size:10px;font-weight:700;color:var(--textMuted);text-transform:uppercase;letter-spacing:0.8px;display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px">
-            <span>Cashier</span><span style="text-align:right">Hours</span><span style="text-align:right">Earned</span><span style="text-align:right">Paid</span><span style="text-align:right">Unpaid</span>
+          <div style="padding:10px 14px;background:rgba(18,14,38,0.6);font-size:10px;font-weight:700;color:var(--textMuted);text-transform:uppercase;letter-spacing:0.8px;display:grid;grid-template-columns:1fr 52px 64px 58px 64px;gap:6px">
+            <span>Cashier</span><span style="text-align:right">Hrs</span><span style="text-align:right">Earned</span><span style="text-align:right">Paid</span><span style="text-align:right">Unpaid</span>
           </div>
           ${empSummaries.sort((a,b)=>b.unpaid-a.unpaid).map(({emp,ms,earned,unpaid,paidThisRange})=>`
-          <div class="salary-row" style="cursor:pointer" onclick="_openEmpDetail('${emp._id}')">
+          <div style="display:grid;grid-template-columns:1fr 52px 64px 58px 64px;gap:6px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.1);cursor:pointer" onclick="_openEmpDetail('${emp._id}')">
             <div style="flex:1;min-width:0">
               <div style="font-weight:600;font-size:13px">${esc(emp.name||'')}</div>
               <div style="font-size:10px;color:var(--textMuted)">${esc(emp.role||'Cashier')} · ${({hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'})[emp.salaryType]||emp.salaryType}</div>
             </div>
-            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#22d3ee;min-width:38px;text-align:right">${hoursFromMs(ms).toFixed(1)}h</div>
-            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#fbbf24;min-width:52px;text-align:right">$${earned.toFixed(2)}</div>
-            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#34d399;min-width:48px;text-align:right">$${paidThisRange.toFixed(2)}</div>
-            <div style="font-family:'Orbitron',monospace;font-size:11px;color:${unpaid>0?'#f87171':'#34d399'};min-width:52px;text-align:right">$${unpaid.toFixed(2)}</div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#22d3ee;text-align:right">${hoursFromMs(ms).toFixed(1)}h</div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#fbbf24;text-align:right">$${earned.toFixed(2)}</div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:#34d399;text-align:right">$${paidThisRange.toFixed(2)}</div>
+            <div style="font-family:'Orbitron',monospace;font-size:11px;color:${unpaid>0?'#f87171':'#34d399'};text-align:right">$${unpaid.toFixed(2)}</div>
           </div>`).join('')}
           <div style="padding:10px 14px;border-top:1px solid rgba(120,100,200,0.15);font-size:11px;font-weight:700;display:flex;justify-content:space-between;color:var(--textMuted)">
             <span>TOTAL</span>
@@ -9014,12 +9016,12 @@
                 ${!isLinked && !isDeactivated ? '<span class="emp-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)">'+warnSvg+' No Access</span>' : ''}
               </div>
               <div style="font-size:13px;color:var(--textMuted);margin-bottom:3px">${esc(emp.role||'Cashier')} &nbsp;·&nbsp; <span style="color:#a78bfa">${slLabel}: $${(emp.salaryRate||0).toFixed(2)}</span></div>
-              <div style="font-size:11px;color:rgba(148,163,184,0.9)">${esc(emp.email||'')}</div>
+              <div style="font-size:11px;color:rgba(203,213,225,0.85)">${esc(emp.email||'')}</div>
               ${!isLinked && !isDeactivated ? `<div style="margin-top:9px;padding:7px 10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;display:flex;align-items:center;gap:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span style="font-size:11px;color:#f87171;flex:1">Cannot log in yet</span><button class="emp-fix-link-btn" data-empid="${emp._id}" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700">Fix Now</button></div>` : ''}
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
               ${isActive ? `<div style="text-align:right"><div style="font-size:9px;color:#34d399;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px;font-weight:700">Live</div><div class="shift-timer" style="font-size:15px;line-height:1.1" id="ot_${emp._id}">${formatHHMM(activeDurMs)}</div></div>` : ''}
-              <button class="btn btn-ghost btn-sm emp-edit-btn" data-empid="${emp._id}" style="font-size:12px;padding:5px 12px;gap:4px;flex-shrink:0">${editSvg} Edit</button>
+              <button class="btn btn-ghost btn-sm emp-edit-btn" data-empid="${emp._id}" style="font-size:12px;padding:6px 14px;gap:4px;flex-shrink:0;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:8px;color:#a78bfa;font-weight:700">${editSvg} Edit</button>
             </div>
           </div>
         </div>`;
@@ -9143,6 +9145,7 @@
             ? `<div style="font-size:11px;color:#34d399;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px"><span class="live-dot" style="margin-right:6px"></span>On Shift</div>
                <div class="shift-timer" id="selfShiftTimer">${formatHHMMSS(liveDurMs)}</div>
                <div style="font-size:11px;color:var(--textMuted);margin-top:6px">Live earnings: <span style="color:#fbbf24;font-weight:700" id="selfLiveEarnings">$${calcEarnings(emp, liveDurMs).toFixed(2)}</span></div>
+               ${othersOnShift.length > 0 ? '<div style="margin-top:10px;padding:8px 12px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.22);border-radius:8px"><div style="font-size:10px;font-weight:700;color:#22d3ee;margin-bottom:3px">' + othersOnShift.length + ' also on shift</div><div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);">' + othersOnShift.map(s=>esc(s.employeeName||'Cashier')).join(' | ') + '</div></div>' : ''}
                <button class="shift-btn-out" style="margin-top:16px" id="btnShiftOut">SHIFT OUT</button>`
             : `<div style="font-size:13px;color:var(--textMuted);margin-bottom:12px">You are currently off shift.</div>
                ${othersOnShift.length > 0 ? '<div style="margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.22);border-radius:10px"><div style="font-size:11px;font-weight:700;color:#22d3ee;margin-bottom:5px;display:flex;align-items:center;gap:5px"><svg width=\"8\" height=\"8\"><circle cx=\"4\" cy=\"4\" r=\"4\" fill=\"#34d399\"/></svg>' + othersOnShift.length + ' other' + (othersOnShift.length>1?'s':'') + ' on shift</div><div style=\"font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);text-align:left;line-height:1.6\">' + othersOnShift.map(s=>esc(s.employeeName||'Cashier')).join(' &nbsp;|&nbsp; ') + '</div></div>' : ''}
@@ -9173,7 +9176,7 @@
             return periods.map(p => {
               const matchPay = payments.find(pay => pay.paidByOwner && periodMatchesKey(pay, p.key, emp));
               const statusClass = matchPay?.receivedByEmployee ? 'received' : (matchPay ? 'paid' : 'unpaid');
-              const statusLabel2 = matchPay?.receivedByEmployee ? 'Received' : (matchPay ? 'Paid' : 'To Pay');
+              const statusLabel2 = matchPay?.receivedByEmployee ? 'Received' : (matchPay ? 'Paid' : 'To Receive');
               return '<div class="salary-row">' +
                 '<div>' +
                   '<div style="font-weight:600;font-size:13px">' + esc(p.label) + '</div>' +
@@ -9249,6 +9252,11 @@
           e.stopPropagation();
           if (!confirm('Delete this shift record?')) return;
           try {
+            // Verify the shift belongs to this employee before deleting
+            const shiftDoc = await db.collection(shiftPath()).doc(btn.dataset.shiftid).get();
+            if (shiftDoc.exists && shiftDoc.data().employeeId !== state.empEmployeeDoc?._id) {
+              alert('You can only delete your own shifts.'); return;
+            }
             await db.collection(shiftPath()).doc(btn.dataset.shiftid).delete();
             await refreshEmploymentSelf();
           } catch(err) { alert('Delete failed: ' + err.message); }
@@ -9357,7 +9365,7 @@
                   +'</div>'
                   +'<div style="display:flex;align-items:center;gap:7px;flex-shrink:0">'
                   +'<div style="font-weight:800;color:#fbbf24;font-family:Orbitron,monospace;font-size:12px;white-space:nowrap">$'+p.earned.toFixed(2)+'</div>'
-                  +'<span class="pay-pill '+sc+'" style="white-space:nowrap">'+(p.unpaid > 0 ? 'To Pay: $'+p.unpaid.toFixed(2) : 'Paid')+'</span>'
+                  +'<span class="pay-pill '+sc+'" style="white-space:nowrap">'+(p.unpaid > 0 ? 'To Receive: $'+p.unpaid.toFixed(2) : 'Paid')+'</span>'
                   +markBtn
                   +'</div>'
                   +'</div>';
