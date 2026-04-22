@@ -878,12 +878,34 @@
       display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0;
     }
     .emp-stat {
-      background:rgba(18,14,38,0.5); border-radius:12px; padding:13px 10px; text-align:center;
-      border:1px solid rgba(130,110,210,0.15);
-      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      position:relative; border-radius:14px; padding:14px 14px 16px;
+      background:rgba(20,14,40,0.55);
+      border:1px solid rgba(140,120,220,0.18);
+      backdrop-filter:blur(18px) saturate(1.3); -webkit-backdrop-filter:blur(18px) saturate(1.3);
+      box-shadow:0 4px 18px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+      overflow:hidden; cursor:default;
+      transition:transform 0.18s, box-shadow 0.18s;
     }
-    .emp-stat .es-label { font-size:9px; color:var(--textMuted); text-transform:uppercase; letter-spacing:0.8px; font-weight:700; margin-bottom:5px; }
-    .emp-stat .es-value { font-family:'Orbitron',monospace; font-size:15px; font-weight:800; color:var(--textPrimary); }
+    .emp-stat::before {
+      content:''; position:absolute; inset:0; border-radius:inherit;
+      background:linear-gradient(160deg,rgba(255,255,255,0.04) 0%,transparent 55%);
+      pointer-events:none;
+    }
+    .emp-stat::after {
+      content:''; position:absolute; bottom:0; left:0; right:0; height:3px; border-radius:0 0 14px 14px;
+    }
+    .emp-stat:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.07); }
+    .emp-stat.clickable { cursor:pointer; }
+    .emp-stat.sclr-0::after { background:linear-gradient(90deg,#7c3aed,#a78bfa); }
+    .emp-stat.sclr-0 { border-color:rgba(124,58,237,0.28); }
+    .emp-stat.sclr-1::after { background:linear-gradient(90deg,#0891b2,#22d3ee); }
+    .emp-stat.sclr-1 { border-color:rgba(6,182,212,0.28); }
+    .emp-stat.sclr-2::after { background:linear-gradient(90deg,#059669,#34d399); }
+    .emp-stat.sclr-2 { border-color:rgba(52,211,153,0.28); }
+    .emp-stat.sclr-3::after { background:linear-gradient(90deg,#b91c1c,#f87171); }
+    .emp-stat.sclr-3 { border-color:rgba(239,68,68,0.28); }
+    .emp-stat .es-label { font-size:9px; color:var(--textMuted); text-transform:uppercase; letter-spacing:0.8px; font-weight:700; margin-bottom:6px; }
+    .emp-stat .es-value { font-family:'Orbitron',monospace; font-size:16px; font-weight:800; color:var(--textPrimary); line-height:1.2; }
     .salary-row {
       display:flex; align-items:center; justify-content:space-between; padding:12px 16px;
       border-bottom:1px solid rgba(120,100,200,0.1); font-size:14px;
@@ -1198,12 +1220,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -2206,12 +2229,17 @@
             </div>
                         <div class="account-panel-divider" id="panelQuickSummaryDiv"></div>
             <div id="menuGlobalAnalytics" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.14),rgba(6,182,212,0.1));border:1px solid rgba(124,58,237,0.22);margin-bottom:10px;cursor:pointer;transition:all 0.2s;backdrop-filter:blur(8px)">
-              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div>
-              <div style="flex:1"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#e8e0ff;letter-spacing:0.5px">ANALYTICS</div><div style="font-size:10px;color:var(--textMuted);margin-top:1px">Global overview & insights</div></div>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+              <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--purple),var(--cyan));display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#e8e0ff;letter-spacing:0.5px">ANALYTICS</div>
+                <div style="font-size:10px;color:var(--textMuted);margin-top:1px">Global overview &amp; insights</div>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2" style="flex-shrink:0"><polyline points="9,18 15,12 9,6"/></svg>
             </div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:6px 0"></div>
-            <div id="menuManageEmployees" style="padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(167,139,250,0.1));border:1px solid rgba(167,139,250,0.35);margin-bottom:6px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
+            <div id="menuManageEmployees" style="padding:11px 14px;border-radius:14px;background:rgba(20,14,40,0.55);border:1px solid rgba(140,120,220,0.22);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 4px 14px rgba(0,0,0,0.18),inset 0 1px 0 rgba(255,255,255,0.05);border-bottom:3px solid rgba(124,58,237,0.45);margin-bottom:6px;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s;display:flex;align-items:center;gap:10px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.25),transparent);margin:2px 0 8px"></div>
             <div class="account-panel-item" id="menuGenReport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Generate Report</div>
             <!-- Cashier shift controls — shown only for cashier accounts -->
@@ -2226,6 +2254,7 @@
                 <button id="menuShiftOutBtn" style="display:none;width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;border:none;font-family:'Orbitron',monospace;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:0.5px;box-shadow:0 3px 12px rgba(239,68,68,0.4);align-items:center;justify-content:center;gap:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> SHIFT OUT</button>
               </div>
             </div>
+            <div id="shiftCardBottomSep" style="height:1px;background:linear-gradient(to right,transparent,rgba(6,182,212,0.25),transparent);margin:4px 0 8px;display:none"></div>
             <div class="account-panel-item" id="menuInvoiceSettings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> Invoice Settings</div>
             <div class="account-panel-divider"></div>
             <div class="account-panel-item" id="menuExport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export Data</div>
@@ -2250,6 +2279,8 @@
         const empMenuItem = document.getElementById('menuManageEmployees');
         const empBottomSep = document.getElementById('menuEmpBottomSep');
         if (empBottomSep) empBottomSep.style.display = state.empRole === 'employee' ? '' : 'none';
+        const shiftSep = document.getElementById('shiftCardBottomSep');
+        if (shiftSep) shiftSep.style.display = state.empRole === 'employee' ? '' : 'none';
         if (empMenuItem && state.empRole === 'employee') {
           empMenuItem.style.background = 'linear-gradient(135deg,#0891b2,#06b6d4)';
           empMenuItem.style.border     = '1px solid rgba(6,182,212,0.6)';
@@ -2440,7 +2471,11 @@
       show('menuGenReport',       !isEmpAcc);
       show('panelSubCard',        !isEmpAcc);
       show('menuShiftSection',     isEmpAcc);
-      // Hide username setup for cashier accounts
+      // Hide username row for cashier accounts (it doesn't work for employees)
+      const usernameDisplayEl = document.getElementById('usernameDisplay');
+      if (usernameDisplayEl) usernameDisplayEl.style.display = isEmpAcc ? 'none' : '';
+      const usernameEditEl = document.getElementById('usernameEditRow');
+      if (usernameEditEl) usernameEditEl.style.display = 'none'; // always hide edit row on open
       const usEl = document.getElementById('menuGbUsername');
       if (usEl) usEl.style.display = isEmpAcc ? 'none' : '';
 
@@ -7393,7 +7428,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -8613,28 +8648,96 @@
       await ensureOrgDoc();
       await Promise.all([refreshEmployeeList(), refreshOwnerDashboard()]);
       // Bind On Shift card click
+      // ── Stat card clicks ────────────────────────────────────────────────────
+      function showStatModal(title, bodyHTML) {
+        const m = document.createElement('div');
+        m.className = 'modal-overlay';
+        m.innerHTML = '<div class="modal fade-in" style="max-width:420px"><div class="modal-header"><h3 class="modal-title">'+title+'</h3><button class="btn btn-ghost btn-sm" onclick="this.closest(\'.modal-overlay\').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="card" style="padding:0;overflow:hidden;max-height:70vh;overflow-y:auto">'+bodyHTML+'</div></div>';
+        document.body.appendChild(m);
+        m.onclick = e => { if (e.target===m) m.remove(); };
+        return m;
+      }
       const onShiftCard = document.getElementById('dashOnShiftCard');
       if (onShiftCard) {
         onShiftCard.onclick = async () => {
-          const shifts = await getActiveShifts().catch(()=>[]);
-          const emps   = await fetchEmployees().catch(()=>[]);
-          if (!shifts.length) return;
+          const [shifts, emps] = await Promise.all([getActiveShifts().catch(()=>[]), fetchEmployees().catch(()=>[])]);
+          if (!shifts.length) { showStatModal('ON SHIFT NOW', '<div style="padding:18px;text-align:center;color:var(--textMuted)">No one currently on shift</div>'); return; }
           const rows = shifts.map(s => {
             const emp = emps.find(e => e._id === s.employeeId);
-            const ms  = s.startTime?.toDate ? Date.now() - s.startTime.toDate().getTime() : 0;
-            const svgDot = '<svg width="8" height="8" style="margin-right:6px;flex-shrink:0"><circle cx="4" cy="4" r="4" fill="#34d399"/></svg>';
-            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.1)">
-              <div style="display:flex;align-items:center">${svgDot}<span style="font-weight:700;font-size:14px">${esc(emp?.name||s.employeeName||'Unknown')}</span></div>
-              <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399">${formatHHMM(ms)}</div>
-            </div>`;
+            const startMs = s.startTime?.toDate ? s.startTime.toDate().getTime() : Date.now();
+            return '<div style="padding:12px 14px;border-bottom:1px solid rgba(120,100,200,0.1)" id="shiftRow_'+s._id+'">'
+              +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+              +'<div><div style="font-weight:700;font-size:14px">'+esc(emp?.name||s.employeeName||'Unknown')+'</div>'
+              +'<div style="font-size:11px;color:#94a3b8">'+esc(emp?.email||'')+'</div></div>'
+              +'<div style="font-family:Orbitron,monospace;font-size:13px;color:#22d3ee;white-space:nowrap" class="onshift-timer" data-start="'+startMs+'">'+formatHHMMSS(Date.now()-startMs)+'</div>'
+              +'</div>'
+              +'<button class="btn btn-red btn-sm mgr-shift-out-btn" data-shiftid="'+s._id+'" data-startts="'+startMs+'" style="width:100%;justify-content:center;gap:6px">'
+              +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> End Shift</button>'
+              +'</div>';
           }).join('');
-          let m = document.createElement('div');
-          m.className = 'modal-overlay';
-          m.innerHTML = `<div class="modal fade-in" style="max-width:380px"><div class="modal-header"><h3 class="modal-title">ON SHIFT NOW</h3><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-overlay').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="card" style="padding:0;overflow:hidden">${rows}</div></div>`;
-          document.body.appendChild(m);
-          m.onclick = e => { if (e.target===m) m.remove(); };
+          const modal = showStatModal('ON SHIFT NOW', rows);
+          const timerInterval = setInterval(() => {
+            modal.querySelectorAll('.onshift-timer').forEach(el => {
+              const st = parseInt(el.dataset.start||0);
+              if (st) el.textContent = formatHHMMSS(Date.now()-st);
+            });
+          }, 1000);
+          modal.querySelectorAll('.mgr-shift-out-btn').forEach(btn => {
+            btn.onclick = async () => {
+              btn.disabled = true; btn.textContent = 'Ending…';
+              const startTs = firebase.firestore.Timestamp.fromMillis(parseInt(btn.dataset.startts));
+              try {
+                await shiftOut(btn.dataset.shiftid, startTs);
+                clearInterval(timerInterval);
+                modal.remove();
+                await Promise.all([refreshEmployeeList(), refreshOwnerDashboard()]);
+              } catch(e) { alert('Error: '+e.message); btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg> End Shift'; }
+            };
+          });
+          const origRemove = modal.remove.bind(modal);
+          modal.remove = () => { clearInterval(timerInterval); origRemove(); };
         };
       }
+
+      // Total Cashiers card
+      const totalCard = document.getElementById('dashTotalCard');
+      if (totalCard) totalCard.onclick = async () => {
+        const emps = await fetchEmployees().catch(()=>[]);
+        const rows = emps.filter(e=>e.active!==false).map(e =>
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.1)">'
+          +'<div><div style="font-weight:700;font-size:13px">'+esc(e.name||'')+'</div>'
+          +'<div style="font-size:11px;color:#94a3b8">'+esc(e.email||'')+'</div></div>'
+          +'<span style="font-size:11px;color:#a78bfa">'+esc(e.role||'Cashier')+'</span></div>'
+        ).join('');
+        showStatModal('ALL CASHIERS', rows||'<div style="padding:18px;text-align:center;color:var(--textMuted)">No cashiers</div>');
+      };
+
+      // Hours card
+      const hoursCard = document.getElementById('dashHoursCard');
+      if (hoursCard) hoursCard.onclick = () => {
+        const rows = empSummaries.map(({emp, ms}) =>
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.1)">'
+          +'<div><div style="font-weight:700;font-size:13px">'+esc(emp.name||'')+'</div>'
+          +'<div style="font-size:11px;color:#94a3b8">'+esc(emp.role||'Cashier')+'</div></div>'
+          +'<div style="font-family:Orbitron,monospace;font-size:13px;color:#22d3ee">'+hoursFromMs(ms).toFixed(1)+'h</div></div>'
+        ).join('');
+        showStatModal('HOURS BREAKDOWN', rows||'<div style="padding:18px;text-align:center;color:var(--textMuted)">No data</div>');
+      };
+
+      // Unpaid salary card
+      const unpaidCard = document.getElementById('dashUnpaidCard');
+      if (unpaidCard) unpaidCard.onclick = () => {
+        const unpaidEmps = empSummaries.filter(s=>s.unpaid>0);
+        if (!unpaidEmps.length) { showStatModal('UNPAID SALARY','<div style="padding:18px;text-align:center;color:#34d399">All cashiers fully paid!</div>'); return; }
+        const rows = unpaidEmps.sort((a,b)=>b.unpaid-a.unpaid).map(({emp, unpaid}) =>
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.1)">'
+          +'<div><div style="font-weight:700;font-size:13px">'+esc(emp.name||'')+'</div>'
+          +'<div style="font-size:11px;color:#94a3b8">'+esc(emp.role||'Cashier')+'</div></div>'
+          +'<div style="font-family:Orbitron,monospace;font-size:13px;color:#f87171;font-weight:800">$'+unpaid.toFixed(2)+'</div></div>'
+        ).join('');
+        showStatModal('UNPAID SALARY', rows);
+      };
+
       // Live listener: refresh dashboard when any shift changes
       if (_empShiftListener) _empShiftListener();
       _empShiftListener = db.collection(shiftPath())
@@ -8721,28 +8824,31 @@
       const dateStr = fromDate.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + toDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 
       wrap.innerHTML = `
-        <div class="emp-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-          <div class="emp-stat">
+        <div class="emp-stat-grid" style="grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px">
+          <div class="emp-stat sclr-0 clickable" id="dashTotalCard">
             <div class="es-label">Total Cashiers</div>
             <div class="es-value">${cashiers.filter(e=>e.active!==false).length}</div>
+            <div style="font-size:9px;color:var(--textMuted);margin-top:5px">Tap to view list</div>
           </div>
-          <div class="emp-stat" id="dashOnShiftCard" style="cursor:pointer;${activeCount>0?'border-color:rgba(52,211,153,0.3)':''}">
+          <div class="emp-stat sclr-1 clickable" id="dashOnShiftCard">
             <div class="es-label">On Shift Now</div>
-            <div class="es-value" style="color:${activeCount>0?'#34d399':'var(--textMuted)'};font-size:${activeCount>1?'18px':activeCount===1?'12px':'15px'}">${
-              activeCount===0 ? 'None'
-              : activeCount===1 ? '<svg width=\"7\" height=\"7\" style=\"margin-right:3px\"><circle cx=\"3.5\" cy=\"3.5\" r=\"3.5\" fill=\"#34d399\"/></svg>' + activeEmpObjs[0].name.split(' ')[0]
-              : '<svg width=\"7\" height=\"7\" style=\"margin-right:3px\"><circle cx=\"3.5\" cy=\"3.5\" r=\"3.5\" fill=\"#34d399\"/></svg>' + activeCount
+            <div class="es-value" style="color:${activeCount>0?'#22d3ee':'var(--textMuted)'}">${
+              activeCount===0 ? '\u2014'
+              : activeCount===1 ? activeEmpObjs[0].name.split(' ')[0]
+              : activeCount
             }</div>
-            ${activeCount===1 ? '<div style=\"font-family:Orbitron,monospace;font-size:11px;color:#34d399;margin-top:3px\" id=\"ownerLiveTimer\" data-start=\"'+activeShift.startTime.toDate().getTime()+'\">'+formatHHMMSS(Date.now()-activeShift.startTime.toDate().getTime())+'</div>' : ''}
-            ${activeCount>1 ? '<div style=\"font-size:9px;color:var(--textMuted);margin-top:2px\">Tap for details</div>' : ''}
+            ${activeCount===1 && activeShift?.startTime?.toDate ? '<div style=\"font-family:Orbitron,monospace;font-size:12px;color:#22d3ee;margin-top:4px\" id=\"ownerLiveTimer\" data-start=\"'+activeShift.startTime.toDate().getTime()+'\">' + formatHHMMSS(Date.now()-activeShift.startTime.toDate().getTime())+'</div>' : ''}
+            <div style="font-size:9px;color:var(--textMuted);margin-top:5px">${activeCount>0?'Tap to manage':'No one on shift'}</div>
           </div>
-          <div class="emp-stat">
-            <div class="es-label">Hours (${dateStr})</div>
+          <div class="emp-stat sclr-2 clickable" id="dashHoursCard">
+            <div class="es-label">Hours This Period</div>
             <div class="es-value">${totalHours.toFixed(1)}h</div>
+            <div style="font-size:9px;color:var(--textMuted);margin-top:5px">${dateStr} &middot; Tap to expand</div>
           </div>
-          <div class="emp-stat">
+          <div class="emp-stat sclr-3 clickable" id="dashUnpaidCard">
             <div class="es-label">Unpaid Salary</div>
             <div class="es-value" style="color:${totalUnpaid>0?'#f87171':'#34d399'}">$${totalUnpaid.toFixed(2)}</div>
+            <div style="font-size:9px;color:var(--textMuted);margin-top:5px">${totalUnpaid>0?'Tap to see who':'All paid'}</div>
           </div>
         </div>
         ${empSummaries.filter(s=>s.earned>0||s.ms>0).length > 0 ? `
@@ -8909,12 +9015,12 @@
                 ${!isLinked && !isDeactivated ? '<span class="emp-badge" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3)">'+warnSvg+' No Access</span>' : ''}
               </div>
               <div style="font-size:13px;color:var(--textMuted);margin-bottom:3px">${esc(emp.role||'Cashier')} &nbsp;·&nbsp; <span style="color:#a78bfa">${slLabel}: $${(emp.salaryRate||0).toFixed(2)}</span></div>
-              <div style="font-size:11px;color:rgba(148,163,184,0.6)">${esc(emp.email||'')}</div>
+              <div style="font-size:11px;color:rgba(148,163,184,0.9)">${esc(emp.email||'')}</div>
               ${!isLinked && !isDeactivated ? `<div style="margin-top:9px;padding:7px 10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;display:flex;align-items:center;gap:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span style="font-size:11px;color:#f87171;flex:1">Cannot log in yet</span><button class="emp-fix-link-btn" data-empid="${emp._id}" style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700">Fix Now</button></div>` : ''}
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;min-width:64px">
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
               ${isActive ? `<div style="text-align:right"><div style="font-size:9px;color:#34d399;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px;font-weight:700">Live</div><div class="shift-timer" style="font-size:15px;line-height:1.1" id="ot_${emp._id}">${formatHHMM(activeDurMs)}</div></div>` : ''}
-              <button class="btn btn-ghost btn-sm emp-edit-btn" data-empid="${emp._id}" style="font-size:11px;padding:4px 10px;gap:4px">${editSvg} Edit</button>
+              <button class="btn btn-ghost btn-sm emp-edit-btn" data-empid="${emp._id}" style="font-size:12px;padding:5px 12px;gap:4px;flex-shrink:0">${editSvg} Edit</button>
             </div>
           </div>
         </div>`;
@@ -9040,7 +9146,7 @@
                <div style="font-size:11px;color:var(--textMuted);margin-top:6px">Live earnings: <span style="color:#fbbf24;font-weight:700" id="selfLiveEarnings">$${calcEarnings(emp, liveDurMs).toFixed(2)}</span></div>
                <button class="shift-btn-out" style="margin-top:16px" id="btnShiftOut">SHIFT OUT</button>`
             : `<div style="font-size:13px;color:var(--textMuted);margin-bottom:12px">You are currently off shift.</div>
-               ${othersOnShift.length > 0 ? '<div style="margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.07);border:1px solid rgba(6,182,212,0.2);border-radius:10px;font-size:12px;color:#22d3ee"><div style="font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px"><svg width=\"10\" height=\"10\"><circle cx=\"5\" cy=\"5\" r=\"5\" fill=\"#34d399\"/></svg>' + othersOnShift.length + ' other' + (othersOnShift.length>1?'s':'') + ' currently on shift</div>' + othersOnShift.map(s=>'<div style=\"font-size:11px;color:var(--textMuted)\">· '+esc(s.employeeName||'Cashier')+'</div>').join('') + '</div>' : ''}
+               ${othersOnShift.length > 0 ? '<div style="margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.22);border-radius:10px"><div style="font-size:11px;font-weight:700;color:#22d3ee;margin-bottom:5px;display:flex;align-items:center;gap:5px"><svg width=\"8\" height=\"8\"><circle cx=\"4\" cy=\"4\" r=\"4\" fill=\"#34d399\"/></svg>' + othersOnShift.length + ' other' + (othersOnShift.length>1?'s':'') + ' on shift</div><div style=\"font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);text-align:left;line-height:1.6\">' + othersOnShift.map(s=>esc(s.employeeName||'Cashier')).join(' &nbsp;|&nbsp; ') + '</div></div>' : ''}
                <button class="shift-btn-in" id="btnShiftIn">SHIFT IN</button>`
           }
         </div>
