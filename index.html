@@ -1231,12 +1231,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -1805,6 +1806,15 @@
         case 'company': app.innerHTML = renderHeader() + renderCompanyScreen(); bindHeader(); bindCompanyScreen(); break;
         case 'analytics': app.innerHTML = renderHeader() + renderAnalyticsPage(); bindHeader(); bindAnalyticsPage(); break;
         case 'globalAnalytics': app.innerHTML = renderHeader() + renderGlobalAnalyticsPage(); bindHeader(); bindGlobalAnalyticsPage(); break;
+        case 'cashFlow': if(state.empRole!=='employee'){
+          if(!_cfLoaded){
+            app.innerHTML = renderHeader() + '<div class="page fade-in" style="display:flex;align-items:center;justify-content:center;padding:60px"><div class="spinner"></div></div>';
+            bindHeader();
+            cfEnsureLoaded().then(()=>{ app.innerHTML = renderHeader() + renderCashFlowPage(); bindHeader(); bindCashFlowPage(); });
+          } else {
+            app.innerHTML = renderHeader() + renderCashFlowPage(); bindHeader(); bindCashFlowPage();
+          }
+        } else {state.view='companies';render();} break;
         case 'employees': renderEmployeesPage(); break;
         case 'employment':
           // Stop owner listener if navigating away from cashiers page
@@ -2239,6 +2249,8 @@
             </div>
             <div id="menuGlobalAnalytics" style="display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.13),rgba(6,182,212,0.07));border:1px solid rgba(124,58,237,0.28);box-shadow:0 2px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin-bottom:8px;cursor:pointer;transition:transform 0.17s ease,box-shadow 0.17s ease,border-color 0.17s ease;width:auto;box-sizing:border-box;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(124,58,237,0.25),inset 0 1px 0 rgba(255,255,255,0.09)';this.style.borderColor='rgba(167,139,250,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.06)';this.style.borderColor='rgba(124,58,237,0.28)'"><div style="width:40px;height:40px;min-width:40px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#7c3aed,#0891b2);box-shadow:0 3px 14px rgba(124,58,237,0.38);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div><div style="flex:1;min-width:0;overflow:hidden;"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#ede9fe;letter-spacing:0.7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">ANALYTICS</div><div style="font-size:10px;color:rgba(160,160,180,0.85);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">Global overview &amp; insights</div></div><div style="flex-shrink:0;min-width:15px;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(196,181,253,0.6)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg></div></div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.2),transparent);margin:2px 0 8px"></div>
+            <!-- CASH FLOW MANAGEMENT MENU BUTTON — manager only -->
+            ${state.empRole !== 'employee' ? `<div id="menuCashFlow" style="display:flex;align-items:center;gap:10px;padding:11px 12px 11px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(6,182,212,0.07));border:1px solid rgba(16,185,129,0.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(16,185,129,0.1),inset 0 1px 0 rgba(255,255,255,0.05);margin-bottom:8px;cursor:pointer;transition:transform 0.17s ease,box-shadow 0.17s ease;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 18px rgba(16,185,129,0.2),inset 0 1px 0 rgba(255,255,255,0.08)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(16,185,129,0.1),inset 0 1px 0 rgba(255,255,255,0.05)'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px;flex:1">Cash Flow</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(52,211,153,0.5)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg></div>` : ''}
             <div id="menuManageEmployees" style="display:flex;align-items:center;gap:10px;padding:11px 12px 11px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(192,132,252,0.06));border:1px solid rgba(124,58,237,0.25);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(124,58,237,0.1),inset 0 1px 0 rgba(255,255,255,0.05);margin-bottom:8px;cursor:pointer;transition:transform 0.17s ease,box-shadow 0.17s ease;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 18px rgba(124,58,237,0.18),inset 0 1px 0 rgba(255,255,255,0.08)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(124,58,237,0.1),inset 0 1px 0 rgba(255,255,255,0.05)'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px;flex:1" id="menuManageEmpLabel">${state.empRole === 'employee' ? 'Manage Employment' : 'Manage Cashiers'}</span></div>
             <div class="account-panel-item" id="menuGenReport"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Generate Report</div>
             <!-- Cashier shift controls — shown only for cashier accounts -->
@@ -2398,6 +2410,10 @@
       $('#menuGenReport').onclick = () => { closePanel(); showReportDatePicker('all'); };
       $('#menuInvoiceSettings').onclick = () => { closePanel(); showInvoiceSettingsModal(); };
       $('#menuGlobalAnalytics').onclick = () => { closePanel(); state.view = 'globalAnalytics'; render(); };
+      // Cash Flow Management navigation
+      if ($('#menuCashFlow')) {
+        $('#menuCashFlow').onclick = () => { closePanel(); state.view = 'cashFlow'; state.cashFlowTab = state.cashFlowTab || 'overview'; render(); };
+      }
       $('#menuManageEmployees').onclick = () => {
         closePanel();
         if (state.empRole === 'employee') {
@@ -3625,6 +3641,14 @@
                 <input class="input" type="number" id="partialAmountInput" placeholder="Amount received" value="${esc(state.partialAmount)}" />
               </div>
             ` : ''}
+            ${(state.paymentStatus === 'received' || state.paymentStatus === 'partial') && cfPaymentMethods.length > 0 ? `
+              <div style="margin-top:10px;max-width:260px">
+                <span class="label" style="font-size:10px;margin-bottom:4px;color:#34d399">Payment Method</span>
+                <select class="input" id="billPaymentMethodSelect" style="padding:7px 10px;font-size:13px;background:rgba(16,185,129,0.07);border-color:rgba(52,211,153,0.25)">
+                  ${cfPaymentMethods.map(pm => `<option value="${esc(pm.id)}" ${state.selectedPaymentMethodId === pm.id ? 'selected' : ''}>${esc(pm.name)}</option>`).join('')}
+                </select>
+              </div>
+            ` : ''}
             
           </div>
           <div style="display:flex;gap:8px;margin-top:14px">
@@ -4126,8 +4150,21 @@
       });
 
       $$('[data-pay]').forEach(btn => {
-        btn.onclick = () => { state.paymentStatus = btn.dataset.pay; state._paymentStatusChosen = true; render(); };
+        btn.onclick = () => {
+          state.paymentStatus = btn.dataset.pay;
+          state._paymentStatusChosen = true;
+          // Auto-select most-used payment method for this company
+          if (btn.dataset.pay !== 'not_received' && cfPaymentMethods.length > 0) {
+            var best = cfGetMostUsedPaymentMethod(c._id);
+            state.selectedPaymentMethodId = best || (cfPaymentMethods[0] && cfPaymentMethods[0].id) || null;
+          }
+          render();
+        };
       });
+      // Bind payment method dropdown change
+      if ($('#billPaymentMethodSelect')) {
+        $('#billPaymentMethodSelect').onchange = (e) => { state.selectedPaymentMethodId = e.target.value; };
+      }
 
       if ($('#partialAmountInput')) {
         $('#partialAmountInput').oninput = (e) => {
@@ -4246,6 +4283,8 @@
             touchCompany(c._id);
             _lastSyncedTime = new Date();
             updateSyncIndicator();
+            // ── CASH FLOW: record income transaction on bill save ──
+            cfRecordBillTransaction(bill, c._id);
             // Clear bill form
             state.billItems = [];
             state.paymentStatus = 'received';
@@ -6482,6 +6521,13 @@
         });
       }
       var opExTotal = opEx.total || 0;
+      // ── CF: add custom operating expenses to global analytics ──
+      if (_cfLoaded && cfOperatingExpenses.length > 0) {
+        var cfOpF = f, cfOpT = t;
+        opExTotal += cfOperatingExpenses.filter(function(e){
+          var d2=new Date(e.date); return d2>=cfOpF && d2<=cfOpT;
+        }).reduce(function(s,e){return s+(e.amount||0);},0);
+      }
       var grossProfit = d.gPr - opExTotal;
       var gpS = grossProfit>=0?'+':''; var gpC = grossProfit>=0?'#fff':'#fca5a5';
       // Determine which is larger and build card display
@@ -6846,6 +6892,12 @@
         var gaF2 = new Date(state.globalDateFrom+'T00:00:00');
         var gaT2 = localEndOfDay(state.globalDateTo);
         fetchOperatingExpenses(gaF2, gaT2).then(function(opEx) {
+          // ── CF: include custom operating expenses in global analytics ──
+          var cfOpTotal = cfOperatingExpenses.filter(function(e){
+            var d = new Date(e.date);
+            return d >= gaF2 && d <= gaT2;
+          }).reduce(function(s,e){ return s + (e.amount||0); }, 0);
+          opEx.total = (opEx.total || 0) + cfOpTotal;
           var valEl = document.getElementById('gaOpExVal');
           var subEl = document.getElementById('gaOpExSub');
           if (valEl) valEl.textContent = '$' + opEx.total.toFixed(2);
@@ -7433,7 +7485,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -9858,6 +9910,556 @@
       } catch(e) {
         console.warn('[opEx] fetch failed:', e.message);
         return { total: 0, paid: 0, unpaid: 0, employees: [] };
+      }
+    }
+
+    // ============================================================
+    // CASH FLOW MANAGEMENT — Independent data structures
+    // ============================================================
+
+    // These are isolated from all existing billing logic
+    var cfPaymentMethods = [];   // { id, name, createdAt }
+    var cfTransactions   = [];   // { id, type, category, amount, paymentMethodId, companyId, date, billId }
+    var cfShareholders   = [];   // { id, name, percentage }
+    var cfOperatingExpenses = []; // { id, title, amount, date, paid }
+
+    // Firestore collection path helpers (under same userPath)
+    function cfPath(col) { return userPath() + '/cashFlow/' + col; }
+
+    // ── Load all CF data from Firestore ──
+    async function cfLoadAll() {
+      if (state.empRole === 'employee') return;
+      try {
+        var [pmSnap, txSnap, shSnap, opSnap] = await Promise.all([
+          db.collection(cfPath('paymentMethods')).get(),
+          db.collection(cfPath('transactions')).get(),
+          db.collection(cfPath('shareholders')).get(),
+          db.collection(cfPath('opExpenses')).get(),
+        ]);
+        cfPaymentMethods   = pmSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        cfTransactions     = txSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        cfShareholders     = shSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        cfOperatingExpenses= opSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        // Auto-set default payment method if none selected
+        if (!state.selectedPaymentMethodId && cfPaymentMethods.length > 0) {
+          state.selectedPaymentMethodId = cfPaymentMethods[0].id;
+        }
+      } catch(e) { console.warn('[CF] load error:', e.message); }
+    }
+
+    // ── Determine most-used payment method for a given company ──
+    function cfGetMostUsedPaymentMethod(companyId) {
+      var counts = {};
+      cfTransactions.filter(t => t.companyId === companyId).forEach(t => {
+        if (t.paymentMethodId) counts[t.paymentMethodId] = (counts[t.paymentMethodId] || 0) + 1;
+      });
+      var best = null, bestCount = 0;
+      Object.keys(counts).forEach(id => { if (counts[id] > bestCount) { bestCount = counts[id]; best = id; } });
+      return best;
+    }
+
+    // ── Record income transaction when a bill is saved ──
+    function cfRecordBillTransaction(bill, companyId) {
+      if (!bill || state.empRole === 'employee') return;
+      var status = bill.paymentStatus;
+      if (status === 'not_received') return; // no cash received
+      var amount = 0;
+      if (status === 'received') amount = (bill.totalDollars || 0) + (bill.extraFeeAmount || 0);
+      else if (status === 'partial') amount = bill.partialAmount || 0;
+      if (amount <= 0) return;
+      var pmId = state.selectedPaymentMethodId || (cfPaymentMethods[0] && cfPaymentMethods[0].id) || '';
+      var tx = {
+        type: 'income',
+        category: 'bill',
+        amount: parseFloat(amount.toFixed(2)),
+        paymentMethodId: pmId,
+        companyId: companyId,
+        companyName: bill.companyName || '',
+        date: bill.date || new Date().toISOString(),
+        billId: bill.referenceNumber || '',
+        note: bill.referenceNumber || ''
+      };
+      // Check if transaction for this bill already exists (prevent duplicates on retry)
+      var existing = cfTransactions.find(t => t.billId === tx.billId && t.billId !== '');
+      if (existing) {
+        // Update existing
+        db.doc(cfPath('transactions') + '/' + existing.id).update(tx).catch(()=>{});
+        Object.assign(existing, tx);
+      } else {
+        // Create new
+        db.collection(cfPath('transactions')).add(tx).then(ref => {
+          cfTransactions.push(Object.assign({ id: ref.id }, tx));
+        }).catch(()=>{});
+      }
+    }
+
+    // ── Compute cash flow summary ──
+    function cfComputeSummary(fromDate, toDate) {
+      var fD = fromDate ? new Date(fromDate + 'T00:00:00') : null;
+      var tD = toDate   ? new Date(toDate   + 'T23:59:59') : null;
+      var filtered = cfTransactions.filter(t => {
+        var d = new Date(t.date);
+        if (fD && d < fD) return false;
+        if (tD && d > tD) return false;
+        return true;
+      });
+      var opFiltered = cfOperatingExpenses.filter(e => {
+        var d = new Date(e.date);
+        if (fD && d < fD) return false;
+        if (tD && d > tD) return false;
+        return true;
+      });
+      var inflow  = filtered.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
+      var outflow = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+      var opExpTotal = opFiltered.reduce((s, e) => s + (e.amount || 0), 0);
+      var totalOutflow = outflow + opExpTotal;
+      var netProfit = inflow - totalOutflow;
+      // Breakdown by payment method
+      var byMethod = {};
+      cfPaymentMethods.forEach(pm => { byMethod[pm.id] = { name: pm.name, total: 0, txs: [] }; });
+      filtered.filter(t => t.type === 'income').forEach(t => {
+        if (t.paymentMethodId && byMethod[t.paymentMethodId]) {
+          byMethod[t.paymentMethodId].total += t.amount || 0;
+          byMethod[t.paymentMethodId].txs.push(t);
+        }
+      });
+      return { inflow, outflow, opExpTotal, totalOutflow, netProfit, byMethod, filteredTxs: filtered, opFiltered };
+    }
+
+    // ── Compute monthly dividend ──
+    function cfComputeDividends(netProfit) {
+      var pool = Math.max(0, netProfit);
+      return cfShareholders.map(s => ({
+        id: s.id, name: s.name, percentage: s.percentage,
+        dividend: parseFloat((pool * (s.percentage / 100)).toFixed(2))
+      }));
+    }
+
+    // ── Unique ID generator ──
+    function cfUid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+    // ============================================================
+    // CASH FLOW: RENDER
+    // ============================================================
+    function renderCashFlowPage() {
+      var tab = state.cashFlowTab || 'overview';
+      var tabs = [
+        { id: 'overview',    label: 'Overview',    icon: '💰' },
+        { id: 'tracking',    label: 'Cash Flow',   icon: '📊' },
+        { id: 'methods',     label: 'Payments',    icon: '💳' },
+        { id: 'expenses',    label: 'Expenses',    icon: '🧾' },
+        { id: 'shareholders',label: 'Shareholders',icon: '👥' },
+      ];
+      var fromDate = state.cfFromDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+      var toDate   = state.cfToDate   || new Date().toISOString().slice(0, 10);
+      var summary  = cfComputeSummary(fromDate, toDate);
+
+      var content = '';
+      if (tab === 'overview') content = renderCFOverview(summary, fromDate, toDate);
+      else if (tab === 'tracking') content = renderCFTracking(summary, fromDate, toDate);
+      else if (tab === 'methods') content = renderCFMethods();
+      else if (tab === 'expenses') content = renderCFExpenses(summary);
+      else if (tab === 'shareholders') content = renderCFShareholders(summary.netProfit);
+
+      return `<div class="page fade-in">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <button class="btn btn-ghost btn-sm" id="cfBackBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15,18 9,12 15,6"/></svg></button>
+          <h2 style="font-family:'Orbitron',monospace;font-size:18px;color:#34d399;flex:1">Cash Flow</h2>
+          <button class="btn btn-sm" id="cfExportBtn" style="background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);color:#34d399;font-size:11px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
+        </div>
+        <div style="display:flex;gap:3px;margin-bottom:16px;background:rgba(15,12,28,0.5);border-radius:12px;padding:3px;border:1px solid rgba(120,100,200,0.15);overflow-x:auto">
+          ${tabs.map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="flex:1;min-width:0;padding:8px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:transparent;color:var(--textMuted);border:1px solid transparent'}">${t.icon} ${t.label}</button>`).join('')}
+        </div>
+        ${content}
+      </div>`;
+    }
+
+    function renderCFOverview(summary, fromDate, toDate) {
+      var divs = cfComputeDividends(summary.netProfit);
+      var totalShareholder = divs.reduce((s,d) => s + d.percentage, 0);
+      return `
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">From</span><input class="input" type="date" id="cfFrom" value="${fromDate}" style="font-size:12px;padding:6px 8px"/></div>
+          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">To</span><input class="input" type="date" id="cfTo" value="${toDate}" style="font-size:12px;padding:6px 8px"/></div>
+          <button class="btn btn-sm btn-purple" id="cfApplyDate" style="align-self:flex-end">Apply</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          ${[
+            {label:'CASH INFLOW',  val:'$'+summary.inflow.toFixed(2),  color:'#34d399', bg:'rgba(16,185,129,0.08)', bc:'rgba(16,185,129,0.2)', icon:'↑'},
+            {label:'CASH OUTFLOW', val:'$'+summary.totalOutflow.toFixed(2), color:'#f87171', bg:'rgba(239,68,68,0.08)', bc:'rgba(239,68,68,0.2)', icon:'↓'},
+            {label:'OP. EXPENSES', val:'$'+summary.opExpTotal.toFixed(2), color:'#fbbf24', bg:'rgba(245,158,11,0.08)', bc:'rgba(245,158,11,0.2)', icon:'🧾'},
+            {label:'NET PROFIT',   val:(summary.netProfit>=0?'+':'')+' $'+summary.netProfit.toFixed(2), color:summary.netProfit>=0?'#34d399':'#f87171', bg:summary.netProfit>=0?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)', bc:summary.netProfit>=0?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.2)', icon:'💰'},
+          ].map(c=>`<div style="padding:14px;border-radius:12px;background:${c.bg};border:1px solid ${c.bc}">
+            <div style="font-size:9px;color:var(--textMuted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px">${c.label}</div>
+            <div style="font-family:'Orbitron',monospace;font-size:16px;font-weight:800;color:${c.color}">${c.val}</div>
+          </div>`).join('')}
+        </div>
+        ${cfShareholders.length > 0 ? `
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399;margin-bottom:12px;font-weight:700">DIVIDEND DISTRIBUTION</div>
+          <div style="font-size:11px;color:var(--textMuted);margin-bottom:10px">Based on net profit • Monthly</div>
+          ${divs.map(d=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(120,100,200,0.1)">
+            <div>
+              <div style="font-weight:600;font-size:14px">${esc(d.name)}</div>
+              <div style="font-size:11px;color:var(--textMuted)">${d.percentage}% ownership</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#34d399">$${d.dividend.toFixed(2)}</div>
+              <div style="font-size:10px;color:var(--textMuted)">monthly div.</div>
+            </div>
+          </div>`).join('')}
+          ${Math.abs(totalShareholder - 100) > 0.01 ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);font-size:11px;color:#fbbf24">⚠ Shareholding totals ${totalShareholder.toFixed(1)}% — must equal 100%</div>` : ''}
+        </div>` : `<div class="card" style="margin-bottom:14px;text-align:center;padding:20px;color:var(--textMuted)">
+          <div style="font-size:24px;margin-bottom:8px">👥</div>
+          <div style="font-size:13px">No shareholders added yet.</div>
+          <button class="btn btn-sm btn-green" id="cfGoShareholders" style="margin-top:10px">Add Shareholders</button>
+        </div>`}
+      `;
+    }
+
+    function renderCFTracking(summary, fromDate, toDate) {
+      var allTx = summary.filteredTxs.concat(
+        summary.opFiltered.map(e => ({
+          id: e.id, type: 'expense', category: 'opex',
+          amount: e.amount, date: e.date, note: e.title,
+          paymentMethodId: null, companyId: null
+        }))
+      ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      return `
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">From</span><input class="input" type="date" id="cfFrom" value="${fromDate}" style="font-size:12px;padding:6px 8px"/></div>
+          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">To</span><input class="input" type="date" id="cfTo" value="${toDate}" style="font-size:12px;padding:6px 8px"/></div>
+          <button class="btn btn-sm btn-purple" id="cfApplyDate" style="align-self:flex-end">Apply</button>
+        </div>
+        <div style="font-size:11px;color:var(--textMuted);margin-bottom:10px">Payment method breakdown (click for details)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px">
+          ${cfPaymentMethods.map(pm => {
+            var md = summary.byMethod[pm.id] || { total: 0, txs: [] };
+            return `<div class="cf-pm-card" data-pmid="${pm.id}" style="padding:12px;border-radius:10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.18);cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(52,211,153,0.12)'" onmouseout="this.style.background='rgba(52,211,153,0.07)'">
+              <div style="font-size:11px;color:#34d399;font-weight:700;margin-bottom:4px">${esc(pm.name)}</div>
+              <div style="font-family:'Orbitron',monospace;font-size:15px;font-weight:800;color:#fff">$${md.total.toFixed(2)}</div>
+              <div style="font-size:10px;color:var(--textMuted)">${md.txs.length} txs</div>
+            </div>`;
+          }).join('')}
+          ${cfPaymentMethods.length === 0 ? '<div style="padding:12px;color:var(--textMuted);font-size:12px;grid-column:1/-1">No payment methods. Add one in the Payments tab.</div>' : ''}
+        </div>
+        <div style="font-family:\'Orbitron\',monospace;font-size:12px;color:var(--purpleLight);margin-bottom:8px">ALL TRANSACTIONS</div>
+        <div style="max-height:380px;overflow-y:auto">
+          ${allTx.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--textMuted);font-size:13px">No transactions in this period</div>' :
+            allTx.map(t => {
+              var pm = cfPaymentMethods.find(p => p.id === t.paymentMethodId);
+              var isIncome = t.type === 'income';
+              var d = new Date(t.date);
+              var dStr = d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+              return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:4px;background:${isIncome?'rgba(16,185,129,0.06)':'rgba(239,68,68,0.06)'};border:1px solid ${isIncome?'rgba(16,185,129,0.12)':'rgba(239,68,68,0.12)'}">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12px;font-weight:600;color:var(--textPrimary)">${esc(t.note || t.category || '-')}</div>
+                  <div style="font-size:10px;color:var(--textMuted)">${dStr}${pm?' · '+esc(pm.name):''}${t.companyName?' · '+esc(t.companyName):''}</div>
+                </div>
+                <div style="font-weight:700;font-family:'Orbitron',monospace;font-size:13px;color:${isIncome?'#34d399':'#f87171'}">${isIncome?'+':'-'}$${(t.amount||0).toFixed(2)}</div>
+              </div>`;
+            }).join('')
+          }
+        </div>`;
+    }
+
+    function renderCFMethods() {
+      return `
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399;margin-bottom:12px">PAYMENT METHODS</div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <input class="input" id="cfPmName" placeholder="e.g. Cash, Bank Transfer, Crypto..." style="flex:1;font-size:13px"/>
+            <button class="btn btn-green btn-sm" id="cfAddPm">Add</button>
+          </div>
+          <div id="cfPmList">
+            ${cfPaymentMethods.length === 0 ? '<div style="text-align:center;padding:16px;color:var(--textMuted);font-size:13px">No payment methods yet</div>' :
+              cfPaymentMethods.map(pm => `
+              <div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15);margin-bottom:6px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                <span style="flex:1;font-weight:600;font-size:13px">${esc(pm.name)}</span>
+                <button class="btn btn-ghost btn-sm cf-pm-edit" data-pmid="${pm.id}" style="color:#a78bfa;padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+                <button class="btn btn-ghost btn-sm cf-pm-del" data-pmid="${pm.id}" style="color:var(--red);padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function renderCFExpenses(summary) {
+      var exps = cfOperatingExpenses.slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      return `
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-family:'Orbitron',monospace;font-size:13px;color:#fbbf24;margin-bottom:12px">ADD EXPENSE</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input class="input" id="cfExpTitle" placeholder="Expense title (e.g. Rent, Utilities...)" style="font-size:13px"/>
+            <div style="display:flex;gap:8px">
+              <input class="input" type="number" id="cfExpAmount" placeholder="Amount" style="flex:1;font-size:13px"/>
+              <input class="input" type="date" id="cfExpDate" value="${new Date().toISOString().slice(0,10)}" style="flex:1;font-size:13px"/>
+            </div>
+            <button class="btn btn-yellow btn-sm btn-full" id="cfAddExp" style="font-size:13px">Add Expense</button>
+          </div>
+        </div>
+        <div style="font-family:'Orbitron',monospace;font-size:12px;color:var(--purpleLight);margin-bottom:8px">
+          ALL EXPENSES <span style="color:#fbbf24">($${summary.opExpTotal.toFixed(2)} total)</span>
+        </div>
+        <div style="max-height:420px;overflow-y:auto">
+          ${exps.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--textMuted);font-size:13px">No expenses recorded yet</div>' :
+            exps.map(e => {
+              var d = new Date(e.date);
+              var dStr = d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+              return `<div style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.15);margin-bottom:6px">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600">${esc(e.title)}</div>
+                  <div style="font-size:10px;color:var(--textMuted)">${dStr}</div>
+                </div>
+                <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#fbbf24">$${(e.amount||0).toFixed(2)}</div>
+                <button class="btn btn-ghost btn-sm cf-exp-del" data-expid="${e.id}" style="color:var(--red);padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+              </div>`;
+            }).join('')
+          }
+        </div>`;
+    }
+
+    function renderCFShareholders(netProfit) {
+      var divs = cfComputeDividends(netProfit);
+      var totalPct = cfShareholders.reduce((s, h) => s + (h.percentage || 0), 0);
+      return `
+        <div class="card" style="margin-bottom:14px">
+          <div style="font-family:'Orbitron',monospace;font-size:13px;color:#c084fc;margin-bottom:12px">ADD SHAREHOLDER</div>
+          <div style="display:flex;gap:8px;margin-bottom:4px">
+            <input class="input" id="cfShName" placeholder="Shareholder name" style="flex:2;font-size:13px"/>
+            <input class="input" type="number" id="cfShPct" placeholder="%" min="0" max="100" style="flex:1;font-size:13px"/>
+            <button class="btn btn-purple btn-sm" id="cfAddSh">Add</button>
+          </div>
+          <div style="font-size:11px;color:${Math.abs(totalPct-100) < 0.01 ? '#34d399' : '#fbbf24'};margin-bottom:12px">
+            ${Math.abs(totalPct-100) < 0.01 ? '✓ Shareholding totals 100%' : `Total: ${totalPct.toFixed(1)}% — must equal 100%`}
+          </div>
+          <div id="cfShList">
+            ${cfShareholders.length === 0 ? '<div style="text-align:center;padding:12px;color:var(--textMuted);font-size:13px">No shareholders yet</div>' :
+              divs.map(sh => `
+              <div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);margin-bottom:6px">
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600">${esc(sh.name)}</div>
+                  <div style="font-size:11px;color:var(--textMuted)">${sh.percentage}% ownership</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#34d399">$${sh.dividend.toFixed(2)}</div>
+                  <div style="font-size:10px;color:var(--textMuted)">div/month</div>
+                </div>
+                <div style="display:flex;gap:3px">
+                  <button class="btn btn-ghost btn-sm cf-sh-edit" data-shid="${sh.id}" style="color:#a78bfa;padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+                  <button class="btn btn-ghost btn-sm cf-sh-del" data-shid="${sh.id}" style="color:var(--red);padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    // ============================================================
+    // CASH FLOW: BIND
+    // ============================================================
+    function bindCashFlowPage() {
+      // Back button
+      $('#cfBackBtn').onclick = () => { state.view = 'companies'; render(); };
+
+      // Tab switching
+      $$('.cf-tab-btn').forEach(btn => {
+        btn.onclick = () => { state.cashFlowTab = btn.dataset.tab; render(); };
+      });
+
+      // Date apply (overview + tracking share same IDs)
+      if ($('#cfApplyDate')) {
+        $('#cfApplyDate').onclick = () => {
+          state.cfFromDate = $('#cfFrom').value;
+          state.cfToDate   = $('#cfTo').value;
+          render();
+        };
+      }
+      // Overview shortcut to shareholders tab
+      if ($('#cfGoShareholders')) {
+        $('#cfGoShareholders').onclick = () => { state.cashFlowTab = 'shareholders'; render(); };
+      }
+
+      // Payment method: add
+      if ($('#cfAddPm')) {
+        $('#cfAddPm').onclick = async () => {
+          var name = ($('#cfPmName').value || '').trim();
+          if (!name) { $('#cfPmName').focus(); return; }
+          var doc = await db.collection(cfPath('paymentMethods')).add({ name, createdAt: new Date().toISOString() });
+          cfPaymentMethods.push({ id: doc.id, name, createdAt: new Date().toISOString() });
+          $('#cfPmName').value = '';
+          render();
+        };
+      }
+      // Payment method: edit
+      $$('.cf-pm-edit').forEach(btn => {
+        btn.onclick = async () => {
+          var pm = cfPaymentMethods.find(p => p.id === btn.dataset.pmid);
+          if (!pm) return;
+          var newName = prompt('Edit payment method name:', pm.name);
+          if (!newName || !newName.trim()) return;
+          newName = newName.trim();
+          await db.doc(cfPath('paymentMethods') + '/' + pm.id).update({ name: newName });
+          pm.name = newName;
+          render();
+        };
+      });
+      // Payment method: delete
+      $$('.cf-pm-del').forEach(btn => {
+        btn.onclick = async () => {
+          var pm = cfPaymentMethods.find(p => p.id === btn.dataset.pmid);
+          if (!pm) return;
+          if (!confirm('Delete payment method "' + pm.name + '"?')) return;
+          await db.doc(cfPath('paymentMethods') + '/' + pm.id).delete();
+          cfPaymentMethods = cfPaymentMethods.filter(p => p.id !== pm.id);
+          render();
+        };
+      });
+
+      // Payment method card: show detail modal
+      $$('.cf-pm-card').forEach(card => {
+        card.onclick = () => {
+          var pmId = card.dataset.pmid;
+          var pm = cfPaymentMethods.find(p => p.id === pmId);
+          if (!pm) return;
+          var fromDate = state.cfFromDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+          var toDate   = state.cfToDate   || new Date().toISOString().slice(0, 10);
+          var summary  = cfComputeSummary(fromDate, toDate);
+          var md = summary.byMethod[pmId] || { total: 0, txs: [] };
+          var ov = document.createElement('div');
+          ov.className = 'modal-overlay';
+          ov.innerHTML = `<div class="modal fade-in" style="max-width:440px">
+            <div class="modal-header">
+              <h3 class="modal-title" style="color:#34d399">${esc(pm.name)} — Transactions</h3>
+              <button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-overlay').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div style="margin-bottom:12px;padding:10px;border-radius:8px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2)">
+              <div style="font-size:11px;color:var(--textMuted)">Total received via ${esc(pm.name)}</div>
+              <div style="font-family:'Orbitron',monospace;font-size:20px;font-weight:800;color:#34d399">$${md.total.toFixed(2)}</div>
+            </div>
+            <div style="max-height:320px;overflow-y:auto">
+              ${md.txs.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--textMuted)">No transactions</div>' :
+                md.txs.map(t => {
+                  var d = new Date(t.date);
+                  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(120,100,200,0.1)">
+                    <div><div style="font-size:12px;font-weight:600">${esc(t.note || t.companyName || '-')}</div><div style="font-size:10px;color:var(--textMuted)">${d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'})}</div></div>
+                    <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399;font-weight:700">+$${(t.amount||0).toFixed(2)}</div>
+                  </div>`;
+                }).join('')}
+            </div>
+          </div>`;
+          document.body.appendChild(ov);
+          ov.onclick = e => { if (e.target === ov) ov.remove(); };
+        };
+      });
+
+      // Expense: add
+      if ($('#cfAddExp')) {
+        $('#cfAddExp').onclick = async () => {
+          var title  = ($('#cfExpTitle').value || '').trim();
+          var amount = parseFloat($('#cfExpAmount').value);
+          var date   = $('#cfExpDate').value || new Date().toISOString().slice(0, 10);
+          if (!title) { $('#cfExpTitle').focus(); return; }
+          if (!amount || isNaN(amount) || amount <= 0) { $('#cfExpAmount').focus(); return; }
+          var rec = { title, amount: parseFloat(amount.toFixed(2)), date, createdAt: new Date().toISOString() };
+          var doc = await db.collection(cfPath('opExpenses')).add(rec);
+          cfOperatingExpenses.push(Object.assign({ id: doc.id }, rec));
+          $('#cfExpTitle').value = '';
+          $('#cfExpAmount').value = '';
+          render();
+        };
+      }
+      // Expense: delete
+      $$('.cf-exp-del').forEach(btn => {
+        btn.onclick = async () => {
+          var exp = cfOperatingExpenses.find(e => e.id === btn.dataset.expid);
+          if (!exp) return;
+          if (!confirm('Delete expense "' + exp.title + '"?')) return;
+          await db.doc(cfPath('opExpenses') + '/' + exp.id).delete();
+          cfOperatingExpenses = cfOperatingExpenses.filter(e => e.id !== exp.id);
+          render();
+        };
+      });
+
+      // Shareholder: add
+      if ($('#cfAddSh')) {
+        $('#cfAddSh').onclick = async () => {
+          var name = ($('#cfShName').value || '').trim();
+          var pct  = parseFloat($('#cfShPct').value);
+          if (!name) { $('#cfShName').focus(); return; }
+          if (isNaN(pct) || pct <= 0 || pct > 100) { alert('Percentage must be between 0 and 100'); return; }
+          var totalPct = cfShareholders.reduce((s, h) => s + (h.percentage || 0), 0);
+          if (totalPct + pct > 100.01) { alert('Total shareholding would exceed 100%. Current total: ' + totalPct.toFixed(1) + '%'); return; }
+          var rec = { name, percentage: pct, createdAt: new Date().toISOString() };
+          var doc = await db.collection(cfPath('shareholders')).add(rec);
+          cfShareholders.push(Object.assign({ id: doc.id }, rec));
+          $('#cfShName').value = '';
+          $('#cfShPct').value = '';
+          render();
+        };
+      }
+      // Shareholder: edit
+      $$('.cf-sh-edit').forEach(btn => {
+        btn.onclick = async () => {
+          var sh = cfShareholders.find(s => s.id === btn.dataset.shid);
+          if (!sh) return;
+          var newName = prompt('Edit name:', sh.name);
+          if (!newName || !newName.trim()) return;
+          var newPctStr = prompt('Edit percentage (0-100):', sh.percentage);
+          var newPct = parseFloat(newPctStr);
+          if (isNaN(newPct) || newPct <= 0 || newPct > 100) { alert('Invalid percentage'); return; }
+          var otherTotal = cfShareholders.filter(s => s.id !== sh.id).reduce((s, h) => s + (h.percentage || 0), 0);
+          if (otherTotal + newPct > 100.01) { alert('Total shareholding would exceed 100%'); return; }
+          await db.doc(cfPath('shareholders') + '/' + sh.id).update({ name: newName.trim(), percentage: newPct });
+          sh.name = newName.trim();
+          sh.percentage = newPct;
+          render();
+        };
+      });
+      // Shareholder: delete
+      $$('.cf-sh-del').forEach(btn => {
+        btn.onclick = async () => {
+          var sh = cfShareholders.find(s => s.id === btn.dataset.shid);
+          if (!sh) return;
+          if (!confirm('Remove shareholder "' + sh.name + '"?')) return;
+          await db.doc(cfPath('shareholders') + '/' + sh.id).delete();
+          cfShareholders = cfShareholders.filter(s => s.id !== sh.id);
+          render();
+        };
+      });
+
+      // CSV Export
+      if ($('#cfExportBtn')) {
+        $('#cfExportBtn').onclick = () => {
+          var fromDate = state.cfFromDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+          var toDate   = state.cfToDate   || new Date().toISOString().slice(0, 10);
+          var summary  = cfComputeSummary(fromDate, toDate);
+          var rows = [['Date','Type','Category','Amount','PaymentMethod','Company','Note']];
+          summary.filteredTxs.forEach(t => {
+            var pm = cfPaymentMethods.find(p => p.id === t.paymentMethodId);
+            rows.push([t.date, t.type, t.category, t.amount, pm ? pm.name : '', t.companyName || '', t.note || '']);
+          });
+          summary.opFiltered.forEach(e => {
+            rows.push([e.date, 'expense', 'opex', e.amount, '', '', e.title]);
+          });
+          var csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+          var blob = new Blob([csv], { type: 'text/csv' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a'); a.href = url;
+          a.download = 'cashflow_' + fromDate + '_to_' + toDate + '.csv';
+          a.click(); URL.revokeObjectURL(url);
+        };
+      }
+    }
+
+    // ── Load CF data when auth resolves ──
+    // Hooked into the existing loadAllData flow
+    var _cfLoaded = false;
+    var _cfLoadOrig = loadAllData;
+    async function cfEnsureLoaded() {
+      if (!_cfLoaded && state.user && state.empRole !== 'employee') {
+        _cfLoaded = true;
+        await cfLoadAll();
       }
     }
 
