@@ -1231,12 +1231,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -3462,6 +3463,8 @@
           state._paymentStatusChosen = false;
           state.partialAmount = '';
           state.billDateOverride = null; // Reset custom date when opening a new company
+          // Reset payment method so it defaults to most-used for the newly selected company
+          state.selectedPaymentMethodId = cfGetMostUsedPaymentMethod(el.dataset.id) || (cfPaymentMethods[0] && cfPaymentMethods[0].id) || null;
           render();
         };
       });
@@ -3643,9 +3646,14 @@
             ${(state.paymentStatus === 'received' || state.paymentStatus === 'partial') && cfPaymentMethods.length > 0 ? `
               <div style="margin-top:10px;max-width:260px">
                 <span class="label" style="font-size:10px;margin-bottom:4px;color:#34d399">Payment Method</span>
-                <select class="input" id="billPaymentMethodSelect" style="padding:7px 10px;font-size:13px;background:rgba(16,185,129,0.07);border-color:rgba(52,211,153,0.25)">
-                  ${cfPaymentMethods.map(pm => `<option value="${esc(pm.id)}" ${state.selectedPaymentMethodId === pm.id ? 'selected' : ''}>${esc(pm.name)}</option>`).join('')}
-                </select>
+                <div style="position:relative" id="pmDropWrap">
+                  <input class="input" id="pmDropInput" value="${esc((cfPaymentMethods.find(pm=>pm.id===state.selectedPaymentMethodId)||cfPaymentMethods[0]||{name:''}).name)}" autocomplete="off" style="cursor:pointer;padding-right:28px;background:rgba(16,185,129,0.07);border-color:rgba(52,211,153,0.25);font-size:13px" readonly />
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2.5" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none"><polyline points="6,9 12,15 18,9"/></svg>
+                  <input type="hidden" id="pmDropHidden" value="${esc(state.selectedPaymentMethodId||'')}"/>
+                  <div id="pmDropList" class="hidden" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:300;max-height:200px;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+                    ${cfPaymentMethods.map(pm => `<div class="dropdown-item pm-drop-opt${state.selectedPaymentMethodId===pm.id?' selected':''}" data-pmid="${esc(pm.id)}" data-pmname="${esc(pm.name)}">${esc(pm.name)}</div>`).join('')}
+                  </div>
+                </div>
               </div>
             ` : ''}
             
@@ -4160,9 +4168,31 @@
           render();
         };
       });
-      // Bind payment method dropdown change
-      if ($('#billPaymentMethodSelect')) {
-        $('#billPaymentMethodSelect').onchange = (e) => { state.selectedPaymentMethodId = e.target.value; };
+      // Bind custom payment method dropdown
+      if ($('#pmDropInput') && $('#pmDropList') && $('#pmDropWrap')) {
+        var _pmInput = $('#pmDropInput');
+        var _pmList  = $('#pmDropList');
+        var _pmHid   = $('#pmDropHidden');
+        var _openPm  = () => { _pmList.classList.toggle('hidden'); };
+        var _closePm = () => { _pmList.classList.add('hidden'); };
+        _pmInput.onclick = (e) => { e.stopPropagation(); _openPm(); };
+        $$('.pm-drop-opt').forEach(opt => {
+          opt.onclick = (e) => {
+            e.stopPropagation();
+            state.selectedPaymentMethodId = opt.dataset.pmid;
+            _pmInput.value = opt.dataset.pmname;
+            if (_pmHid) _pmHid.value = opt.dataset.pmid;
+            $$('.pm-drop-opt').forEach(o => o.classList.remove('selected'));
+            opt.classList.add('selected');
+            _closePm();
+          };
+        });
+        document.addEventListener('click', function _pmOutside(e) {
+          if (!$('#pmDropWrap') || !$('#pmDropWrap').contains(e.target)) {
+            _closePm();
+            document.removeEventListener('click', _pmOutside);
+          }
+        });
       }
 
       if ($('#partialAmountInput')) {
@@ -7508,7 +7538,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -9962,8 +9992,11 @@
         // Always load payment methods — needed for billing panel for all roles
         var pmSnap = await db.collection(cfPath('paymentMethods')).get();
         cfPaymentMethods = pmSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-        if (!state.selectedPaymentMethodId && cfPaymentMethods.length > 0) {
-          state.selectedPaymentMethodId = cfPaymentMethods[0].id;
+        if (cfPaymentMethods.length > 0) {
+          var _initBest = cfGetMostUsedPaymentMethod(state.selectedCompanyId);
+          if (!state.selectedPaymentMethodId || !cfPaymentMethods.find(p=>p.id===state.selectedPaymentMethodId)) {
+            state.selectedPaymentMethodId = _initBest || cfPaymentMethods[0].id;
+          }
         }
         if (isEmployee) return; // employees only need payment methods
         // Full load for managers/owners
