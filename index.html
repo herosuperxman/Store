@@ -1231,12 +1231,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
- apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -6791,38 +6792,62 @@
       var ov = document.createElement('div'); ov.className='modal-overlay'; ov.id='gaDetailModal';
       var grossProfit = d.gPr - opEx.total;
       var gSign = grossProfit >= 0 ? '+' : '';
-      var cashierList = opEx.cashiers || opEx.empData || [];
+      // fetchOperatingExpenses returns { employees: [...] } — support all property names
+      var cashierList = opEx.employees || opEx.cashiers || opEx.empData || [];
+      // Also include custom CF operating expenses
+      var cfExpRows = '';
+      if (cfOperatingExpenses.length > 0) {
+        var fD = new Date(state.globalDateFrom + 'T00:00:00');
+        var tD = localEndOfDay(state.globalDateTo);
+        var filtered = cfOperatingExpenses.filter(function(e){ var d2=new Date(e.date); return d2>=fD && d2<=tD; });
+        if (filtered.length > 0) {
+          cfExpRows = '<div style="padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.15)">'
+            + '<div style="font-family:Orbitron,monospace;font-size:11px;color:#fbbf24;margin-bottom:8px;font-weight:700">MANUAL EXPENSES</div>'
+            + filtered.map(function(e){
+                return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(120,100,200,0.07)">'
+                  + '<span style="font-size:12px;color:var(--textSecondary)">' + esc(e.title) + '</span>'
+                  + '<span style="font-family:Orbitron,monospace;font-size:12px;color:#fbbf24">$' + (e.amount||0).toFixed(2) + '</span>'
+                  + '</div>';
+              }).join('')
+            + '</div>';
+        }
+      }
       var rows = cashierList.length ? cashierList.map(function(e) {
-        var salLabel = {hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'}[e.emp.salaryType]||e.emp.salaryType;
-        var rows2 = e.periods.map(function(p){
+        var salLabel = {hourly:'Hourly',daily:'Daily',weekly:'Weekly',biweekly:'Bi-Weekly',monthly:'Monthly'}[e.emp&&e.emp.salaryType]||(e.emp&&e.emp.salaryType)||'—';
+        var rows2 = (e.periods||[]).map(function(p){
           var sc = p.unpaid>0?'#f87171':'#34d399';
           var sl = p.unpaid>0?'To Pay: $'+p.unpaid.toFixed(2):'Paid';
           return '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid rgba(120,100,200,0.08);font-size:11px">'
-            +'<span style="flex:1;color:var(--textMuted)">'+esc(p.label)+'</span>'
+            +'<span style="flex:1;color:var(--textMuted)">'+esc(p.label||'')+'</span>'
             +'<span style="color:#fbbf24;font-family:Orbitron,monospace">$'+p.earned.toFixed(2)+'</span>'
             +'<span style="color:'+sc+';font-size:10px">'+sl+'</span>'
             +'</div>';
         }).join('');
         return '<div style="padding:10px 14px;border-bottom:1px solid rgba(120,100,200,0.15)">'
           +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
-          +'<div><span style="font-weight:700;color:var(--textPrimary)">'+esc(e.emp.name||'')+'</span>'
-          +' <span style="font-size:10px;color:var(--textMuted)">'+esc(e.emp.role||'')+'</span></div>'
+          +'<div><span style="font-weight:700;color:var(--textPrimary)">'+esc((e.emp&&e.emp.name)||'')+'</span>'
+          +' <span style="font-size:10px;color:var(--textMuted)">'+esc((e.emp&&e.emp.role)||'')+'</span></div>'
           +'<div style="text-align:right"><div style="font-weight:700;color:#fbbf24;font-family:Orbitron,monospace;font-size:13px">$'+e.earned.toFixed(2)+'</div>'
-          +'<div style="font-size:10px;color:var(--textMuted)">'+salLabel+' · '+hoursFromMs(e.ms).toFixed(1)+'h</div></div></div>'
+          +'<div style="font-size:10px;color:var(--textMuted)">'+salLabel+' · '+hoursFromMs(e.ms||0).toFixed(1)+'h</div></div></div>'
           +'<div style="display:flex;gap:8px;margin-bottom:6px"><span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(52,211,153,0.12);color:#34d399">Paid: $'+e.periodPaid.toFixed(2)+'</span>'
           +'<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,0.12);color:#f87171">To Pay: $'+e.periodUnpaid.toFixed(2)+'</span></div>'
           + rows2
           +'</div>';
-      }).join('') : '<div class="analytics-nodata">No salary data for this period</div>';
+      }).join('') : '';
+      var emptyMsg = (!cashierList.length && !cfExpRows) ? '<div class="analytics-nodata">No expense data for this period</div>' : '';
       ov.innerHTML = '<div class="modal fade-in" style="max-width:600px"><div class="modal-header">'
         +'<h3 class="modal-title">OPERATING EXPENSES</h3>'
         +'<button class="btn btn-ghost btn-sm" onclick="this.closest(\'.modal-overlay\').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
-        +'<div style="max-height:60vh;overflow-y:auto">'+rows+'</div>'
+        +'<div style="max-height:60vh;overflow-y:auto">'
+        +(cashierList.length ? '<div style="padding:10px 14px 4px;font-family:Orbitron,monospace;font-size:11px;color:#a78bfa;font-weight:700">CASHIER SALARIES</div>'+rows : '')
+        +cfExpRows
+        +emptyMsg
+        +'</div>'
         +'<div style="padding:12px;border-top:1px solid rgba(120,100,200,0.15)">'
         +'<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">'
         +'<span style="font-weight:700;color:#fbbf24">Total: $'+opEx.total.toFixed(2)+'</span>'
-        +'<span style="color:#34d399">Paid: $'+opEx.paid.toFixed(2)+'</span>'
-        +'<span style="color:#f87171">To Pay: $'+opEx.unpaid.toFixed(2)+'</span>'
+        +'<span style="color:#34d399">Paid: $'+(opEx.paid||0).toFixed(2)+'</span>'
+        +'<span style="color:#f87171">To Pay: $'+(opEx.unpaid||0).toFixed(2)+'</span>'
         +'<span style="color:var(--textMuted);font-size:11px">·</span>'
         +'<span style="font-size:11px;color:var(--textMuted)">Gross Profit: </span><span style="font-weight:700;font-family:Orbitron,monospace;font-size:12px;color:'+(grossProfit>=0?'#34d399':'#f87171')+'">'+gSign+'$'+grossProfit.toFixed(2)+'</span>'
         +'</div>'
@@ -7484,7 +7509,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -7770,6 +7795,7 @@
           render();
           _lastSyncedTime = new Date();
           setupListeners();
+          cfEnsureLoaded().catch(() => {}); // load CF payment methods for employees
           setTimeout(() => checkPopupMessages(user.uid), 600);
           return;
         }
@@ -7788,14 +7814,12 @@
         }
         // Load all data (cache-first, then fresh)
         await loadAllData(false);
-        // Load invoice settings from cloud (non-blocking)
         loadInvoiceSettings().catch(e => console.warn('Invoice settings load:', e));
         state.view = 'companies';
         render();
         _lastSyncedTime = new Date();
-        // Listeners provide real-time delta updates
         setupListeners();
-        // Check for admin popup messages (shown above company list)
+        cfEnsureLoaded().catch(() => {}); // load CF data for owner
         setTimeout(() => checkPopupMessages(user.uid), 600);
       } else {
         stopListeners();
@@ -9919,10 +9943,11 @@
     // ============================================================
 
     // These are isolated from all existing billing logic
-    var cfPaymentMethods = [];   // { id, name, createdAt }
-    var cfTransactions   = [];   // { id, type, category, amount, paymentMethodId, companyId, date, billId }
-    var cfShareholders   = [];   // { id, name, percentage }
-    var cfOperatingExpenses = []; // { id, title, amount, date, paid }
+    var cfPaymentMethods    = [];   // { id, name, createdAt }
+    var cfTransactions      = [];   // { id, type, category, amount, paymentMethodId, companyId, date, billId }
+    var cfShareholders      = [];   // { id, name, percentage }
+    var cfOperatingExpenses = [];   // { id, title, amount, date }
+    var cfDividendPayments  = [];   // { id, shareholderId, amount, period, paidAt }
 
     // Firestore collection paths for Cash Flow data — under users/{uid}/cf_{col}
     // Using flat sub-collections to stay within Firestore path rules
@@ -9932,22 +9957,27 @@
 
     // ── Load all CF data from Firestore ──
     async function cfLoadAll() {
-      if (state.empRole === 'employee') return;
+      // Employees can see payment methods (needed for billing dropdown) but not full CF data
+      var isEmployee = state.empRole === 'employee';
       try {
-        var [pmSnap, txSnap, shSnap, opSnap] = await Promise.all([
-          db.collection(cfPath('paymentMethods')).get(),
-          db.collection(cfPath('transactions')).get(),
-          db.collection(cfPath('shareholders')).get(),
-          db.collection(cfPath('opExpenses')).get(),
-        ]);
-        cfPaymentMethods   = pmSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-        cfTransactions     = txSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-        cfShareholders     = shSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-        cfOperatingExpenses= opSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-        // Auto-set default payment method if none selected
+        // Always load payment methods — needed for billing panel for all roles
+        var pmSnap = await db.collection(cfPath('paymentMethods')).get();
+        cfPaymentMethods = pmSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
         if (!state.selectedPaymentMethodId && cfPaymentMethods.length > 0) {
           state.selectedPaymentMethodId = cfPaymentMethods[0].id;
         }
+        if (isEmployee) return; // employees only need payment methods
+        // Full load for managers/owners
+        var [txSnap, shSnap, opSnap, divSnap] = await Promise.all([
+          db.collection(cfPath('transactions')).get(),
+          db.collection(cfPath('shareholders')).get(),
+          db.collection(cfPath('opExpenses')).get(),
+          db.collection(cfPath('dividendPayments')).get(),
+        ]);
+        cfTransactions      = txSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        cfShareholders      = shSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        cfOperatingExpenses = opSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        cfDividendPayments  = divSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
       } catch(e) { console.warn('[CF] load error:', e.message); }
     }
 
@@ -10057,13 +10087,25 @@
       }
     }
 
-    // ── Compute monthly dividend ──
+    // ── Compute monthly dividend with paid status ──
     function cfComputeDividends(netProfit) {
       var pool = Math.max(0, netProfit);
-      return cfShareholders.map(s => ({
-        id: s.id, name: s.name, percentage: s.percentage,
-        dividend: parseFloat((pool * (s.percentage / 100)).toFixed(2))
-      }));
+      // Current month period key e.g. "2026-04"
+      var now = new Date();
+      var currentPeriod = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      return cfShareholders.map(s => {
+        var amount = parseFloat((pool * (s.percentage / 100)).toFixed(2));
+        // Find any payment for this shareholder in current period
+        var payment = cfDividendPayments.find(p => p.shareholderId === s.id && p.period === currentPeriod);
+        return {
+          id: s.id, name: s.name, percentage: s.percentage,
+          dividend: amount,
+          period: currentPeriod,
+          paidAmount: payment ? (payment.amount || 0) : 0,
+          isPaid: !!payment,
+          paymentId: payment ? payment.id : null
+        };
+      });
     }
 
     // ── Unique ID generator ──
@@ -10127,8 +10169,11 @@
           <h2 style="font-family:'Orbitron',monospace;font-size:18px;color:#34d399;flex:1">Cash Flow Management</h2>
           <button class="btn btn-sm" id="cfExportBtn" style="background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);color:#34d399;font-size:11px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
         </div>
-        <div style="display:flex;gap:3px;margin-bottom:16px;background:rgba(15,12,28,0.5);border-radius:12px;padding:3px;border:1px solid rgba(120,100,200,0.15);overflow-x:auto">
-          ${tabs.map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="flex:1;min-width:0;padding:8px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:transparent;color:var(--textMuted);border:1px solid transparent'}">${tabSvgs[t.id]} ${t.label}</button>`).join('')}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:16px">
+          ${tabs.slice(0,3).map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="padding:9px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:rgba(15,12,28,0.5);color:var(--textMuted);border:1px solid rgba(120,100,200,0.15)'}">${tabSvgs[t.id]} ${t.label}</button>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-bottom:16px">
+          ${tabs.slice(3).map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="padding:9px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:rgba(15,12,28,0.5);color:var(--textMuted);border:1px solid rgba(120,100,200,0.15)'}">${tabSvgs[t.id]} ${t.label}</button>`).join('')}
         </div>
         ${content}
       </div>`;
@@ -10159,19 +10204,44 @@
         </div>
         ${cfShareholders.length > 0 ? `
         <div class="card" style="margin-bottom:14px">
-          <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399;margin-bottom:12px;font-weight:700">DIVIDEND DISTRIBUTION</div>
-          <div style="font-size:11px;color:var(--textMuted);margin-bottom:10px">Based on net profit • Monthly</div>
-          ${divs.map(d=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(120,100,200,0.1)">
-            <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399;font-weight:700">DIVIDEND DISTRIBUTION</div>
+            <div style="font-size:10px;color:var(--textMuted);text-align:right">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:2px"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+              ${new Date().toLocaleString('default',{month:'long',year:'numeric'})}
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--textMuted);margin-bottom:4px">
+            Dividend pool: <span style="color:#34d399;font-family:'Orbitron',monospace;font-size:11px;font-weight:700">$${Math.max(0, summary.netProfit).toFixed(2)}</span>
+            <span style="color:var(--textMuted)"> net profit</span>
+          </div>
+          <div style="height:1px;background:rgba(52,211,153,0.15);margin-bottom:10px"></div>
+          ${divs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(120,100,200,0.1)">
+            <div style="flex:1;min-width:0">
               <div style="font-weight:600;font-size:14px">${esc(d.name)}</div>
               <div style="font-size:11px;color:var(--textMuted)">${d.percentage}% ownership</div>
             </div>
-            <div style="text-align:right">
-              <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:#34d399">$${d.dividend.toFixed(2)}</div>
-              <div style="font-size:10px;color:var(--textMuted)">monthly div.</div>
+            <div style="text-align:right;margin-right:8px">
+              <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:${d.isPaid?'#34d399':'#fbbf24'}">$${d.dividend.toFixed(2)}</div>
+              <div style="font-size:10px;color:${d.isPaid?'#34d399':'var(--textMuted)'}">
+                ${d.isPaid
+                  ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" style="vertical-align:middle"><polyline points="20,6 9,17 4,12"/></svg> Paid $${d.paidAmount.toFixed(2)}`
+                  : 'Pending'}
+              </div>
             </div>
+            <button class="btn btn-sm cf-div-pay" data-shid="${d.id}" data-period="${d.period}" data-amount="${d.dividend}" data-payid="${d.paymentId||''}" data-ispaid="${d.isPaid?'1':'0'}"
+              style="padding:5px 8px;font-size:10px;font-weight:700;border-radius:8px;white-space:nowrap;${d.isPaid
+                ? 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171'
+                : 'background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399'}">
+              ${d.isPaid
+                ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg> Undo`
+                : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle"><polyline points="20,6 9,17 4,12"/></svg> Pay`}
+            </button>
           </div>`).join('')}
-          ${Math.abs(totalShareholder - 100) > 0.01 ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);font-size:11px;color:#fbbf24">⚠ Shareholding totals ${totalShareholder.toFixed(1)}% — must equal 100%</div>` : ''}
+          ${Math.abs(totalShareholder - 100) > 0.01 ? `<div style="margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);font-size:11px;color:#fbbf24">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Shareholding totals ${totalShareholder.toFixed(1)}% — must equal 100%
+          </div>` : ''}
         </div>` : `<div class="card" style="margin-bottom:14px;text-align:center;padding:20px;color:var(--textMuted)">
           <div style="font-size:24px;margin-bottom:8px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(120,100,200,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
           <div style="font-size:13px">No shareholders added yet.</div>
@@ -10332,6 +10402,9 @@
     function renderCFShareholders(netProfit) {
       var divs = cfComputeDividends(netProfit);
       var totalPct = cfShareholders.reduce((s, h) => s + (h.percentage || 0), 0);
+      var now = new Date();
+      var currentPeriod = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      var periodLabel = now.toLocaleString('default',{month:'long',year:'numeric'});
       return `
         <div class="card" style="margin-bottom:14px">
           <div style="font-family:'Orbitron',monospace;font-size:13px;color:#c084fc;margin-bottom:12px">ADD SHAREHOLDER</div>
@@ -10346,22 +10419,43 @@
           <div id="cfShList">
             ${cfShareholders.length === 0 ? '<div style="text-align:center;padding:12px;color:var(--textMuted);font-size:13px">No shareholders yet</div>' :
               divs.map(sh => `
-              <div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);margin-bottom:6px">
-                <div style="flex:1">
-                  <div style="font-size:13px;font-weight:600">${esc(sh.name)}</div>
-                  <div style="font-size:11px;color:var(--textMuted)">${sh.percentage}% ownership</div>
+              <div style="border-radius:10px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);margin-bottom:8px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px">
+                  <div style="flex:1">
+                    <div style="font-size:13px;font-weight:600">${esc(sh.name)}</div>
+                    <div style="font-size:11px;color:var(--textMuted)">${sh.percentage}% ownership</div>
+                  </div>
+                  <div style="text-align:right;margin-right:6px">
+                    <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:${sh.isPaid?'#34d399':'#fbbf24'}">$${sh.dividend.toFixed(2)}</div>
+                    <div style="font-size:10px;color:var(--textMuted)">${periodLabel}</div>
+                  </div>
+                  <div style="display:flex;gap:3px">
+                    <button class="btn btn-ghost btn-sm cf-sh-edit" data-shid="${sh.id}" style="color:#a78bfa;padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
+                    <button class="btn btn-ghost btn-sm cf-sh-del" data-shid="${sh.id}" style="color:var(--red);padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+                  </div>
                 </div>
-                <div style="text-align:right">
-                  <div style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#34d399">$${sh.dividend.toFixed(2)}</div>
-                  <div style="font-size:10px;color:var(--textMuted)">div/month</div>
-                </div>
-                <div style="display:flex;gap:3px">
-                  <button class="btn btn-ghost btn-sm cf-sh-edit" data-shid="${sh.id}" style="color:#a78bfa;padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>
-                  <button class="btn btn-ghost btn-sm cf-sh-del" data-shid="${sh.id}" style="color:var(--red);padding:3px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg></button>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:${sh.isPaid?'rgba(16,185,129,0.08)':'rgba(245,158,11,0.05)'};border-top:1px solid rgba(124,58,237,0.12)">
+                  <span style="font-size:11px;color:${sh.isPaid?'#34d399':'#fbbf24'}">
+                    ${sh.isPaid
+                      ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" style="vertical-align:middle"><polyline points="20,6 9,17 4,12"/></svg> Paid $${sh.paidAmount.toFixed(2)} this month`
+                      : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" style="vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg> Pending for ' + periodLabel}
+                  </span>
+                  <button class="btn btn-sm cf-div-pay" data-shid="${sh.id}" data-period="${currentPeriod}" data-amount="${sh.dividend}" data-payid="${sh.paymentId||''}" data-ispaid="${sh.isPaid?'1':'0'}"
+                    style="padding:4px 10px;font-size:10px;font-weight:700;border-radius:7px;${sh.isPaid
+                      ? 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171'
+                      : 'background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.3);color:#34d399'}">
+                    ${sh.isPaid
+                      ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg> Undo`
+                      : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle"><polyline points="20,6 9,17 4,12"/></svg> Mark Paid`}
+                  </button>
                 </div>
               </div>`).join('')}
           </div>
-        </div>`;
+          <div style="margin-top:10px;padding:10px 14px;border-radius:10px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'Orbitron',monospace;font-size:11px;color:#c084fc;font-weight:700">TOTAL POOL</span>
+            <span style="font-family:'Orbitron',monospace;font-size:15px;font-weight:800;color:${netProfit>=0?'#34d399':'#f87171'}">$${Math.max(0,netProfit).toFixed(2)}</span>
+          </div>
+        </div>`; 
     }
 
     // ============================================================
@@ -10491,6 +10585,33 @@
         };
       });
 
+      // ── Dividend: mark paid / undo ──
+      $$('.cf-div-pay').forEach(btn => {
+        btn.onclick = async () => {
+          var shId    = btn.dataset.shid;
+          var period  = btn.dataset.period;
+          var amount  = parseFloat(btn.dataset.amount) || 0;
+          var payId   = btn.dataset.payid;
+          var isPaid  = btn.dataset.ispaid === '1';
+          if (isPaid) {
+            // Undo — delete the payment record
+            if (!confirm('Undo dividend payment for this shareholder?')) return;
+            if (payId) {
+              await db.doc(cfPath('dividendPayments') + '/' + payId).delete().catch(() => {});
+              cfDividendPayments = cfDividendPayments.filter(p => p.id !== payId);
+            }
+          } else {
+            // Mark as paid — save record
+            var rec = { shareholderId: shId, amount, period, paidAt: new Date().toISOString() };
+            var sh = cfShareholders.find(s => s.id === shId);
+            rec.shareholderName = sh ? sh.name : '';
+            var doc = await db.collection(cfPath('dividendPayments')).add(rec).catch(() => null);
+            if (doc) cfDividendPayments.push(Object.assign({ id: doc.id }, rec));
+          }
+          render();
+        };
+      });
+
       // Shareholder: add
       if ($('#cfAddSh')) {
         $('#cfAddSh').onclick = async () => {
@@ -10567,7 +10688,7 @@
     var _cfLoaded = false;
     var _cfLoadOrig = loadAllData;
     async function cfEnsureLoaded() {
-      if (!_cfLoaded && state.user && state.empRole !== 'employee') {
+      if (!_cfLoaded && state.user) {
         _cfLoaded = true;
         await cfLoadAll();
       }
