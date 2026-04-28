@@ -375,6 +375,7 @@
     .badge-red { background:rgba(239,68,68,0.13); color:#fca5a5; border:1px solid rgba(239,68,68,0.25); }
     .badge-orange { background:rgba(245,158,11,0.13); color:#fcd34d; border:1px solid rgba(245,158,11,0.25); }
     .badge-cyan { background:rgba(6,182,212,0.13); color:#67e8f9; border:1px solid rgba(6,182,212,0.25); }
+    .badge-yellow { background:rgba(251,191,36,0.13); color:#fde68a; border:1px solid rgba(251,191,36,0.25); }
     .badge-pink { background:rgba(236,72,153,0.13); color:#f9a8d4; border:1px solid rgba(236,72,153,0.25); }
 
     /* LABEL */
@@ -1231,12 +1232,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -1468,6 +1470,8 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         
         _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
         invalidateAnalyticsCache();
+        // Sync any newly loaded bills into CF transactions if CF is already loaded
+        if (_cfLoaded && state.empRole !== 'employee') cfSyncBillsToTransactions();
         // Soft-refresh bill history without rebuilding entire page
         if(state.view === 'company' && state.companyTab === 'billing') {
           refreshBillHistory();
@@ -1775,6 +1779,30 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
             // Update local bill + refresh just the select styling
             var lb = state.bills.find(function(b){return b._id===bid});
             if(lb){lb.paymentStatus=newStatus;if(updates.partialAmount!==undefined)lb.partialAmount=updates.partialAmount;if(updates.balanceDue!==undefined)lb.balanceDue=updates.balanceDue;}
+            // Re-sync CF: if bill now received/partial, ensure it has a CF transaction
+            if (_cfLoaded && state.empRole !== 'employee') {
+              if (newStatus !== 'not_received' && lb) {
+                // Remove old synced entry so cfSyncBillsToTransactions can recreate with correct amount
+                var _refId = lb.referenceNumber || lb._id;
+                var _exIdx = cfTransactions.findIndex(function(t){ return t.billId === _refId; });
+                if (_exIdx >= 0) {
+                  var _exTx = cfTransactions[_exIdx];
+                  if (_exTx.id && !_exTx.id.startsWith('_sync_')) {
+                    db.doc(cfPath('transactions') + '/' + _exTx.id).delete().catch(function(){});
+                  }
+                  cfTransactions.splice(_exIdx, 1);
+                }
+              } else if (newStatus === 'not_received' && lb) {
+                // Remove any CF transaction for this bill
+                var _refId2 = lb.referenceNumber || lb._id;
+                cfTransactions = cfTransactions.filter(function(t){
+                  if (t.billId !== _refId2) return true;
+                  if (t.id && !t.id.startsWith('_sync_')) db.doc(cfPath('transactions') + '/' + t.id).delete().catch(function(){});
+                  return false;
+                });
+              }
+              cfSyncBillsToTransactions();
+            }
             invalidateAnalyticsCache();
             _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
             // Update select appearance without full render
@@ -2246,7 +2274,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
                 </div>
               </div>
             </div>
-            <div id="menuGlobalAnalytics" style="display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.13),rgba(6,182,212,0.07));border:1px solid rgba(124,58,237,0.28);box-shadow:0 2px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin-bottom:8px;cursor:pointer;transition:transform 0.17s ease,box-shadow 0.17s ease,border-color 0.17s ease;width:auto;box-sizing:border-box;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(124,58,237,0.25),inset 0 1px 0 rgba(255,255,255,0.09)';this.style.borderColor='rgba(167,139,250,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.06)';this.style.borderColor='rgba(124,58,237,0.28)'"><div style="width:40px;height:40px;min-width:40px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#7c3aed,#0891b2);box-shadow:0 3px 14px rgba(124,58,237,0.38);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div><div style="flex:1;min-width:0;overflow:hidden;"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#ede9fe;letter-spacing:0.7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">ANALYTICS</div><div style="font-size:10px;color:rgba(160,160,180,0.85);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">Global overview &amp; insights</div></div><div style="flex-shrink:0;min-width:15px;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(196,181,253,0.6)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg></div></div>
+            <div id="menuGlobalAnalytics" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,0.13),rgba(6,182,212,0.07));border:1px solid rgba(124,58,237,0.28);box-shadow:0 2px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);margin-bottom:8px;cursor:pointer;transition:transform 0.17s ease,box-shadow 0.17s ease,border-color 0.17s ease;width:auto;box-sizing:border-box;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(124,58,237,0.25),inset 0 1px 0 rgba(255,255,255,0.09)';this.style.borderColor='rgba(167,139,250,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 16px rgba(124,58,237,0.12),inset 0 1px 0 rgba(255,255,255,0.06)';this.style.borderColor='rgba(124,58,237,0.28)'"><div style="width:40px;height:40px;min-width:40px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#7c3aed,#0891b2);box-shadow:0 3px 14px rgba(124,58,237,0.38);display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg></div><div style="flex:1;min-width:0;overflow:hidden;"><div style="font-family:'Orbitron',monospace;font-weight:800;font-size:13px;color:#ede9fe;letter-spacing:0.7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">ANALYTICS</div><div style="font-size:10px;color:rgba(160,160,180,0.85);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">Global overview &amp; insights</div></div><div style="flex-shrink:0;min-width:15px;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(196,181,253,0.6)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg></div></div>
             <div style="height:1px;background:linear-gradient(to right,transparent,rgba(167,139,250,0.2),transparent);margin:2px 0 8px"></div>
             <!-- CASH FLOW MANAGEMENT MENU BUTTON — manager only -->
             ${state.empRole !== 'employee' ? `<div id="menuCashFlow" style="display:flex;align-items:center;gap:10px;padding:11px 12px 11px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(6,182,212,0.07));border:1px solid rgba(16,185,129,0.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 2px 12px rgba(16,185,129,0.1),inset 0 1px 0 rgba(255,255,255,0.05);margin-bottom:8px;cursor:pointer;transition:transform 0.17s ease,box-shadow 0.17s ease;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 18px rgba(16,185,129,0.2),inset 0 1px 0 rgba(255,255,255,0.08)'" onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(16,185,129,0.1),inset 0 1px 0 rgba(255,255,255,0.05)'"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span style="font-weight:700;color:var(--textPrimary);font-size:13px;flex:1">Cash Flow Management</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(52,211,153,0.5)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,18 15,12 9,6"/></svg></div>` : ''}
@@ -2676,7 +2704,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `points_manager_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `sweepAdmin_backup_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
     }
 
@@ -3193,7 +3221,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         ${isEmp
           ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;margin-bottom:12px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;font-size:12px;color:#fbbf24">
                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-               View only. You can update points — name and rate are locked.
+               View only. Available &amp; ordered points shown — name and rate are manager-only.
              </div>`
           : `<div class="card" style="padding:12px;margin-bottom:14px;background:var(--bgInput)">
                <div style="margin-bottom:8px">
@@ -3218,11 +3246,16 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       if (!list) return;
       const filtered = state.masterGames.filter(g => g.name.toLowerCase().includes(search));
       const showCostRate = state.empRole !== 'employee' || getEmpPerm('viewCostRate');
+      const isManager = state.empRole !== 'employee';
       list.innerHTML = filtered.map(g => `
         <div class="mg-row" style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);gap:8px;cursor:pointer;transition:background 0.15s" data-id="${g._id}" onmouseenter="this.style.background='var(--bgHover)'" onmouseleave="this.style.background='transparent'">
           <span style="font-size:16px">🎮</span>
-          <span style="flex:1;font-weight:600;font-size:14px">${esc(g.name)}</span>
-          ${showCostRate ? `<span class="badge badge-orange" style="margin-right:4px">${g.costRate||0}%</span>` : ''}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px">${esc(g.name)}</div>
+            ${isManager && g.assignedUsername ? `<div style="font-size:10px;color:var(--textMuted);margin-top:1px">${esc(g.assignedUsername)} · ${esc(g.assignedLevel||'')}</div>` : ''}
+          </div>
+          ${showCostRate ? `<span class="badge badge-orange" style="margin-right:2px">${g.costRate||0}%</span>` : ''}
+          ${(g.orderedPoints||0) > 0 ? `<span class="badge badge-yellow" title="Ordered Points">${(g.orderedPoints||0).toLocaleString()} ord pts</span>` : ''}
           <span class="badge ${(g.remainingPoints||0) > 0 ? 'badge-cyan' : 'badge-red'}">${(g.remainingPoints||0).toLocaleString()} pts</span>
           <span style="color:var(--textMuted);font-size:12px">▸</span>
         </div>
@@ -3264,82 +3297,325 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       });
     }
 
+    // ============================================================
+    // HIERARCHY LEVELS FOR MASTER GAME INVENTORY
+    // ============================================================
+    const MG_HIERARCHY_LEVELS = ['Supermaster', 'Master', 'Agent', 'Distributor', 'Subdistributor', 'Store'];
+
     function showMasterGameDetail(g) {
       $('#mgDetailOverlay')?.remove();
       const isEmp = state.empRole === 'employee';
-      const canSeeCostRate = !isEmp || getEmpPerm('viewCostRate');
-      const lockIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      overlay.id = 'mgDetailOverlay';
-      overlay.innerHTML = `<div class="modal fade-in" style="max-width:400px">
-        <div class="modal-header">
-          <h3 class="modal-title">${isEmp ? 'UPDATE POINTS' : 'EDIT GAME'}</h3>
-          <button class="btn btn-ghost btn-sm" id="closeMgDetail"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div style="margin-bottom:16px">
-          <span class="label" style="display:flex;align-items:center">${isEmp ? lockIcon : ''}Game Name</span>
-          <input class="input" id="mgDetailName" value="${esc(g.name)}" ${isEmp ? 'readonly style="opacity:0.45;cursor:not-allowed;background:var(--bgInput)"' : ''} />
-          ${isEmp ? '<div style="font-size:10px;color:#fbbf24;margin-top:3px;display:flex;align-items:center;gap:4px">' + lockIcon + 'Only manager can edit game name</div>' : ''}
-        </div>
-        <div style="margin-bottom:16px">
-          <span class="label">Remaining Points</span>
-          <input class="input" type="number" id="mgDetailPts" value="${g.remainingPoints||0}" />
-        </div>
-        ${canSeeCostRate ? `
-        <div style="margin-bottom:16px">
-          <span class="label" style="display:flex;align-items:center">${isEmp ? lockIcon : ''}Cost Rate (%)</span>
-          <input class="input" type="number" id="mgDetailCostRate" value="${g.costRate||0}" ${isEmp ? 'readonly style="opacity:0.45;cursor:not-allowed;background:var(--bgInput)"' : ''} />
-          ${isEmp ? '<div style="font-size:10px;color:#fbbf24;margin-top:3px;display:flex;align-items:center;gap:4px">' + lockIcon + 'Only manager can edit rate</div>' : ''}
-        </div>` : ''}
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-green" id="mgDetailSave" style="flex:1">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>
-            ${isEmp ? 'Update Points' : 'Save'}
-          </button>
-          ${!isEmp ? `<button class="btn btn-red" id="mgDetailDelete">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            Delete
-          </button>` : ''}
-        </div>
-      </div>`;
-      document.body.appendChild(overlay);
 
-      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-      $('#closeMgDetail').onclick = () => overlay.remove();
-      const mgDetailSaveHandler = () => $('#mgDetailSave').click();
-      $$('#mgDetailOverlay input.input').forEach(inp => {
-        inp.onkeydown = (e) => { if (e.key === 'Enter') mgDetailSaveHandler(); };
-      });
-      $('#mgDetailSave').onclick = async () => {
-        const newPts = parseFloat($('#mgDetailPts').value) || 0;
-        const btn = $('#mgDetailSave');
-        btn.disabled = true; btn.innerHTML = 'Saving...';
-        if (isEmp) {
-          // Cashier: only update remainingPoints
+      // ── EMPLOYEE VIEW: unchanged simple edit ──────────────────────
+      if (isEmp) {
+        const canSeeCostRate = getEmpPerm('viewCostRate');
+        const lockIcon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.id = 'mgDetailOverlay';
+        overlay.innerHTML = `<div class="modal fade-in" style="max-width:400px">
+          <div class="modal-header">
+            <h3 class="modal-title">UPDATE POINTS</h3>
+            <button class="btn btn-ghost btn-sm" id="closeMgDetail"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div style="margin-bottom:16px">
+            <span class="label" style="display:flex;align-items:center">${lockIcon}Game Name</span>
+            <input class="input" id="mgDetailName" value="${esc(g.name)}" readonly style="opacity:0.45;cursor:not-allowed;background:var(--bgInput)" />
+            <div style="font-size:10px;color:#fbbf24;margin-top:3px;display:flex;align-items:center;gap:4px">${lockIcon}Only manager can edit game name</div>
+          </div>
+          <div style="margin-bottom:16px">
+            <span class="label">Remaining Points</span>
+            <input class="input" type="number" id="mgDetailPts" value="${g.remainingPoints||0}" />
+          </div>
+          ${(g.orderedPoints||0) > 0 ? `<div style="margin-bottom:16px;padding:10px 12px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11px;color:#fbbf24;font-weight:600">Ordered Points</span>
+            <span class="badge badge-yellow">${(g.orderedPoints||0).toLocaleString()} pts</span>
+          </div>` : ''}
+          ${canSeeCostRate ? `
+          <div style="margin-bottom:16px">
+            <span class="label" style="display:flex;align-items:center">${lockIcon}Cost Rate (%)</span>
+            <input class="input" type="number" id="mgDetailCostRate" value="${g.costRate||0}" readonly style="opacity:0.45;cursor:not-allowed;background:var(--bgInput)" />
+            <div style="font-size:10px;color:#fbbf24;margin-top:3px;display:flex;align-items:center;gap:4px">${lockIcon}Only manager can edit rate</div>
+          </div>` : ''}
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" id="mgDetailSave" style="flex:1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>
+              Update Points
+            </button>
+          </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+        $('#closeMgDetail').onclick = () => overlay.remove();
+        $('#mgDetailSave').onclick = async () => {
+          const newPts = parseFloat($('#mgDetailPts').value) || 0;
+          const btn = $('#mgDetailSave');
+          btn.disabled = true; btn.innerHTML = 'Saving...';
           await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).update({ remainingPoints: newPts }));
-        } else {
-          // Owner: full edit
-          const newName = $('#mgDetailName').value.trim();
-          if (!newName) { btn.disabled = false; btn.innerHTML = 'Save'; return; }
-          const newCostRate = parseFloat($('#mgDetailCostRate').value) || 0;
-          await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).update({ name: newName, remainingPoints: newPts, costRate: newCostRate }));
-        }
-        overlay.remove();
-        renderMasterGamesList();
-        bindMasterGameListEvents();
-      };
-      if (!isEmp) {
-        $('#mgDetailDelete').onclick = async () => {
-          if (!confirm('Delete "' + g.name + '"?')) return;
-          const btn = $('#mgDetailDelete');
-          btn.disabled = true; btn.innerHTML = 'Deleting...';
-          await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).delete());
           overlay.remove();
           renderMasterGamesList();
           bindMasterGameListEvents();
         };
+        return;
       }
+
+      // ── MANAGER VIEW: full hierarchy inventory panel ──────────────
+      const available = g.remainingPoints || 0;
+      const ordered   = g.orderedPoints   || 0;
+      const stockHistory   = g.stockHistory   || [];
+      const orderHistory   = g.orderHistory   || [];
+      const billingHistory = g.billingHistory || [];
+
+      const lvlOptions = MG_HIERARCHY_LEVELS.map(l =>
+        `<option value="${l}" ${(g.assignedLevel||'') === l ? 'selected' : ''}>${l}</option>`).join('');
+      const highLvlOptions = MG_HIERARCHY_LEVELS.map(l =>
+        `<option value="${l}" ${(g.highestLevel||'') === l ? 'selected' : ''}>${l}</option>`).join('');
+
+      // Build history rows
+      function fmtHistRows(arr, cols, emptyMsg) {
+        if (!arr.length) return `<tr><td colspan="${cols}" style="padding:10px;text-align:center;color:var(--textMuted);font-size:11px">${emptyMsg}</td></tr>`;
+        return arr.slice().reverse().slice(0, 50).map(r => {
+          if (cols === 4) { // stock history
+            const colorClass = r.actionType === 'Add' ? 'badge-green' : r.actionType === 'Deduct' ? 'badge-red' : 'badge-cyan';
+            return `<tr>
+              <td style="padding:5px 8px;font-size:11px;color:var(--textMuted)">${r.date||''}</td>
+              <td style="padding:5px 8px;font-size:11px"><span class="badge ${colorClass}">${r.actionType||''}</span></td>
+              <td style="padding:5px 8px;font-size:11px;text-align:right">${r.amount!=null?(r.amount>0?'+':'')+r.amount.toLocaleString():''}</td>
+              <td style="padding:5px 8px;font-size:11px;text-align:right">${r.newAvailable!=null?r.newAvailable.toLocaleString():''}</td>
+            </tr>`;
+          } else if (cols === 5) { // order history
+            return `<tr>
+              <td style="padding:5px 8px;font-size:11px;color:var(--textMuted)">${r.date||''}</td>
+              <td style="padding:5px 8px;font-size:11px">${r.amount!=null?r.amount.toLocaleString():''}</td>
+              <td style="padding:5px 8px;font-size:11px">${esc(r.username||'')}</td>
+              <td style="padding:5px 8px;font-size:11px">${esc(r.accountLevel||'')}</td>
+              <td style="padding:5px 8px;font-size:11px"><span class="badge badge-yellow">${esc(r.status||'Pending')}</span></td>
+            </tr>`;
+          } else { // billing history (6 cols)
+            return `<tr>
+              <td style="padding:5px 8px;font-size:11px;color:var(--textMuted)">${r.date||''}</td>
+              <td style="padding:5px 8px;font-size:11px;text-align:right;color:#ef4444">-${(r.amount||0).toLocaleString()}</td>
+              <td style="padding:5px 8px;font-size:11px">${esc(r.username||'')}</td>
+              <td style="padding:5px 8px;font-size:11px"><span class="badge ${r.billingType==='Direct'?'badge-cyan':'badge-yellow'}">${esc(r.billingType||'')}</span></td>
+            </tr>`;
+          }
+        }).join('');
+      }
+
+      const tableStyle = `width:100%;border-collapse:collapse;font-size:11px`;
+      const thStyle = `padding:5px 8px;text-align:left;font-size:10px;color:var(--textMuted);font-weight:700;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid var(--border)`;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.id = 'mgDetailOverlay';
+      overlay.innerHTML = `<div class="modal fade-in" style="max-width:560px;max-height:92vh;overflow-y:auto">
+        <div class="modal-header" style="position:sticky;top:0;background:var(--bgModal,var(--bgCard));z-index:2">
+          <h3 class="modal-title">🎮 ${esc(g.name)}</h3>
+          <button class="btn btn-ghost btn-sm" id="closeMgDetail"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <!-- STOCK OVERVIEW -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          <div style="background:var(--bgInput);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:var(--textMuted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Available Balance</div>
+            <div style="font-size:22px;font-weight:700;color:${available>0?'#22d3ee':'#ef4444'}">${available.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--textMuted)">pts</div>
+          </div>
+          <div style="background:var(--bgInput);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:var(--textMuted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px">Ordered Points</div>
+            <div style="font-size:22px;font-weight:700;color:#fbbf24">${ordered.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--textMuted)">pts</div>
+          </div>
+        </div>
+
+        <!-- TABS -->
+        <div style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0">
+          ${['Config','Stock','History'].map((t,i) =>
+            `<button class="mg-inv-tab btn btn-ghost btn-sm" data-tab="${t}" style="border-radius:6px 6px 0 0;${i===0?'background:var(--bgInput);':''}">${t}</button>`
+          ).join('')}
+        </div>
+
+        <!-- TAB: CONFIG -->
+        <div id="mgTab-Config">
+          <div style="margin-bottom:12px">
+            <span class="label">Game Name</span>
+            <input class="input" id="mgDetailName" value="${esc(g.name)}" />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div>
+              <span class="label">Cost Rate (%)</span>
+              <input class="input" type="number" id="mgDetailCostRate" value="${g.costRate||0}" />
+            </div>
+            <div>
+              <span class="label">Assigned Username</span>
+              <input class="input" id="mgDetailUsername" value="${esc(g.assignedUsername||'')}" placeholder="e.g. dist_account1" />
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+            <div>
+              <span class="label">Assigned Account Level</span>
+              <select class="input" id="mgDetailAssignedLevel"><option value="">— Select —</option>${lvlOptions}</select>
+            </div>
+            <div>
+              <span class="label">Highest Level (This Game)</span>
+              <select class="input" id="mgDetailHighestLevel"><option value="">— Select —</option>${highLvlOptions}</select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-green" id="mgConfigSave" style="flex:1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Save Config
+            </button>
+            <button class="btn btn-red" id="mgDetailDelete">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Delete
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB: STOCK -->
+        <div id="mgTab-Stock" style="display:none">
+          <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#fbbf24">
+            <b>Add Stock</b> increments balance. <b>Set Total</b> replaces it entirely. <b>Deduct</b> is a manual correction.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+            <div>
+              <span class="label">Amount</span>
+              <input class="input" type="number" id="mgStockAmt" placeholder="0" />
+            </div>
+            <div>
+              <span class="label">Action</span>
+              <select class="input" id="mgStockAction">
+                <option value="Add">Add Stock (+)</option>
+                <option value="Set">Set Total (replace)</option>
+                <option value="Deduct">Deduct (correction)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-green" id="mgStockApply" style="width:100%">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Apply Stock Action
+          </button>
+        </div>
+
+        <!-- TAB: HISTORY -->
+        <div id="mgTab-History" style="display:none">
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--textMuted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">Stock History</div>
+            <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+              <table style="${tableStyle}">
+                <thead><tr>
+                  <th style="${thStyle}">Date</th><th style="${thStyle}">Action</th>
+                  <th style="${thStyle};text-align:right">Amount</th><th style="${thStyle};text-align:right">New Avail.</th>
+                </tr></thead>
+                <tbody>${fmtHistRows(stockHistory, 4, 'No stock history')}</tbody>
+              </table>
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--textMuted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">Order History</div>
+            <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+              <table style="${tableStyle}">
+                <thead><tr>
+                  <th style="${thStyle}">Date</th><th style="${thStyle}">Ordered</th>
+                  <th style="${thStyle}">Username</th><th style="${thStyle}">Level</th><th style="${thStyle}">Status</th>
+                </tr></thead>
+                <tbody>${fmtHistRows(orderHistory, 5, 'No order history')}</tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--textMuted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">Billing History</div>
+            <div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px">
+              <table style="${tableStyle}">
+                <thead><tr>
+                  <th style="${thStyle}">Date</th><th style="${thStyle};text-align:right">Deducted</th>
+                  <th style="${thStyle}">Username</th><th style="${thStyle}">Type</th>
+                </tr></thead>
+                <tbody>${fmtHistRows(billingHistory, 4, 'No billing history')}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>`;
+      document.body.appendChild(overlay);
+
+      // Tab switching
+      $$('.mg-inv-tab').forEach(btn => {
+        btn.onclick = () => {
+          $$('.mg-inv-tab').forEach(b => b.style.background = '');
+          btn.style.background = 'var(--bgInput)';
+          ['Config','Stock','History'].forEach(t => {
+            const el = $('#mgTab-'+t);
+            if (el) el.style.display = (t === btn.dataset.tab) ? '' : 'none';
+          });
+        };
+      });
+
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+      $('#closeMgDetail').onclick = () => overlay.remove();
+
+      // CONFIG SAVE
+      $('#mgConfigSave').onclick = async () => {
+        const newName = $('#mgDetailName').value.trim();
+        if (!newName) return;
+        const newCostRate = parseFloat($('#mgDetailCostRate').value) || 0;
+        const assignedUsername = $('#mgDetailUsername').value.trim();
+        const assignedLevel = $('#mgDetailAssignedLevel').value;
+        const highestLevel = $('#mgDetailHighestLevel').value;
+        const btn = $('#mgConfigSave');
+        btn.disabled = true; btn.innerHTML = 'Saving...';
+        await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).update({
+          name: newName, costRate: newCostRate,
+          assignedUsername, assignedLevel, highestLevel
+        }));
+        btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Saved!';
+        setTimeout(() => { if($('#mgConfigSave')) $('#mgConfigSave').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Save Config'; }, 1500);
+        renderMasterGamesList();
+        bindMasterGameListEvents();
+      };
+
+      // DELETE
+      $('#mgDetailDelete').onclick = async () => {
+        if (!confirm('Delete "' + g.name + '"?')) return;
+        const btn = $('#mgDetailDelete');
+        btn.disabled = true; btn.innerHTML = 'Deleting...';
+        await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).delete());
+        overlay.remove();
+        renderMasterGamesList();
+        bindMasterGameListEvents();
+      };
+
+      // STOCK APPLY
+      $('#mgStockApply').onclick = async () => {
+        const amt = parseFloat($('#mgStockAmt').value) || 0;
+        if (amt <= 0) { showPopup('Enter a valid amount', 'error'); return; }
+        const action = $('#mgStockAction').value;
+        const prev = g.remainingPoints || 0;
+        let newAvail;
+        if (action === 'Add')    newAvail = prev + amt;
+        else if (action === 'Set') newAvail = amt;
+        else                       newAvail = Math.max(0, prev - amt);
+        const now = new Date().toISOString().slice(0,10);
+        const entry = { date: now, actionType: action, amount: action==='Add'?amt:(action==='Deduct'?-amt:amt), previousAvailable: prev, newAvailable: newAvail };
+        const newHistory = [...(g.stockHistory||[]), entry];
+        const btn = $('#mgStockApply');
+        btn.disabled = true; btn.innerHTML = 'Applying...';
+        await trackedWrite(() => db.doc(`${userPath()}/masterGames/${g._id}`).update({
+          remainingPoints: newAvail,
+          totalPoints: action === 'Set' ? amt : (g.totalPoints || prev),
+          stockHistory: newHistory
+        }));
+        g.remainingPoints = newAvail;
+        g.stockHistory = newHistory;
+        if (action === 'Set') g.totalPoints = amt;
+        // Refresh overlay
+        overlay.remove();
+        renderMasterGamesList();
+        bindMasterGameListEvents();
+        showMasterGameDetail(state.masterGames.find(x => x._id === g._id) || g);
+        showPopup(`Stock ${action}: ${amt.toLocaleString()} pts → ${newAvail.toLocaleString()} available`, 'success');
+      };
+
+
     }
 
     // ============================================================
@@ -3649,7 +3925,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
                   <input class="input" id="pmDropInput" value="${esc((cfPaymentMethods.find(pm=>pm.id===state.selectedPaymentMethodId)||cfPaymentMethods[0]||{name:''}).name)}" autocomplete="off" style="cursor:pointer;padding-right:28px;background:rgba(16,185,129,0.07);border-color:rgba(52,211,153,0.25);font-size:13px" readonly />
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2.5" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none"><polyline points="6,9 12,15 18,9"/></svg>
                   <input type="hidden" id="pmDropHidden" value="${esc(state.selectedPaymentMethodId||'')}"/>
-                  <div id="pmDropList" class="hidden" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:300;max-height:200px;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+                  <div id="pmDropList" class="hidden" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:9999;max-height:200px;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
                     ${cfPaymentMethods.map(pm => `<div class="dropdown-item pm-drop-opt${state.selectedPaymentMethodId===pm.id?' selected':''}" data-pmid="${esc(pm.id)}" data-pmname="${esc(pm.name)}">${esc(pm.name)}</div>`).join('')}
                   </div>
                 </div>
@@ -4253,15 +4529,52 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
               _saveBillInProgress = false;
               return;
             }
-            // Deduct from master games
+            // Deduct from master games (or increment orderedPoints for hierarchy ordering)
             for (const item of state.billItems) {
               if (item.gameId) {
                 const calc = calcLine(item);
                 const mg = state.masterGames.find(g => g.name === item.gameName);
                 if (mg) {
-                  const newPts = (mg.remainingPoints || 0) - calc.points;
-                  await db.doc(userPath()+'/masterGames/'+mg._id).update({ remainingPoints: newPts });
-                  mg.remainingPoints = newPts;
+                  const _billDate = bill.date || new Date().toISOString().slice(0,10);
+                  // Hierarchy check: if the username's level matches the game's highest level,
+                  // the manager cannot load to that level directly — it must come from ordered stock.
+                  // Also: if the game has an assignedUsername and the bill username matches it
+                  // and their level equals the highestLevel configured for this game → ordered.
+                  const _itemUsername = item.username || '';
+                  const _userLevel = getUserLevel(c, _itemUsername, item.gameName);
+                  const _highestLevel = mg.highestLevel || '';
+                  const _assignedLevel = mg.assignedLevel || '';
+                  // isOrdered = true when billing to a username whose level equals the game's
+                  // highest configured account level (peer-level load → must source from ordered)
+                  const _isOrdered = _highestLevel &&
+                    (_userLevel === _highestLevel || _assignedLevel === _highestLevel && _itemUsername === (mg.assignedUsername || ''));
+                  const _mgUpdatePayload = {};
+                  if (_isOrdered) {
+                    // Add to orderedPoints — do NOT touch remainingPoints
+                    const newOrdered = (mg.orderedPoints || 0) + calc.points;
+                    _mgUpdatePayload.orderedPoints = newOrdered;
+                    if (state.empRole !== 'employee') {
+                      const _orderEntry = { date: _billDate, amount: calc.points, username: _itemUsername, accountLevel: _userLevel || _assignedLevel, status: 'Auto' };
+                      mg.orderHistory = [...(mg.orderHistory || []), _orderEntry];
+                      _mgUpdatePayload.orderHistory = mg.orderHistory;
+                      const _billingEntry = { date: _billDate, amount: calc.points, username: _itemUsername, billingType: 'Ordered' };
+                      mg.billingHistory = [...(mg.billingHistory || []), _billingEntry];
+                      _mgUpdatePayload.billingHistory = mg.billingHistory;
+                    }
+                    await db.doc(userPath()+'/masterGames/'+mg._id).update(_mgUpdatePayload);
+                    mg.orderedPoints = newOrdered;
+                  } else {
+                    // Direct load — deduct from available balance
+                    const newPts = (mg.remainingPoints || 0) - calc.points;
+                    _mgUpdatePayload.remainingPoints = newPts;
+                    if (state.empRole !== 'employee') {
+                      const _billingEntry = { date: _billDate, amount: calc.points, username: _itemUsername, billingType: 'Direct' };
+                      mg.billingHistory = [...(mg.billingHistory || []), _billingEntry];
+                      _mgUpdatePayload.billingHistory = mg.billingHistory;
+                    }
+                    await db.doc(userPath()+'/masterGames/'+mg._id).update(_mgUpdatePayload);
+                    mg.remainingPoints = newPts;
+                  }
                 }
               }
             }
@@ -7151,9 +7464,28 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         try{
           await db.doc(userPath()+'/bills/'+bill._id).delete();
           state.bills=state.bills.filter(function(b){return b._id!==bill._id});
+          // Restore credit balance: recompute from remaining bills for this company
+          try {
+            var _delCompId = bill.companyId || c._id;
+            var _remainBills = state.bills.filter(function(b){ return b.companyId === _delCompId; });
+            var _newCrBal = 0;
+            _remainBills.forEach(function(b){
+              var _isHolder = (b.totalDollars||0) === 0 && (b.totalPoints||0) === 0;
+              (b.extraPayments||[]).forEach(function(ep){
+                if(ep.isCredit) _newCrBal += (ep.amount||0);
+                else if(ep.isGeneral && _isHolder) _newCrBal += (ep.amount||0);
+              });
+              _newCrBal -= (b.creditApplied||0);
+            });
+            _newCrBal = Math.max(0, parseFloat(_newCrBal.toFixed(2)));
+            await db.doc(userPath()+'/companies/'+_delCompId).update({creditBalance: _newCrBal});
+            if(state.companies[_delCompId]) state.companies[_delCompId].creditBalance = _newCrBal;
+          } catch(_crErr){ console.error('Credit recalc failed:', _crErr); }
           invalidateAnalyticsCache();
           _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
-          ov.remove();refreshBillHistory();
+          ov.remove();
+          // refreshBillingPanel re-renders the entire billing content including credit card
+          refreshBillingPanel();
         }catch(e2){alert('Error: '+e2.message);delBtn.disabled=false;delBtn.textContent='Delete'}
       };
     }
@@ -7537,7 +7869,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -10009,6 +10341,8 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         cfShareholders      = shSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
         cfOperatingExpenses = opSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
         cfDividendPayments  = divSnap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+        // Auto-sync historical bills that were never tracked as CF transactions
+        cfSyncBillsToTransactions();
       } catch(e) { console.warn('[CF] load error:', e.message); }
     }
 
@@ -10058,58 +10392,195 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       }
     }
 
+    // ── Sync all existing bills into cfTransactions (backfill) ──
+    // Called after both state.bills and cfTransactions are loaded.
+    // Creates a cfTransaction record for every bill that has received/partial payment
+    // but has no matching cfTransaction entry. Uses paymentMethodId stored on the bill if
+    // available, otherwise falls back to the most-used method for the company or cfPaymentMethods[0].
+    // Existing records (matched by billId = referenceNumber) are NOT overwritten.
+    function cfSyncBillsToTransactions() {
+      if (!state.bills || !state.bills.length) return;
+      var writes = [];
+      state.bills.forEach(function(bill) {
+        var status = bill.paymentStatus;
+        if (!status || status === 'not_received') return;
+        var refId = bill.referenceNumber || bill._id;
+        if (!refId) return;
+        // Check if a transaction already exists for this bill
+        var existing = cfTransactions.find(function(t){ return t.billId === refId; });
+        if (existing) return; // already tracked
+        var amount = 0;
+        if (status === 'received') amount = (bill.totalDollars || 0) + (bill.extraFeeAmount || 0);
+        else if (status === 'partial') amount = bill.partialAmount || 0;
+        if (amount <= 0) return;
+        // Determine payment method: prefer the one stored on the bill, then most-used for company, then first
+        var pmId = bill.paymentMethodId || cfGetMostUsedPaymentMethod(bill.companyId) || (cfPaymentMethods[0] && cfPaymentMethods[0].id) || '';
+        var companyObj = state.companies && state.companies[bill.companyId];
+        var tx = {
+          type: 'income',
+          category: 'bill',
+          amount: parseFloat(amount.toFixed(2)),
+          paymentMethodId: pmId,
+          companyId: bill.companyId || '',
+          companyName: (companyObj && companyObj.name) || bill.companyName || '',
+          date: bill.date || new Date().toISOString(),
+          billId: refId,
+          note: refId,
+          synced: true // mark as auto-synced
+        };
+        // Push locally immediately so UI updates
+        var localTx = Object.assign({ id: '_sync_' + refId }, tx);
+        cfTransactions.push(localTx);
+        // Persist to Firestore async, then update the local id
+        writes.push(
+          db.collection(cfPath('transactions')).add(tx).then(function(ref) {
+            localTx.id = ref.id;
+          }).catch(function(){})
+        );
+      });
+      if (writes.length > 0) {
+        Promise.all(writes).catch(function(){});
+      }
+    }
+
     // ── Cached cashier salary data for CF (fetched async on CF page open) ──
     var _cfSalaryCache = null; // { total, paid, unpaid, employees, fromDate, toDate }
 
-    // ── Compute cash flow summary (sync, uses cached salary) ──
+    // ── Compute cash flow summary — derived directly from state.bills (same as computeAnalyticsData) ──
+    // fromDate / toDate: YYYY-MM-DD or YYYY-MM-DDThh:mm strings (local time)
     function cfComputeSummary(fromDate, toDate) {
-      var fD = fromDate ? new Date(fromDate + 'T00:00:00') : null;
-      var tD = toDate   ? new Date(toDate   + 'T23:59:59') : null;
-      var filtered = cfTransactions.filter(t => {
-        var d = new Date(t.date);
-        if (fD && d < fD) return false;
-        if (tD && d > tD) return false;
-        return true;
-      });
-      var opFiltered = cfOperatingExpenses.filter(e => {
-        var d = new Date(e.date);
-        if (fD && d < fD) return false;
-        if (tD && d > tD) return false;
-        return true;
-      });
-      var inflow    = filtered.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
-      var outflow   = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
-      var opExpTotal= opFiltered.reduce((s, e) => s + (e.amount || 0), 0);
-      // Include cashier salary from the existing employee management system
-      var salaryTotal = 0;
-      var salaryEmployees = [];
-      if (_cfSalaryCache && _cfSalaryCache.fromDate === fromDate && _cfSalaryCache.toDate === toDate) {
-        salaryTotal     = _cfSalaryCache.total || 0;
-        salaryEmployees = _cfSalaryCache.employees || [];
+      // Parse bounds — same logic as the bill history and analytics date filters
+      // Accept YYYY-MM-DD (date-only) and YYYY-MM-DDThh:mm (datetime-local) formats
+      var fD = fromDate ? new Date(fromDate.length === 10 ? fromDate + 'T00:00:00' : fromDate + ':00') : null;
+      var tD = toDate   ? new Date(toDate.length   === 10 ? toDate   + 'T23:59:59' : toDate   + ':59') : null;
+
+      // ── INFLOW: final bill amounts + live credit balances across all companies ──
+      var billInflow = 0;   // sum of (totalDollars + extraFeeAmount) per bill in range
+      var creditInflow = 0; // sum of current credit balances across all companies (dynamic)
+
+      // Accumulate live credit balance from every company
+      if (state.companies) {
+        Object.values(state.companies).forEach(function(comp) {
+          creditInflow += getCompanyCreditBalance(comp);
+        });
       }
-      var totalOpEx   = opExpTotal + salaryTotal;
-      var totalOutflow= outflow + totalOpEx;
-      var netProfit   = inflow - totalOutflow;
-      // Breakdown by payment method (income only)
+
+      // Track per-method inflow for the breakdown panel
       var byMethod = {};
-      cfPaymentMethods.forEach(pm => { byMethod[pm.id] = { name: pm.name, total: 0, txs: [] }; });
-      filtered.filter(t => t.type === 'income').forEach(t => {
-        if (t.paymentMethodId && byMethod[t.paymentMethodId]) {
-          byMethod[t.paymentMethodId].total += t.amount || 0;
-          byMethod[t.paymentMethodId].txs.push(t);
+      cfPaymentMethods.forEach(function(pm) { byMethod[pm.id] = { name: pm.name, total: 0, txs: [] }; });
+
+      // For payment-method breakdown we use cfTransactions (which store the method used per bill).
+      // But the TOTALS must come from state.bills directly so they match analytics.
+      var filteredBills = (state.bills || []).filter(function(bill) {
+        var bd = billToDate(bill.date);
+        if (isNaN(bd.getTime())) return true; // keep malformed dates
+        if (fD && bd < fD) return false;
+        if (tD && bd > tD) return false;
+        return true;
+      });
+
+      // ── OUTFLOW: cost basis calculated from all bill items ──
+      var redemptionCost = 0;
+
+      filteredBills.forEach(function(bill) {
+        var bD   = bill.totalDollars || 0;
+        var bFull= bD + (bill.extraFeeAmount || 0);
+
+        // INFLOW: final bill amount per bill in date range
+        billInflow += bFull;
+
+        // OUTFLOW: cost basis from all bill items (costRate * |points|)
+        (bill.items || []).forEach(function(it) {
+          var pts = it.points || 0;
+          if (pts !== 0) {
+            var absPts = Math.abs(pts);
+            var cR = (it.costRate != null ? it.costRate : null);
+            if (cR === null) cR = getCostRate(it.gameName);
+            redemptionCost += absPts * (cR / 100);
+          }
+        });
+
+        // Payment-method breakdown: attribute bill inflow to payment method
+        if (bFull > 0) {
+          var refId = bill.referenceNumber || bill._id;
+          var tx = cfTransactions.find(function(t) { return t.billId === refId; });
+          var pmId = (tx && tx.paymentMethodId) || bill.paymentMethodId || '';
+          if (pmId && byMethod[pmId]) {
+            byMethod[pmId].total  += bFull;
+            byMethod[pmId].txs.push({
+              date: bill.date, amount: bFull,
+              note: refId, companyName: (state.companies && state.companies[bill.companyId] && state.companies[bill.companyId].name) || bill.companyName || '',
+              paymentMethodId: pmId
+            });
+          }
         }
       });
-      return { inflow, outflow, opExpTotal, totalOpEx, totalOutflow, netProfit,
+
+      // Total inflow = bill revenue + live credit pool
+      var inflow = billInflow + creditInflow;
+
+      // ── OPERATING EXPENSES (manual entries) ──
+      var opFiltered = cfOperatingExpenses.filter(function(e) {
+        var d = new Date(e.date.length === 10 ? e.date + 'T00:00:00' : e.date);
+        if (fD && d < fD) return false;
+        if (tD && d > tD) return false;
+        return true;
+      });
+      var opExpTotal = opFiltered.reduce(function(s, e) { return s + (e.amount || 0); }, 0);
+
+      // ── CASHIER SALARY ──
+      var salaryTotal = 0, salaryEmployees = [];
+      if (_cfSalaryCache && _cfSalaryCache.fromDate === fromDate && _cfSalaryCache.toDate === toDate) {
+        salaryTotal     = _cfSalaryCache.total    || 0;
+        salaryEmployees = _cfSalaryCache.employees || [];
+      }
+
+      // ── TOTALS ──
+      // Outflow = cost basis from bill items + manual op expenses + cashier salaries
+      var totalOpEx    = opExpTotal + salaryTotal;
+      var totalOutflow = redemptionCost + totalOpEx;
+      var grossProfit  = inflow - totalOutflow;
+
+      // filteredTxs: for the tracking tab transaction list, build a unified list from filteredBills
+      // so the list shows real data even before cfTransactions are fully synced
+      var filteredTxs = filteredBills
+        .map(function(b) {
+          var refId = bill_refId(b);
+          var tx = cfTransactions.find(function(t) { return t.billId === refId; });
+          var pmId = (tx && tx.paymentMethodId) || b.paymentMethodId || '';
+          var bFull2 = (b.totalDollars || 0) + (b.extraFeeAmount || 0);
+          var amt = bFull2;
+          if (amt <= 0) return null;
+          return {
+            id: b._id, type: 'income', category: 'bill',
+            amount: parseFloat(amt.toFixed(2)),
+            paymentMethodId: pmId,
+            companyId: b.companyId || '',
+            companyName: (state.companies && state.companies[b.companyId] && state.companies[b.companyId].name) || b.companyName || '',
+            date: b.date,
+            billId: refId,
+            note: refId
+          };
+        })
+        .filter(Boolean)
+        .sort(function(a, b) { return billToDate(b.date) - billToDate(a.date); });
+
+      return { inflow, billInflow, creditInflow, redemptionCost, opExpTotal, totalOpEx, totalOutflow, grossProfit,
                salaryTotal, salaryEmployees, byMethod,
-               filteredTxs: filtered, opFiltered, salaryLoaded: !!_cfSalaryCache };
+               filteredTxs: filteredTxs, opFiltered,
+               salaryLoaded: !!_cfSalaryCache };
     }
+
+    // Helper: get stable bill reference ID
+    function bill_refId(bill) { return bill.referenceNumber || bill._id; }
 
     // ── Async: fetch & cache cashier salary for CF date range ──
     async function cfFetchSalary(fromDate, toDate) {
       if (_cfSalaryCache && _cfSalaryCache.fromDate === fromDate && _cfSalaryCache.toDate === toDate) return;
       try {
-        var f = new Date(fromDate + 'T00:00:00');
-        var t = localEndOfDay(toDate);
+        // Handle both YYYY-MM-DD and YYYY-MM-DDThh:mm
+        var f = new Date(fromDate.length === 10 ? fromDate + 'T00:00:00' : fromDate + ':00');
+        var t = new Date(toDate.length   === 10 ? toDate   + 'T23:59:59' : toDate   + ':59');
         var result = await fetchOperatingExpenses(f, t);
         _cfSalaryCache = Object.assign({ fromDate, toDate }, result);
       } catch(e) {
@@ -10119,8 +10590,8 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
     }
 
     // ── Compute monthly dividend with paid status ──
-    function cfComputeDividends(netProfit) {
-      var pool = Math.max(0, netProfit);
+    function cfComputeDividends(grossProfit) {
+      var pool = Math.max(0, grossProfit);
       // Current month period key e.g. "2026-04"
       var now = new Date();
       var currentPeriod = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
@@ -10162,24 +10633,31 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         { id: 'expenses',    label: 'Expenses'     },
         { id: 'shareholders',label: 'Shareholders' },
       ];
-      var fromDate = state.cfFromDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-      var toDate   = state.cfToDate   || new Date().toISOString().slice(0, 10);
-      var summary  = cfComputeSummary(fromDate, toDate);
+      // Default: first of current month 00:00 to today 23:59 (datetime-local format)
+      var _cfNow = new Date();
+      var _cfDefFrom = _cfNow.getFullYear()+'-'+String(_cfNow.getMonth()+1).padStart(2,'0')+'-01T00:00';
+      var _cfDefTo   = _cfNow.getFullYear()+'-'+String(_cfNow.getMonth()+1).padStart(2,'0')+'-'+String(_cfNow.getDate()).padStart(2,'0')+'T23:59';
+      var fromDate = state.cfFromDate || _cfDefFrom;
+      var toDate   = state.cfToDate   || _cfDefTo;
+      // Extract just the date part for summary computation (existing logic uses YYYY-MM-DD)
+      var fromDateD = fromDate.slice(0,10);
+      var toDateD   = toDate.slice(0,10);
+      var summary  = cfComputeSummary(fromDateD, toDateD);
 
       // Fetch salary async if not cached for this date range, then re-render
       if (!summary.salaryLoaded) {
-        cfFetchSalary(fromDate, toDate).then(() => {
+        cfFetchSalary(fromDateD, toDateD).then(() => {
           if (state.view === 'cashFlow') {
             var s = cfComputeSummary(fromDate, toDate);
             // Patch summary cards that show salary-affected numbers
             var salEl = document.getElementById('cfSalaryTotal');
             var opExEl= document.getElementById('cfTotalOpEx');
-            var netEl = document.getElementById('cfNetProfit');
+            var gpEl  = document.getElementById('cfGrossProfit');
             var outEl = document.getElementById('cfTotalOutflow');
             if (salEl) salEl.textContent = '$' + s.salaryTotal.toFixed(2);
             if (opExEl) opExEl.textContent = '$' + s.totalOpEx.toFixed(2);
-            if (outEl) outEl.textContent = '$' + s.totalOutflow.toFixed(2);
-            if (netEl) { netEl.textContent = (s.netProfit>=0?'+':'')+' $'+s.netProfit.toFixed(2); netEl.style.color = s.netProfit>=0?'#34d399':'#f87171'; }
+            if (outEl) { outEl.textContent = '$' + s.totalOutflow.toFixed(2); }
+            if (gpEl) { gpEl.textContent = (s.grossProfit>=0?'+':'')+' $'+s.grossProfit.toFixed(2); gpEl.style.color = s.grossProfit>=0?'#34d399':'#f87171'; }
             // For full re-render of expenses tab which shows salary detail
             var expSalaryWrap = document.getElementById('cfSalaryBreakdown');
             if (expSalaryWrap) expSalaryWrap.innerHTML = renderCFSalaryRows(s);
@@ -10188,11 +10666,11 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       }
 
       var content = '';
-      if (tab === 'overview') content = renderCFOverview(summary, fromDate, toDate);
-      else if (tab === 'tracking') content = renderCFTracking(summary, fromDate, toDate);
+      if (tab === 'overview') content = renderCFOverview(summary, fromDate, toDate, fromDateD, toDateD);
+      else if (tab === 'tracking') content = renderCFTracking(summary, fromDate, toDate, fromDateD, toDateD);
       else if (tab === 'methods') content = renderCFMethods();
       else if (tab === 'expenses') content = renderCFExpenses(summary);
-      else if (tab === 'shareholders') content = renderCFShareholders(summary.netProfit);
+      else if (tab === 'shareholders') content = renderCFShareholders(summary.grossProfit);
 
       return `<div class="page fade-in">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
@@ -10210,27 +10688,35 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       </div>`;
     }
 
-    function renderCFOverview(summary, fromDate, toDate) {
-      var divs = cfComputeDividends(summary.netProfit);
+    function renderCFOverview(summary, fromDate, toDate, fromDateD, toDateD) {
+      var divs = cfComputeDividends(summary.grossProfit);
       var totalShareholder = divs.reduce((s,d) => s + d.percentage, 0);
       return `
-        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
-          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">From</span><input class="input" type="date" id="cfFrom" value="${fromDate}" style="font-size:12px;padding:6px 8px"/></div>
-          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">To</span><input class="input" type="date" id="cfTo" value="${toDate}" style="font-size:12px;padding:6px 8px"/></div>
-          <button class="btn btn-sm btn-purple" id="cfApplyDate" style="align-self:flex-end">Apply</button>
+        <div style="display:flex;gap:6px;margin-bottom:14px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <span class="label" style="font-size:10px">From</span>
+            <input class="input" type="datetime-local" id="cfFrom" value="${fromDate}" style="font-size:12px;padding:6px 8px"/>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <span class="label" style="font-size:10px">To</span>
+            <input class="input" type="datetime-local" id="cfTo" value="${toDate}" style="font-size:12px;padding:6px 8px"/>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="cfApplyDate" style="font-size:11px">Filter</button>
+          <button class="btn btn-ghost btn-sm" id="cfResetDate" style="font-size:11px;color:var(--textMuted)">Reset</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
           ${[
-            {label:'CASH INFLOW',  val:'$'+summary.inflow.toFixed(2),  color:'#34d399', bg:'rgba(16,185,129,0.08)', bc:'rgba(16,185,129,0.2)',  svgPath:'<polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/>', id:'cfInflowVal'},
-            {label:'CASH OUTFLOW', val:'$'+summary.totalOutflow.toFixed(2), color:'#f87171', bg:'rgba(239,68,68,0.08)', bc:'rgba(239,68,68,0.2)', svgPath:'<polyline points="23,18 13.5,8.5 8.5,13.5 1,6"/><polyline points="17,18 23,18 23,12"/>', id:'cfTotalOutflow'},
-            {label:'OP. EXPENSES', val:'$'+summary.totalOpEx.toFixed(2), color:'#fbbf24', bg:'rgba(245,158,11,0.08)', bc:'rgba(245,158,11,0.2)',  svgPath:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>', id:'cfTotalOpEx'},
-            {label:'NET PROFIT',   val:(summary.netProfit>=0?'+':'')+' $'+summary.netProfit.toFixed(2), color:summary.netProfit>=0?'#34d399':'#f87171', bg:summary.netProfit>=0?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)', bc:summary.netProfit>=0?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.2)', svgPath:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', id:'cfNetProfit'},
+            {label:'CASH INFLOW',  val:'$'+summary.inflow.toFixed(2),  sub:'Bills: $'+summary.billInflow.toFixed(2)+' · Credit: $'+summary.creditInflow.toFixed(2),         color:'#34d399', bg:'rgba(16,185,129,0.08)', bc:'rgba(16,185,129,0.2)',  svgPath:'<polyline points="23,6 13.5,15.5 8.5,10.5 1,18"/><polyline points="17,6 23,6 23,12"/>', id:'cfInflowVal'},
+            {label:'CASH OUTFLOW', val:'$'+summary.totalOutflow.toFixed(2), sub:'Cost: $'+summary.redemptionCost.toFixed(2)+' · OpEx: $'+summary.totalOpEx.toFixed(2), color:'#f87171', bg:'rgba(239,68,68,0.08)', bc:'rgba(239,68,68,0.2)', svgPath:'<polyline points="23,18 13.5,8.5 8.5,13.5 1,6"/><polyline points="17,18 23,18 23,12"/>', id:'cfTotalOutflow'},
+            {label:'OP. EXPENSES', val:'$'+summary.totalOpEx.toFixed(2),   sub:'Manual + Salaries',              color:'#fbbf24', bg:'rgba(245,158,11,0.08)', bc:'rgba(245,158,11,0.2)',  svgPath:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>', id:'cfTotalOpEx'},
+            {label:'GROSS PROFIT', val:(summary.grossProfit>=0?'+':'')+' $'+summary.grossProfit.toFixed(2), sub:'Inflow − Outflow',   color:summary.grossProfit>=0?'#34d399':'#f87171', bg:summary.grossProfit>=0?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)', bc:summary.grossProfit>=0?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.2)', svgPath:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', id:'cfGrossProfit'},
           ].map(c=>`<div style="padding:14px;border-radius:12px;background:${c.bg};border:1px solid ${c.bc}">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${c.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${c.svgPath}</svg>
               <div style="font-size:9px;color:var(--textMuted);text-transform:uppercase;letter-spacing:1px;font-weight:700">${c.label}</div>
             </div>
-            <div id="${c.id}" style="font-family:'Orbitron',monospace;font-size:16px;font-weight:800;color:${c.color}">${c.val}</div>
+            <div id="${c.id}" style="font-family:'Orbitron',monospace;font-size:15px;font-weight:800;color:${c.color};margin-bottom:3px">${c.val}</div>
+            <div style="font-size:9px;color:var(--textMuted)">${c.sub}</div>
           </div>`).join('')}
         </div>
         ${cfShareholders.length > 0 ? `
@@ -10243,8 +10729,8 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
             </div>
           </div>
           <div style="font-size:11px;color:var(--textMuted);margin-bottom:4px">
-            Dividend pool: <span style="color:#34d399;font-family:'Orbitron',monospace;font-size:11px;font-weight:700">$${Math.max(0, summary.netProfit).toFixed(2)}</span>
-            <span style="color:var(--textMuted)"> net profit</span>
+            Dividend pool: <span style="color:#34d399;font-family:'Orbitron',monospace;font-size:11px;font-weight:700">$${Math.max(0, summary.grossProfit).toFixed(2)}</span>
+            <span style="color:var(--textMuted)"> gross profit</span>
           </div>
           <div style="height:1px;background:rgba(52,211,153,0.15);margin-bottom:10px"></div>
           ${divs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid rgba(120,100,200,0.1)">
@@ -10281,20 +10767,54 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       `;
     }
 
-    function renderCFTracking(summary, fromDate, toDate) {
+    function renderCFTracking(summary, fromDate, toDate, fromDateD, toDateD) {
+      // Build unified transaction list:
+      // 1. Bill income transactions (from filteredTxs = derived from state.bills)
+      // 2. Manual operating expenses
+      // 3. Redemption cost (outflow — point redemptions per bill)
+      var _redemptionRows = [];
+      (state.bills || []).forEach(function(bill) {
+        var bd = billToDate(bill.date);
+        var fD2 = fromDate ? new Date(fromDate.length===10?fromDate+'T00:00:00':fromDate+':00') : null;
+        var tD2 = toDate   ? new Date(toDate.length===10  ?toDate  +'T23:59:59':toDate  +':59') : null;
+        if (fD2 && bd < fD2) return;
+        if (tD2 && bd > tD2) return;
+        (bill.items||[]).forEach(function(it) {
+          if ((it.points||0) < 0) {
+            var absPts = Math.abs(it.points);
+            var cR = (it.costRate!=null?it.costRate:getCostRate(it.gameName));
+            var cost = absPts*(cR/100);
+            if (cost>0) _redemptionRows.push({
+              id: bill._id+'_r_'+it.gameName, type:'expense', category:'redemption',
+              amount: parseFloat(cost.toFixed(2)), date: bill.date,
+              note: 'Redeem: '+(it.gameName||'')+(it.username?' ('+it.username+')':''),
+              paymentMethodId:null, companyId:bill.companyId,
+              companyName:(state.companies&&state.companies[bill.companyId]&&state.companies[bill.companyId].name)||''
+            });
+          }
+        });
+      });
       var allTx = summary.filteredTxs.concat(
-        summary.opFiltered.map(e => ({
+        summary.opFiltered.map(function(e) { return {
           id: e.id, type: 'expense', category: 'opex',
           amount: e.amount, date: e.date, note: e.title,
           paymentMethodId: null, companyId: null
-        }))
-      ).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }; })
+      ).concat(_redemptionRows)
+       .sort((a, b) => billToDate(b.date) - billToDate(a.date));
 
       return `
-        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
-          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">From</span><input class="input" type="date" id="cfFrom" value="${fromDate}" style="font-size:12px;padding:6px 8px"/></div>
-          <div style="flex:1;min-width:100px"><span class="label" style="font-size:9px">To</span><input class="input" type="date" id="cfTo" value="${toDate}" style="font-size:12px;padding:6px 8px"/></div>
-          <button class="btn btn-sm btn-purple" id="cfApplyDate" style="align-self:flex-end">Apply</button>
+        <div style="display:flex;gap:6px;margin-bottom:14px;align-items:flex-end;flex-wrap:wrap">
+          <div style="flex:1;min-width:120px">
+            <span class="label" style="font-size:10px">From</span>
+            <input class="input" type="datetime-local" id="cfFrom" value="${fromDate}" style="font-size:12px;padding:6px 8px"/>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <span class="label" style="font-size:10px">To</span>
+            <input class="input" type="datetime-local" id="cfTo" value="${toDate}" style="font-size:12px;padding:6px 8px"/>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="cfApplyDate" style="font-size:11px">Filter</button>
+          <button class="btn btn-ghost btn-sm" id="cfResetDate" style="font-size:11px;color:var(--textMuted)">Reset</button>
         </div>
         <div style="font-size:11px;color:var(--textMuted);margin-bottom:10px">Payment method breakdown (click for details)</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px">
@@ -10430,8 +10950,8 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         </div>`;
     }
 
-    function renderCFShareholders(netProfit) {
-      var divs = cfComputeDividends(netProfit);
+    function renderCFShareholders(grossProfit) {
+      var divs = cfComputeDividends(grossProfit);
       var totalPct = cfShareholders.reduce((s, h) => s + (h.percentage || 0), 0);
       var now = new Date();
       var currentPeriod = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
@@ -10484,7 +11004,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
           </div>
           <div style="margin-top:10px;padding:10px 14px;border-radius:10px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);display:flex;justify-content:space-between;align-items:center">
             <span style="font-family:'Orbitron',monospace;font-size:11px;color:#c084fc;font-weight:700">TOTAL POOL</span>
-            <span style="font-family:'Orbitron',monospace;font-size:15px;font-weight:800;color:${netProfit>=0?'#34d399':'#f87171'}">$${Math.max(0,netProfit).toFixed(2)}</span>
+            <span style="font-family:'Orbitron',monospace;font-size:15px;font-weight:800;color:${grossProfit>=0?'#34d399':'#f87171'}">$${Math.max(0,grossProfit).toFixed(2)}</span>
           </div>
         </div>`; 
     }
@@ -10501,12 +11021,23 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
         btn.onclick = () => { state.cashFlowTab = btn.dataset.tab; render(); };
       });
 
-      // Date apply (overview + tracking share same IDs)
+      // Date filter apply/reset (overview + tracking share same IDs)
       if ($('#cfApplyDate')) {
         $('#cfApplyDate').onclick = () => {
-          state.cfFromDate = $('#cfFrom').value;
-          state.cfToDate   = $('#cfTo').value;
+          var fv = $('#cfFrom').value || '';
+          var tv = $('#cfTo').value || '';
+          // Accept both datetime-local (YYYY-MM-DDThh:mm) and date (YYYY-MM-DD) values
+          state.cfFromDate = fv;
+          state.cfToDate   = tv;
           _cfSalaryCache = null; // invalidate salary cache for new date range
+          render();
+        };
+      }
+      if ($('#cfResetDate')) {
+        $('#cfResetDate').onclick = () => {
+          state.cfFromDate = null;
+          state.cfToDate   = null;
+          _cfSalaryCache = null;
           render();
         };
       }
@@ -10557,9 +11088,10 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
           var pmId = card.dataset.pmid;
           var pm = cfPaymentMethods.find(p => p.id === pmId);
           if (!pm) return;
-          var fromDate = state.cfFromDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-          var toDate   = state.cfToDate   || new Date().toISOString().slice(0, 10);
-          var summary  = cfComputeSummary(fromDate, toDate);
+          var _cfN=new Date();
+          var _fd=(state.cfFromDate||(_cfN.getFullYear()+'-'+String(_cfN.getMonth()+1).padStart(2,'0')+'-01T00:00')).slice(0,10);
+          var _td=(state.cfToDate||(_cfN.getFullYear()+'-'+String(_cfN.getMonth()+1).padStart(2,'0')+'-'+String(_cfN.getDate()).padStart(2,'0')+'T23:59')).slice(0,10);
+          var summary  = cfComputeSummary(_fd, _td);
           var md = summary.byMethod[pmId] || { total: 0, txs: [] };
           var ov = document.createElement('div');
           ov.className = 'modal-overlay';
@@ -10693,9 +11225,10 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
       // CSV Export
       if ($('#cfExportBtn')) {
         $('#cfExportBtn').onclick = () => {
-          var fromDate = state.cfFromDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-          var toDate   = state.cfToDate   || new Date().toISOString().slice(0, 10);
-          var summary  = cfComputeSummary(fromDate, toDate);
+          var _cfN=new Date();
+          var _fd=(state.cfFromDate||(_cfN.getFullYear()+'-'+String(_cfN.getMonth()+1).padStart(2,'0')+'-01T00:00')).slice(0,10);
+          var _td=(state.cfToDate||(_cfN.getFullYear()+'-'+String(_cfN.getMonth()+1).padStart(2,'0')+'-'+String(_cfN.getDate()).padStart(2,'0')+'T23:59')).slice(0,10);
+          var summary  = cfComputeSummary(_fd, _td);
           var rows = [['Date','Type','Category','Amount','PaymentMethod','Company','Note']];
           summary.filteredTxs.forEach(t => {
             var pm = cfPaymentMethods.find(p => p.id === t.paymentMethodId);
@@ -10708,7 +11241,7 @@ apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
           var blob = new Blob([csv], { type: 'text/csv' });
           var url = URL.createObjectURL(blob);
           var a = document.createElement('a'); a.href = url;
-          a.download = 'cashflow_' + fromDate + '_to_' + toDate + '.csv';
+          a.download = 'cashflow_' + _fd2 + '_to_' + _td2 + '.csv';
           a.click(); URL.revokeObjectURL(url);
         };
       }
