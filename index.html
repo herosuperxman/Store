@@ -1252,12 +1252,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -3815,544 +3816,641 @@
     // BULK BILL SHEET
     // ============================================================
     function showBulkBillSheet() {
+      // ── Only available on desktop ──
+      if (window.innerWidth < 768) { alert('Bulk Bill Sheet is only available on desktop browsers.'); return; }
       document.getElementById('bulkBillSheet')?.remove();
 
-      const companies   = Object.values(state.companies).filter(c => c.active !== false).sort((a,b) => a.name.localeCompare(b.name));
-      const compNames   = companies.map(c => c.name);
-      const masterGames = state.masterGames.map(g => g.name);
-      const COL = { DATE:0, COMPANY:1, GAME:2, USERNAME:3, LEVEL:4, POINTS:5, AMOUNT:6, MODE:7 };
-      const COL_COUNT = 8;
-      const today = new Date(); const pad = n => String(n).padStart(2,'0');
+      const companies   = Object.values(state.companies).filter(c=>c.active!==false).sort((a,b)=>a.name.localeCompare(b.name));
+      const compNames   = companies.map(c=>c.name);
+      const masterGames = state.masterGames.map(g=>g.name);
+      const pmNames     = cfPaymentMethods.map(p=>p.name);
+      const PAY_STATUSES= ['not_received','partial','received'];
+      const MODES       = ['pts→$','$→pts'];
+
+      // Column definitions
+      const COLS = [
+        {id:'date',      label:'Date',           w:108, hint:'YYYY/MM/DD · Ctrl+; = today'},
+        {id:'company',   label:'Company',         w:160, hint:'Type to search companies'},
+        {id:'game',      label:'Game',            w:150, hint:'Type to search inventory games'},
+        {id:'username',  label:'Username',        w:130, hint:'Player username'},
+        {id:'level',     label:'Level',           w:90,  hint:'Auto-filled · editable if new user', ro:false},
+        {id:'points',    label:'Points',          w:100, hint:'Points value (signed, neg=redeem)'},
+        {id:'amount',    label:'Amount ($)',       w:100, hint:'Dollar value (or leave for auto-calc)'},
+        {id:'mode',      label:'Mode',            w:82,  hint:'pts→$ or $→pts'},
+        {id:'paymethod', label:'Pay Method',      w:120, hint:'Payment method from Cash Flow'},
+        {id:'paystatus', label:'Pay Status',      w:110, hint:'not_received · partial · received'},
+        {id:'partialamt',label:'Partial $',       w:90,  hint:'Paid amount if partial'},
+      ];
+      const CI = {}; COLS.forEach((c,i)=>CI[c.id]=i);
+      const NC = COLS.length;
+
+      const today = new Date();
+      const pad = n=>String(n).padStart(2,'0');
       const todayStr = today.getFullYear()+'/'+pad(today.getMonth()+1)+'/'+pad(today.getDate());
 
-      // Sheet state
-      let rows = []; // each row: array of 8 cell values (strings)
-      let sel  = { r:0, c:0 };   // active cell
-      let sel2 = { r:0, c:0 };   // selection anchor
-      let isDragging = false;
-      let copyBuffer = null;      // { data: 2d array, cut: bool }
-      let editingCell = null;     // { r, c, el }
-      let undoStack = [];
+      // State
+      let rows = [];
+      for(let i=0;i<100;i++) rows.push(Array(NC).fill(''));
+      let sel={r:0,c:0}, sel2={r:0,c:0};
+      let editingCell=null, undoStack=[], copyBuffer=null;
+      let colWidths=COLS.map(c=>c.w);   // resizable
+      const pushUndo=()=>{ undoStack.push(rows.map(r=>[...r])); if(undoStack.length>100) undoStack.shift(); };
 
-      // Add 20 empty rows to start
-      for (let i = 0; i < 20; i++) rows.push(Array(COL_COUNT).fill(''));
-
-      const pushUndo = () => { undoStack.push(rows.map(r => [...r])); if (undoStack.length > 50) undoStack.shift(); };
-
-      // ── Build overlay ──
-      const overlay = document.createElement('div');
-      overlay.id = 'bulkBillSheet';
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:var(--bgPrimary,#0a0a0f);display:flex;flex-direction:column;overflow:hidden';
-
-      overlay.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(124,58,237,0.1);border-bottom:1px solid rgba(124,58,237,0.25);flex-shrink:0;flex-wrap:wrap">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purpleLight)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-          <span style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--purpleLight)">BULK BILL SHEET</span>
-          <span style="font-size:11px;color:var(--textMuted);flex:1">Tab/Enter to move · Ctrl+C/V copy/paste · Ctrl+Z undo · Del clear · Ctrl+Enter add rows</span>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button id="bbAddRows" class="btn btn-sm btn-ghost" style="font-size:11px">+ 10 Rows</button>
-            <button id="bbClearAll" class="btn btn-sm btn-ghost" style="font-size:11px;color:#f87171">Clear All</button>
-            <button id="bbSave" class="btn btn-sm" style="background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;font-size:12px;font-weight:700;padding:6px 18px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>
-              Submit Bills
-            </button>
-            <button id="bbClose" class="btn btn-sm btn-ghost" style="font-size:11px">✕ Close</button>
+      // ── DOM ──
+      const overlay=document.createElement('div');
+      overlay.id='bulkBillSheet';
+      overlay.style.cssText='position:fixed;inset:0;z-index:10000;background:#0d0b18;display:flex;flex-direction:column;overflow:hidden;user-select:none';
+      overlay.innerHTML=`
+        <div id="bbToolbar" style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#13101f;border-bottom:1px solid rgba(124,58,237,0.3);flex-shrink:0;flex-wrap:wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          <span style="font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#a78bfa">BULK BILL</span>
+          <div style="width:1px;height:20px;background:rgba(124,58,237,0.3)"></div>
+          <button id="bbAddRowsBtn" class="btn btn-ghost btn-sm" style="font-size:11px">+ Rows</button>
+          <input id="bbAddRowsCount" type="number" value="10" min="1" max="500" style="width:48px;font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid rgba(120,100,200,0.25);background:rgba(0,0,0,0.3);color:#e2e8f0;text-align:center"/>
+          <button id="bbClearBtn" class="btn btn-ghost btn-sm" style="font-size:11px;color:#f87171">Clear</button>
+          <div style="width:1px;height:20px;background:rgba(124,58,237,0.3)"></div>
+          <button id="bbInfoBtn" class="btn btn-ghost btn-sm" style="font-size:11px;color:#22d3ee" title="Keyboard shortcuts">⌨ Shortcuts</button>
+          <div style="flex:1"></div>
+          <button id="bbSubmitBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;font-size:12px;font-weight:700;padding:6px 20px;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>Submit Bills
+          </button>
+          <button id="bbCloseBtn" class="btn btn-ghost btn-sm" style="font-size:13px;padding:4px 10px">✕</button>
+        </div>
+        <div id="bbFormulaBar" style="display:flex;align-items:center;gap:8px;padding:4px 14px;background:#100d1c;border-bottom:1px solid rgba(120,100,200,0.15);flex-shrink:0;font-size:12px;min-height:28px">
+          <span id="bbCellAddr" style="color:#a78bfa;font-family:monospace;font-weight:700;min-width:36px">A1</span>
+          <span style="color:rgba(120,100,200,0.4)">|</span>
+          <span id="bbCellHint" style="color:var(--textMuted,#888);flex:1;font-size:11px"></span>
+          <span id="bbRowsReady" style="color:#34d399;font-size:11px"></span>
+        </div>
+        <div style="flex:1;overflow:auto;position:relative" id="bbScroll">
+          <table id="bbTable" style="border-collapse:collapse;table-layout:fixed;font-size:12px;min-width:max-content">
+            <thead id="bbHead"></thead>
+            <tbody id="bbBody"></tbody>
+          </table>
+        </div>
+        <div id="bbStatus" style="padding:3px 14px;font-size:11px;color:#888;background:#0d0b18;border-top:1px solid rgba(120,100,200,0.12);flex-shrink:0;min-height:20px">Ready · ${rows.length} rows</div>
+        <div id="bbAcDrop" style="display:none;position:fixed;background:#13101f;border:1px solid rgba(124,58,237,0.4);border-radius:8px;z-index:10002;max-height:220px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.8);min-width:160px;font-size:12px"></div>
+        <div id="bbShortcutsPanel" style="display:none;position:fixed;inset:0;z-index:10003;background:rgba(0,0,0,0.7);align-items:center;justify-content:center">
+          <div style="background:#13101f;border:1px solid rgba(124,58,237,0.4);border-radius:14px;padding:24px;max-width:560px;width:90%;max-height:80vh;overflow-y:auto">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <h3 style="font-family:'Orbitron',monospace;color:#a78bfa;font-size:14px">KEYBOARD SHORTCUTS</h3>
+              <button id="bbShortcutsClose" class="btn btn-ghost btn-sm">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+              ${[
+                ['Arrow keys','Navigate cells'],['Tab / Shift+Tab','Move right / left'],
+                ['Enter','Confirm & move down'],['Shift+Enter','Confirm & move up'],
+                ['F2 / double-click','Edit cell'],['Escape','Cancel edit / deselect'],
+                ['Delete / Backspace','Clear cell(s)'],['Ctrl+Z','Undo (100 levels)'],
+                ['Ctrl+C','Copy selection'],['Ctrl+X','Cut selection'],
+                ['Ctrl+V','Paste'],['Ctrl+D','Fill down'],
+                ['Ctrl+R','Fill right'],['Ctrl+Shift+V','Paste special (values only)'],
+                ['Ctrl+;','Insert today\'s date'],['Ctrl+Enter','Expand selection & paste'],
+                ['Ctrl+A','Select all'],['Shift+Arrow','Extend selection'],
+                ['Ctrl+Shift+End','Select to last row'],['Ctrl+Home','Go to A1'],
+                ['Ctrl+End','Go to last used cell'],['Page Up / Down','Scroll 20 rows'],
+                ['Ctrl+F','Find in sheet (browser)'],['Ctrl+Space','Select column'],
+                ['Shift+Space','Select row'],['Alt+Enter','New line in cell (multi)'],
+                ['Ctrl++','Insert row below'],['Ctrl+-','Delete selected rows'],
+                ['Ctrl+Shift+;','Insert current time'],['Ctrl+\'','Copy value from above'],
+              ].map(([k,v])=>`<div style="padding:5px 8px;background:rgba(124,58,237,0.07);border-radius:6px;display:flex;justify-content:space-between;gap:8px"><span style="color:#22d3ee;font-family:monospace;font-size:11px;flex-shrink:0">${k}</span><span style="color:#b0a8c8;font-size:11px;text-align:right">${v}</span></div>`).join('')}
+            </div>
+            <div style="margin-top:14px;padding:10px;background:rgba(34,211,238,0.06);border-radius:8px;font-size:11px;color:#888">
+              <strong style="color:#22d3ee">Smart fill:</strong> Start typing in Company, Game, Username, Mode, Pay Method, or Pay Status to see autocomplete suggestions. Arrow keys navigate the list, Enter or Tab selects.
+            </div>
           </div>
         </div>
-        <div id="bbStatusBar" style="padding:4px 16px;font-size:11px;color:var(--textMuted);background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(120,100,200,0.1);min-height:22px;flex-shrink:0"></div>
-        <div style="flex:1;overflow:auto;position:relative" id="bbScrollWrap">
-          <div id="bbTableWrap" style="min-width:900px"></div>
-        </div>
-        <!-- Autocomplete dropdown portal -->
-        <div id="bbAcDrop" style="display:none;position:fixed;background:rgba(16,13,30,0.98);border:1px solid rgba(124,58,237,0.35);border-radius:8px;z-index:10001;max-height:200px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px"></div>
       `;
       document.body.appendChild(overlay);
 
-      // ── Column headers & widths ──
-      const COLS = [
-        { label:'Date',        w:110, hint:'YYYY/MM/DD' },
-        { label:'Company',     w:160, hint:'Company name' },
-        { label:'Game',        w:150, hint:'Game from inventory' },
-        { label:'Username',    w:130, hint:'Player username' },
-        { label:'Level',       w:90,  hint:'Auto-filled' },
-        { label:'Points',      w:100, hint:'Points value' },
-        { label:'Amount ($)',  w:100, hint:'Dollar value' },
-        { label:'Mode',        w:80,  hint:'pts→$ or $→pts' },
-      ];
-
-      // ── Render the table ──
-      function renderTable() {
-        const wrap = document.getElementById('bbTableWrap');
-        if (!wrap) return;
-        const rMin = Math.min(sel.r, sel2.r), rMax = Math.max(sel.r, sel2.r);
-        const cMin = Math.min(sel.c, sel2.c), cMax = Math.max(sel.c, sel2.c);
-
-        let html = '<table style="border-collapse:collapse;font-size:12px;font-family:-apple-system,sans-serif;table-layout:fixed">';
-        // Header row
-        html += '<thead><tr><th style="width:36px;min-width:36px;background:#1a1530;border:1px solid rgba(120,100,200,0.2);color:var(--textMuted);font-size:10px;padding:6px 4px;position:sticky;top:0;left:0;z-index:3">#</th>';
-        COLS.forEach((col,ci) => {
-          html += `<th style="width:${col.w}px;min-width:${col.w}px;background:#1a1530;border:1px solid rgba(120,100,200,0.2);color:var(--purpleLight);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:6px 6px;position:sticky;top:0;z-index:2;user-select:none" data-col="${ci}">${col.label}</th>`;
+      // ── Render column headers ──
+      function renderHead() {
+        const head=document.getElementById('bbHead');
+        if(!head) return;
+        let h='<tr>';
+        h+=`<th style="width:36px;min-width:36px;background:#1a1530;border:1px solid rgba(120,100,200,0.2);color:#666;font-size:10px;padding:5px 4px;position:sticky;top:0;left:0;z-index:5;text-align:center">#</th>`;
+        COLS.forEach((col,ci)=>{
+          h+=`<th data-ci="${ci}" style="width:${colWidths[ci]}px;min-width:40px;background:#1a1530;border:1px solid rgba(120,100,200,0.2);color:#a78bfa;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 6px;position:sticky;top:0;z-index:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default">
+            ${col.label}
+            <div class="bb-col-resize" data-ci="${ci}" style="position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;background:transparent" onmouseenter="this.style.background='rgba(124,58,237,0.4)'" onmouseleave="this.style.background='transparent'"></div>
+          </th>`;
         });
-        html += '</tr></thead><tbody>';
+        h+='</tr>';
+        head.innerHTML=h;
+        bindColResize();
+      }
 
-        rows.forEach((row, ri) => {
-          html += `<tr data-row="${ri}">`;
-          // Row number
-          html += `<td style="background:#1a1530;border:1px solid rgba(120,100,200,0.15);color:var(--textMuted);font-size:10px;text-align:center;padding:0;position:sticky;left:0;z-index:1;user-select:none">${ri+1}</td>`;
-          row.forEach((val, ci) => {
-            const isActive = ri===sel.r && ci===sel.c;
-            const isSelected = ri>=rMin && ri<=rMax && ci>=cMin && ci<=cMax;
-            const isFilled = val !== '';
-            // Level col: read-only, dimmed
-            const isReadOnly = ci === COL.LEVEL;
-            const bg = isActive ? 'rgba(124,58,237,0.25)' : isSelected ? 'rgba(124,58,237,0.12)' : isFilled ? 'rgba(15,12,28,0.95)' : 'rgba(10,8,20,0.8)';
-            const border = isActive ? '2px solid #7c3aed' : '1px solid rgba(120,100,200,0.15)';
-            const color = ci === COL.LEVEL ? '#a78bfa' : ci === COL.AMOUNT ? '#34d399' : ci === COL.POINTS ? '#22d3ee' : ci === COL.MODE ? '#fbbf24' : 'var(--textPrimary,#e2e8f0)';
-            let displayVal = val;
-            if (ci === COL.MODE && !val) displayVal = 'pts→$';
-            html += `<td data-r="${ri}" data-c="${ci}" style="background:${bg};border:${border};padding:0;cursor:${isReadOnly?'default':'cell'};max-width:${COLS[ci].w}px;overflow:hidden">
-              <div style="padding:4px 6px;height:28px;display:flex;align-items:center;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;opacity:${isReadOnly&&!val?0.4:1}">${esc(displayVal)}</div>
+      // ── Column resize ──
+      function bindColResize() {
+        document.querySelectorAll('.bb-col-resize').forEach(handle=>{
+          handle.onmousedown=e=>{
+            e.preventDefault(); e.stopPropagation();
+            const ci=parseInt(handle.dataset.ci);
+            const startX=e.clientX, startW=colWidths[ci];
+            const onMove=ev=>{ colWidths[ci]=Math.max(40,startW+(ev.clientX-startX)); renderHead(); renderBody(); };
+            const onUp=()=>{ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); };
+            document.addEventListener('mousemove',onMove);
+            document.addEventListener('mouseup',onUp);
+          };
+        });
+      }
+
+      // ── Render body ──
+      function renderBody() {
+        const tbody=document.getElementById('bbBody');
+        if(!tbody) return;
+        const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
+        const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
+        let h='';
+        rows.forEach((row,ri)=>{
+          h+=`<tr data-ri="${ri}">`;
+          h+=`<td style="background:#1a1530;border:1px solid rgba(120,100,200,0.15);color:#555;font-size:10px;text-align:center;padding:0;width:36px;min-width:36px;position:sticky;left:0;z-index:1;user-select:none;cursor:default">${ri+1}</td>`;
+          row.forEach((val,ci)=>{
+            const isAct=ri===sel.r&&ci===sel.c;
+            const isSel=ri>=rMin&&ri<=rMax&&ci>=cMin&&ci<=cMax;
+            const isRO=false; // all cols editable now including level
+            const col=COLS[ci];
+            let bg=isAct?'rgba(124,58,237,0.3)':isSel?'rgba(124,58,237,0.12)':val?'rgba(18,14,34,0.95)':'rgba(13,11,24,0.9)';
+            let border=isAct?'2px solid #7c3aed':'1px solid rgba(120,100,200,0.15)';
+            let color=ci===CI.level?'#a78bfa':ci===CI.amount?'#34d399':ci===CI.points?'#22d3ee':ci===CI.mode?'#fbbf24':ci===CI.paymethod?'#f472b6':ci===CI.paystatus?'#fb923c':ci===CI.partialamt?'#34d399':'#e2e8f0';
+            let display=val;
+            if(!display&&ci===CI.mode) { display='pts→$'; color='rgba(251,191,36,0.3)'; }
+            if(!display&&ci===CI.paystatus) { display='not_received'; color='rgba(251,146,60,0.3)'; }
+            h+=`<td data-r="${ri}" data-c="${ci}" style="background:${bg};border:${border};padding:0;max-width:${colWidths[ci]}px;overflow:hidden;cursor:cell;position:relative">
+              <div style="padding:3px 5px;height:26px;display:flex;align-items:center;color:${color};white-space:nowrap;overflow:hidden;font-size:12px">${esc(display)}</div>
             </td>`;
           });
-          html += '</tr>';
+          h+='</tr>';
         });
-        html += '</tbody></table>';
-        wrap.innerHTML = html;
+        tbody.innerHTML=h;
+        bindCellEvents();
+      }
 
-        // Bind cell events
-        wrap.querySelectorAll('td[data-r]').forEach(td => {
-          const ri = parseInt(td.dataset.r), ci = parseInt(td.dataset.c);
-          td.onmousedown = (e) => {
+      function bindCellEvents() {
+        document.querySelectorAll('#bbBody td[data-r]').forEach(td=>{
+          const ri=parseInt(td.dataset.r),ci=parseInt(td.dataset.c);
+          td.onmousedown=e=>{
+            if(e.target.classList.contains('bb-col-resize'))return;
             e.preventDefault();
             closeEdit(); closeAc();
-            if (e.shiftKey) { sel2 = {r:ri,c:ci}; }
-            else { sel = {r:ri,c:ci}; sel2 = {r:ri,c:ci}; isDragging = true; }
-            renderTable(); updateStatus();
+            if(e.shiftKey){sel2={r:ri,c:ci};}
+            else{sel={r:ri,c:ci};sel2={r:ri,c:ci};}
+            renderBody(); updateBar();
           };
-          td.onmouseover = (e) => { if (isDragging && e.buttons===1) { sel2={r:ri,c:ci}; renderTable(); } };
-          td.ondblclick = () => { if (ci !== COL.LEVEL) startEdit(ri, ci); };
+          td.ondblclick=()=>startEdit(ri,ci);
+          td.oncontextmenu=e=>{ e.preventDefault(); showContextMenu(e,ri,ci); };
         });
-
-        wrap.onmouseup = () => { isDragging = false; };
-        // Scroll active cell into view
-        const activeTd = wrap.querySelector(`td[data-r="${sel.r}"][data-c="${sel.c}"]`);
-        if (activeTd) activeTd.scrollIntoView({ block:'nearest', inline:'nearest' });
-      }
-
-      // ── Inline editor ──
-      function startEdit(r, c, initialChar) {
-        closeEdit(); closeAc();
-        if (c === COL.LEVEL) return;
-        const wrap = document.getElementById('bbTableWrap');
-        const td = wrap?.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
-        if (!td) return;
-        const input = document.createElement('input');
-        input.value = initialChar != null ? initialChar : (rows[r][c] || '');
-        input.style.cssText = 'width:100%;height:100%;border:none;background:transparent;color:inherit;font-size:12px;padding:4px 6px;outline:none;box-sizing:border-box;position:absolute;inset:0';
-        td.style.position = 'relative';
-        td.style.overflow = 'visible';
-        td.appendChild(input);
-        input.focus();
-        if (initialChar == null) input.select(); else { input.setSelectionRange(input.value.length, input.value.length); }
-        editingCell = { r, c, el: input };
-
-        // Autocomplete
-        input.oninput = () => {
-          const q = input.value;
-          let items = [];
-          if (c === COL.COMPANY) items = compNames.filter(n => n.toLowerCase().includes(q.toLowerCase()));
-          else if (c === COL.GAME) {
-            // Get games for the selected company if set, else all master games
-            const compName = rows[r][COL.COMPANY];
-            const comp = companies.find(co => co.name === compName);
-            const compGames = comp ? (comp.assignedGames||[]).map(g=>g.gameName) : masterGames;
-            items = compGames.filter(n => n.toLowerCase().includes(q.toLowerCase()));
-          }
-          else if (c === COL.USERNAME) {
-            const compName = rows[r][COL.COMPANY];
-            const comp = companies.find(co => co.name === compName);
-            const gameName = rows[r][COL.GAME];
-            let users = [];
-            if (comp) {
-              // Users from company usernames
-              users = (comp.usernames||[]).map(u => u.username||u.name||'').filter(Boolean);
-              // Also users from this game's username list
-              const ag = (comp.assignedGames||[]).find(g=>g.gameName===gameName);
-              if (ag && ag.usernames) users = [...new Set([...users, ...ag.usernames.map(u=>u.username||u.name||'').filter(Boolean)])];
-            }
-            items = q ? users.filter(n => n.toLowerCase().includes(q.toLowerCase())) : users.slice(0,10);
-          }
-          else if (c === COL.MODE) items = ['pts→$','$→pts'];
-          showAc(input, items, (val) => {
-            rows[r][c] = val;
-            autoFill(r, c, val);
-            closeEdit();
-            renderTable();
-            moveSel(0,1);
-          });
-        };
-
-        input.onkeydown = (e) => {
-          if (e.key === 'Escape') { closeEdit(); closeAc(); renderTable(); return; }
-          if (e.key === 'Tab') { e.preventDefault(); commitEdit(r,c,input.value); moveSel(0, e.shiftKey?-1:1); return; }
-          if (e.key === 'Enter') {
-            const acDrop = document.getElementById('bbAcDrop');
-            const highlighted = acDrop?.querySelector('.bb-ac-item.highlighted');
-            if (highlighted) { highlighted.click(); return; }
-            commitEdit(r,c,input.value); moveSel(1,0); return;
-          }
-          if (e.key === 'ArrowDown' && document.getElementById('bbAcDrop')?.style.display !== 'none') {
-            e.preventDefault(); moveAcHighlight(1); return;
-          }
-          if (e.key === 'ArrowUp' && document.getElementById('bbAcDrop')?.style.display !== 'none') {
-            e.preventDefault(); moveAcHighlight(-1); return;
-          }
-        };
-
-        input.onblur = (e) => {
-          setTimeout(() => {
-            const acDrop = document.getElementById('bbAcDrop');
-            if (acDrop && acDrop.contains(document.activeElement)) return;
-            commitEdit(r,c,input.value);
-          }, 120);
+        document.getElementById('bbBody').onmousemove=e=>{
+          if(e.buttons!==1)return;
+          const td=e.target.closest('td[data-r]');
+          if(td&&document.getSelection().isCollapsed){sel2={r:parseInt(td.dataset.r),c:parseInt(td.dataset.c)};renderBody();}
         };
       }
 
-      function commitEdit(r, c, val) {
-        if (!rows[r]) return;
-        pushUndo();
-        rows[r][c] = val.trim();
-        autoFill(r, c, val.trim());
-        closeEdit();
-        renderTable();
+      // ── Formula bar / status ──
+      function updateBar() {
+        const col=String.fromCharCode(65+sel.c);
+        document.getElementById('bbCellAddr').textContent=col+(sel.r+1);
+        document.getElementById('bbCellHint').textContent=COLS[sel.c]?.hint||'';
+        const ready=rows.filter(r=>r[CI.company]&&r[CI.game]).length;
+        document.getElementById('bbRowsReady').textContent=ready?`${ready} row${ready===1?'':'s'} ready`:'';
+        document.getElementById('bbStatus').textContent=`Cell ${col}${sel.r+1} · ${rows.length} total rows · ${ready} ready to submit`;
       }
 
-      function closeEdit() {
-        if (editingCell) {
-          const { el } = editingCell;
-          if (el && el.parentNode) { el.parentNode.style.overflow = ''; el.parentNode.style.position = ''; el.remove(); }
-          editingCell = null;
-        }
-      }
-
-      // ── Auto-fill dependent cells ──
-      function autoFill(r, c, val) {
-        if (c === COL.COMPANY) {
-          // Auto-fill date if empty
-          if (!rows[r][COL.DATE]) rows[r][COL.DATE] = todayStr;
-          // Clear game/username/level if company changed
-          rows[r][COL.GAME] = ''; rows[r][COL.USERNAME] = ''; rows[r][COL.LEVEL] = '';
-        }
-        if (c === COL.GAME) {
-          rows[r][COL.USERNAME] = ''; rows[r][COL.LEVEL] = '';
-        }
-        if (c === COL.USERNAME) {
-          // Auto-fill level
-          const compName = rows[r][COL.COMPANY];
-          const comp = companies.find(co => co.name === compName);
-          const gameName = rows[r][COL.GAME];
-          if (comp && val) {
-            const level = getUserLevel(comp, val, gameName);
-            rows[r][COL.LEVEL] = level || '';
-          }
-        }
-        // If date empty on any edit, default to today
-        if (!rows[r][COL.DATE] && c !== COL.DATE) rows[r][COL.DATE] = todayStr;
-      }
-
-      // ── Autocomplete dropdown ──
-      function showAc(inputEl, items, onSelect) {
-        const drop = document.getElementById('bbAcDrop');
-        if (!items.length) { drop.style.display = 'none'; return; }
-        const r2 = inputEl.getBoundingClientRect();
-        drop.style.top  = (r2.bottom + 2) + 'px';
-        drop.style.left = r2.left + 'px';
-        drop.style.minWidth = Math.max(r2.width, 160) + 'px';
-        drop.style.display = 'block';
-        drop.innerHTML = items.slice(0,12).map((item,i) =>
-          `<div class="bb-ac-item${i===0?' highlighted':''}" style="padding:7px 12px;cursor:pointer;font-size:12px;color:var(--textPrimary,#e2e8f0);border-bottom:1px solid rgba(120,100,200,0.1);transition:background .1s" data-val="${esc(item)}">${esc(item)}</div>`
+      // ── Autocomplete ──
+      let acCallback=null;
+      function showAc(anchorEl, items, onSelect) {
+        const drop=document.getElementById('bbAcDrop');
+        if(!items.length){drop.style.display='none';return;}
+        acCallback=onSelect;
+        const r2=anchorEl.getBoundingClientRect();
+        drop.style.top=(r2.bottom+2)+'px';
+        drop.style.left=r2.left+'px';
+        drop.style.minWidth=Math.max(r2.width,160)+'px';
+        drop.style.display='block';
+        drop.innerHTML=items.slice(0,14).map((item,i)=>
+          `<div class="bb-ac-item${i===0?' bb-ac-hi':''}" data-val="${esc(item)}" style="padding:6px 12px;cursor:pointer;color:#e2e8f0;border-bottom:1px solid rgba(120,100,200,0.1)">${esc(item)}</div>`
         ).join('');
-        drop.querySelectorAll('.bb-ac-item').forEach(item => {
-          item.onmouseenter = () => { drop.querySelectorAll('.bb-ac-item').forEach(i=>i.classList.remove('highlighted')); item.classList.add('highlighted'); };
-          item.onmousedown = (e) => { e.preventDefault(); onSelect(item.dataset.val); };
+        drop.querySelectorAll('.bb-ac-item').forEach(item=>{
+          item.onmouseenter=()=>{drop.querySelectorAll('.bb-ac-item').forEach(i=>i.classList.remove('bb-ac-hi'));item.classList.add('bb-ac-hi');};
+          item.onmousedown=e=>{e.preventDefault();onSelect(item.dataset.val);};
         });
       }
-
-      function closeAc() {
-        const drop = document.getElementById('bbAcDrop');
-        if (drop) drop.style.display = 'none';
+      function closeAc(){const d=document.getElementById('bbAcDrop');if(d)d.style.display='none'; acCallback=null;}
+      function acHighlight(dir){
+        const d=document.getElementById('bbAcDrop');if(!d||d.style.display==='none')return false;
+        const items=[...d.querySelectorAll('.bb-ac-item')];
+        const cur=items.findIndex(i=>i.classList.contains('bb-ac-hi'));
+        items.forEach(i=>i.classList.remove('bb-ac-hi'));
+        const next=Math.max(0,Math.min(items.length-1,cur+dir));
+        items[next]?.classList.add('bb-ac-hi');
+        items[next]?.scrollIntoView({block:'nearest'});
+        return true;
+      }
+      function acSelect(){
+        const d=document.getElementById('bbAcDrop');if(!d||d.style.display==='none')return false;
+        const hi=d.querySelector('.bb-ac-item.bb-ac-hi');
+        if(hi&&acCallback){hi.dispatchEvent(new MouseEvent('mousedown'));return true;}
+        return false;
       }
 
-      function moveAcHighlight(dir) {
-        const drop = document.getElementById('bbAcDrop');
-        if (!drop) return;
-        const items = Array.from(drop.querySelectorAll('.bb-ac-item'));
-        const cur = items.findIndex(i => i.classList.contains('highlighted'));
-        items.forEach(i => i.classList.remove('highlighted'));
-        const next = Math.max(0, Math.min(items.length-1, cur + dir));
-        items[next]?.classList.add('highlighted');
-        items[next]?.scrollIntoView({ block:'nearest' });
-      }
-
-      // ── Selection movement ──
-      function moveSel(dr, dc) {
-        closeAc();
-        let nr = sel.r + dr, nc = sel.c + dc;
-        if (nc >= COL_COUNT) { nc = 0; nr++; }
-        if (nc < 0) { nc = COL_COUNT-1; nr--; }
-        if (nr >= rows.length) { rows.push(Array(COL_COUNT).fill('')); }
-        if (nr < 0) nr = 0;
-        // Skip read-only level column when tabbing
-        if (nc === COL.LEVEL && dc !== 0) nc += dc > 0 ? 1 : -1;
-        sel = { r:nr, c:nc }; sel2 = { r:nr, c:nc };
-        renderTable(); updateStatus();
-      }
-
-      // ── Status bar ──
-      function updateStatus() {
-        const bar = document.getElementById('bbStatusBar');
-        if (!bar) return;
-        const colName = COLS[sel.c]?.label || '';
-        const hint = COLS[sel.c]?.hint || '';
-        const filledRows = rows.filter(r => r[COL.COMPANY] && r[COL.GAME]).length;
-        bar.textContent = `Cell: ${String.fromCharCode(65+sel.c)}${sel.r+1}  |  ${colName}: ${hint}  |  ${filledRows} bill row${filledRows===1?'':'s'} ready`;
-      }
-
-      // ── Global keyboard handler ──
-      const onKeyDown = (e) => {
-        const tag = document.activeElement?.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-
-        // Navigation
-        if (e.key === 'ArrowUp')    { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:Math.max(0,sel2.r-1),c:sel2.c}; else moveSel(-1,0); }
-        else if (e.key === 'ArrowDown')  { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:Math.min(rows.length-1,sel2.r+1),c:sel2.c}; else moveSel(1,0); }
-        else if (e.key === 'ArrowLeft')  { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:sel2.r,c:Math.max(0,sel2.c-1)}; else moveSel(0,-1); }
-        else if (e.key === 'ArrowRight') { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:sel2.r,c:Math.min(COL_COUNT-1,sel2.c+1)}; else moveSel(0,1); }
-        else if (e.key === 'Tab')   { e.preventDefault(); moveSel(0, e.shiftKey?-1:1); }
-        else if (e.key === 'Enter') { e.preventDefault(); if (sel.c===COL.LEVEL) moveSel(1,0); else startEdit(sel.r,sel.c); }
-        else if (e.key === 'F2')    { e.preventDefault(); startEdit(sel.r,sel.c); }
-        else if (e.key === 'Delete' || e.key === 'Backspace') {
-          e.preventDefault();
-          pushUndo();
-          const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
-          const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
-          for (let r=rMin;r<=rMax;r++) for (let c=cMin;c<=cMax;c++) if (c!==COL.LEVEL) rows[r][c]='';
-          renderTable();
+      // ── Helpers ──
+      function getSuggestions(r,c,q){
+        q=(q||'').toLowerCase();
+        if(c===CI.company) return compNames.filter(n=>n.toLowerCase().includes(q));
+        if(c===CI.game){
+          const comp=companies.find(co=>co.name===rows[r][CI.company]);
+          const list=comp?(comp.assignedGames||[]).map(g=>g.gameName):masterGames;
+          return list.filter(n=>n.toLowerCase().includes(q));
         }
-        else if (e.key === 'Escape') { closeAc(); sel2={...sel}; renderTable(); }
-        // Ctrl shortcuts
-        else if ((e.ctrlKey||e.metaKey) && e.key === 'c') { e.preventDefault(); doCopy(false); }
-        else if ((e.ctrlKey||e.metaKey) && e.key === 'x') { e.preventDefault(); doCopy(true); }
-        else if ((e.ctrlKey||e.metaKey) && e.key === 'v') { e.preventDefault(); doPaste(); }
-        else if ((e.ctrlKey||e.metaKey) && e.key === 'z') { e.preventDefault(); doUndo(); }
-        else if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); addRows(10); }
-        else if ((e.ctrlKey||e.metaKey) && e.key === 'd') { e.preventDefault(); doFillDown(); }
-        // Printable char starts editing
-        else if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length===1 && sel.c!==COL.LEVEL) {
-          startEdit(sel.r, sel.c, e.key);
+        if(c===CI.username){
+          const comp=companies.find(co=>co.name===rows[r][CI.company]);
+          if(!comp)return[];
+          const gname=rows[r][CI.game];
+          let us=(comp.usernames||[]).map(u=>u.username||u.name||'').filter(Boolean);
+          const ag=(comp.assignedGames||[]).find(g=>g.gameName===gname);
+          if(ag&&ag.usernames)us=[...new Set([...us,...ag.usernames.map(u=>u.username||u.name||'').filter(Boolean)])];
+          return q?us.filter(n=>n.toLowerCase().includes(q)):us.slice(0,12);
         }
-        if (e.key.startsWith('Arrow') || e.key === 'Tab') { renderTable(); updateStatus(); }
-      };
-      document.addEventListener('keydown', onKeyDown);
-
-      // ── Copy / Paste / Undo ──
-      function doCopy(cut) {
-        const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
-        const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
-        const data = [];
-        for (let r=rMin;r<=rMax;r++) { const row=[]; for(let c=cMin;c<=cMax;c++) row.push(rows[r][c]); data.push(row); }
-        copyBuffer = { data, cut };
-        if (cut) { pushUndo(); for(let r=rMin;r<=rMax;r++) for(let c=cMin;c<=cMax;c++) if(c!==COL.LEVEL) rows[r][c]=''; renderTable(); }
-        // Also put to clipboard as TSV
-        const tsv = data.map(r=>r.join('\t')).join('\n');
-        navigator.clipboard?.writeText(tsv).catch(()=>{});
-        setStatus(`Copied ${data.length}×${data[0].length} cells`);
-      }
-
-      async function doPaste() {
-        // Try system clipboard first (handles paste from Excel/Sheets)
-        let tsv = '';
-        try { tsv = await navigator.clipboard.readText(); } catch(e) {}
-        if (tsv) {
-          pushUndo();
-          const pasteRows = tsv.split('\n').map(r=>r.split('\t'));
-          for (let dr=0;dr<pasteRows.length;dr++) {
-            const tr = sel.r+dr; if (tr>=rows.length) rows.push(Array(COL_COUNT).fill(''));
-            for (let dc=0;dc<pasteRows[dr].length;dc++) {
-              const tc = sel.c+dc; if (tc<COL_COUNT && tc!==COL.LEVEL) rows[tr][tc] = pasteRows[dr][dc];
-            }
-          }
-          // Re-run autoFill for all pasted rows
-          for (let dr=0;dr<pasteRows.length;dr++) {
-            const tr = sel.r+dr;
-            if (rows[tr][COL.USERNAME]) autoFill(tr, COL.USERNAME, rows[tr][COL.USERNAME]);
-            if (!rows[tr][COL.DATE] && rows[tr][COL.COMPANY]) rows[tr][COL.DATE] = todayStr;
-          }
-          renderTable(); updateStatus();
-        } else if (copyBuffer) {
-          pushUndo();
-          copyBuffer.data.forEach((row,dr) => {
-            const tr=sel.r+dr; if(tr>=rows.length) rows.push(Array(COL_COUNT).fill(''));
-            row.forEach((val,dc) => { const tc=sel.c+dc; if(tc<COL_COUNT&&tc!==COL.LEVEL) rows[tr][tc]=val; });
-          });
-          renderTable(); updateStatus();
+        if(c===CI.level){
+          const levels=['Agent','Sub-Agent','Master','Player','VIP'];
+          return q?levels.filter(l=>l.toLowerCase().includes(q)):levels;
         }
+        if(c===CI.mode) return MODES.filter(m=>m.includes(q));
+        if(c===CI.paymethod) return pmNames.filter(n=>n.toLowerCase().includes(q));
+        if(c===CI.paystatus) return PAY_STATUSES.filter(s=>s.includes(q));
+        return[];
+      }
+      function autoFillRow(r,c,val){
+        if(c===CI.company){
+          if(!rows[r][CI.date])rows[r][CI.date]=todayStr;
+          rows[r][CI.game]='';rows[r][CI.username]='';rows[r][CI.level]='';
+        }
+        if(c===CI.game){rows[r][CI.username]='';rows[r][CI.level]='';}
+        if(c===CI.username){
+          const comp=companies.find(co=>co.name===rows[r][CI.company]);
+          if(comp&&val){rows[r][CI.level]=getUserLevel(comp,val,rows[r][CI.game])||'';}
+        }
+        if(!rows[r][CI.date]&&rows[r][CI.company])rows[r][CI.date]=todayStr;
+        if(!rows[r][CI.mode])rows[r][CI.mode]='pts→$';
+        if(!rows[r][CI.paystatus])rows[r][CI.paystatus]='not_received';
       }
 
-      function doUndo() {
-        if (!undoStack.length) return;
-        rows = undoStack.pop();
-        renderTable(); updateStatus();
+      // ── Edit ──
+      function startEdit(r,c,initChar){
+        closeEdit(); closeAc();
+        const tbody=document.getElementById('bbBody');
+        const td=tbody?.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+        if(!td)return;
+        const inp=document.createElement('input');
+        const curVal=rows[r][c]||'';
+        inp.value=initChar!=null?initChar:curVal;
+        inp.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:none;background:rgba(124,58,237,0.2);color:#fff;font-size:12px;padding:3px 5px;outline:none;box-sizing:border-box;z-index:3;font-family:inherit';
+        td.style.position='relative'; td.style.overflow='visible';
+        td.appendChild(inp);
+        inp.focus();
+        if(initChar==null)inp.select(); else inp.setSelectionRange(inp.value.length,inp.value.length);
+        editingCell={r,c,el:inp};
+        // Show suggestions immediately
+        const sugg=getSuggestions(r,c,inp.value);
+        if(sugg.length)showAc(inp,sugg,v=>{commitEdit(r,c,v);moveSel(0,1);});
+        inp.oninput=()=>{
+          const sugg2=getSuggestions(r,c,inp.value);
+          if(sugg2.length)showAc(inp,sugg2,v=>{commitEdit(r,c,v);moveSel(0,1);});
+          else closeAc();
+        };
+        inp.onkeydown=e=>{
+          if(e.key==='Escape'){closeEdit();closeAc();renderBody();return;}
+          if(e.key==='ArrowDown'){e.preventDefault();if(!acHighlight(1)){commitEdit(r,c,inp.value);moveSel(1,0);}return;}
+          if(e.key==='ArrowUp'){e.preventDefault();if(!acHighlight(-1)){commitEdit(r,c,inp.value);moveSel(-1,0);}return;}
+          if(e.key==='Enter'){e.preventDefault();if(acSelect())return;commitEdit(r,c,inp.value);moveSel(e.shiftKey?-1:1,0);return;}
+          if(e.key==='Tab'){e.preventDefault();if(acSelect())return;commitEdit(r,c,inp.value);moveSel(0,e.shiftKey?-1:1);return;}
+          // Ctrl+; = today
+          if((e.ctrlKey||e.metaKey)&&e.key===';'){e.preventDefault();inp.value=todayStr;inp.oninput();}
+          // Ctrl+Shift+; = current time
+          if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key===';'){e.preventDefault();const n=new Date();inp.value=todayStr+' '+pad(n.getHours())+':'+pad(n.getMinutes());}
+        };
+        inp.onblur=()=>setTimeout(()=>{
+          if(document.getElementById('bbAcDrop')?.contains(document.activeElement))return;
+          commitEdit(r,c,inp.value);
+        },150);
       }
-
-      function doFillDown() {
-        const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
-        const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
+      function commitEdit(r,c,val){
+        if(!rows[r])return;
         pushUndo();
-        for (let c=cMin;c<=cMax;c++) {
-          const srcVal = rows[rMin][c];
-          for (let r=rMin+1;r<=rMax;r++) if(c!==COL.LEVEL) rows[r][c]=srcVal;
+        rows[r][c]=val.trim();
+        autoFillRow(r,c,val.trim());
+        closeEdit(); closeAc(); renderBody(); updateBar();
+      }
+      function closeEdit(){
+        if(editingCell){
+          const{el}=editingCell;
+          if(el?.parentNode){el.parentNode.style.overflow='';el.parentNode.style.position='';el.remove();}
+          editingCell=null;
         }
-        renderTable();
       }
 
-      function addRows(n) {
-        for (let i=0;i<n;i++) rows.push(Array(COL_COUNT).fill(''));
-        renderTable(); updateStatus();
+      // ── Navigation ──
+      function moveSel(dr,dc,extend){
+        closeAc();
+        let nr=sel.r+dr,nc=sel.c+dc;
+        if(nc>=NC){nc=0;nr++;}if(nc<0){nc=NC-1;nr--;}
+        if(nr>=rows.length)addRows(Math.max(10,nr-rows.length+1));
+        if(nr<0)nr=0;
+        sel={r:nr,c:nc};
+        if(!extend)sel2={...sel};
+        renderBody(); updateBar();
+        // Scroll into view
+        const td=document.querySelector(`#bbBody td[data-r="${nr}"][data-c="${nc}"]`);
+        td?.scrollIntoView({block:'nearest',inline:'nearest'});
+      }
+      function addRows(n){
+        const cnt=parseInt(n)||10;
+        for(let i=0;i<cnt;i++)rows.push(Array(NC).fill(''));
+        renderBody(); renderHead(); updateBar();
       }
 
-      function setStatus(msg, color) {
-        const bar = document.getElementById('bbStatusBar');
-        if (bar) { bar.textContent = msg; bar.style.color = color||'var(--textMuted)'; setTimeout(()=>updateStatus(),2500); }
+      // ── Copy / paste / fill ──
+      function getSelection(){
+        const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
+        const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
+        return{rMin,rMax,cMin,cMax};
+      }
+      function doCopy(cut){
+        const{rMin,rMax,cMin,cMax}=getSelection();
+        const data=[];
+        for(let r=rMin;r<=rMax;r++){const row=[];for(let c=cMin;c<=cMax;c++)row.push(rows[r][c]);data.push(row);}
+        copyBuffer={data,cut};
+        if(cut){pushUndo();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)rows[r][c]='';renderBody();}
+        const tsv=data.map(r=>r.join('\t')).join('\n');
+        navigator.clipboard?.writeText(tsv).catch(()=>{});
+        setStatus(`${cut?'Cut':'Copied'} ${data.length}×${data[0].length}`,'#22d3ee');
+      }
+      async function doPaste(){
+        let tsv='';
+        try{tsv=await navigator.clipboard.readText();}catch(e){}
+        if(!tsv&&copyBuffer)tsv=copyBuffer.data.map(r=>r.join('\t')).join('\n');
+        if(!tsv)return;
+        pushUndo();
+        const pasteRows=tsv.split('\n').map(r=>r.split('\t'));
+        const{rMin,rMax,cMin,cMax}=getSelection();
+        const spanR=rMax-rMin, spanC=cMax-cMin;
+        // Ctrl+Enter: tile paste over selection
+        const tile=(spanR>0||spanC>0);
+        const endR=tile?rMax:sel.r+pasteRows.length-1;
+        const endC=tile?cMax:sel.c+(pasteRows[0]?.length||1)-1;
+        for(let dr=0;dr<=(tile?spanR:pasteRows.length-1);dr++){
+          const tr=sel.r+dr; if(tr>=rows.length)rows.push(Array(NC).fill(''));
+          for(let dc=0;dc<=(tile?spanC:(pasteRows[0]?.length||1)-1);dc++){
+            const tc=sel.c+dc; if(tc<NC){
+              const srcR=dr%pasteRows.length, srcC=dc%(pasteRows[0]?.length||1);
+              rows[tr][tc]=pasteRows[srcR]?.[srcC]??'';
+              autoFillRow(tr,tc,rows[tr][tc]);
+            }
+          }
+        }
+        renderBody(); updateBar();
+      }
+      function doFillDown(){
+        const{rMin,rMax,cMin,cMax}=getSelection();
+        pushUndo();
+        for(let c=cMin;c<=cMax;c++){const v=rows[rMin][c];for(let r=rMin+1;r<=rMax;r++){rows[r][c]=v;autoFillRow(r,c,v);}}
+        renderBody();
+      }
+      function doFillRight(){
+        const{rMin,rMax,cMin,cMax}=getSelection();
+        pushUndo();
+        for(let r=rMin;r<=rMax;r++){const v=rows[r][cMin];for(let c=cMin+1;c<=cMax;c++){rows[r][c]=v;autoFillRow(r,c,v);}}
+        renderBody();
+      }
+      function doInsertRow(){
+        pushUndo();
+        rows.splice(sel.r+1,0,Array(NC).fill(''));
+        renderBody(); updateBar();
+      }
+      function doDeleteRows(){
+        const{rMin,rMax}=getSelection();
+        if(!confirm(`Delete rows ${rMin+1}–${rMax+1}?`))return;
+        pushUndo();
+        rows.splice(rMin,rMax-rMin+1);
+        if(rows.length===0)rows.push(Array(NC).fill(''));
+        sel={r:Math.min(rMin,rows.length-1),c:sel.c};sel2={...sel};
+        renderBody(); updateBar();
+      }
+      function doCopyAbove(){
+        // Ctrl+' — copy value from row above
+        if(sel.r===0)return;
+        pushUndo();
+        const{rMin,rMax,cMin,cMax}=getSelection();
+        for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++){rows[r][c]=rows[r-1]?.[c]||'';autoFillRow(r,c,rows[r][c]);}
+        renderBody();
+      }
+      function doUndo(){
+        if(!undoStack.length)return;
+        rows=undoStack.pop();
+        renderBody(); updateBar();
+      }
+      function doSelectAll(){sel={r:0,c:0};sel2={r:rows.length-1,c:NC-1};renderBody();}
+      function doSelectCol(){sel={r:0,c:sel.c};sel2={r:rows.length-1,c:sel2.c};renderBody();}
+      function doSelectRow(){sel={r:sel.r,c:0};sel2={r:sel2.r,c:NC-1};renderBody();}
+      function setStatus(msg,color){
+        const el=document.getElementById('bbStatus');
+        if(el){el.textContent=msg;el.style.color=color||'#888';setTimeout(()=>updateBar(),3000);}
       }
 
-      // ── Submit bills ──
-      document.getElementById('bbSave').onclick = async () => {
-        const btn = document.getElementById('bbSave');
-        btn.disabled = true; btn.textContent = 'Submitting…';
-        // Validate and collect rows
-        const billRows = rows.filter(r => r[COL.COMPANY] && r[COL.GAME]);
-        if (!billRows.length) { alert('No rows to submit. Fill in at least Company and Game.'); btn.disabled=false; btn.textContent='Submit Bills'; return; }
-
-        // Validate each row
-        const errors = [];
-        billRows.forEach((row, i) => {
-          if (!compNames.includes(row[COL.COMPANY])) errors.push(`Row ${i+1}: Unknown company "${row[COL.COMPANY]}"`);
-          if (!masterGames.includes(row[COL.GAME])) errors.push(`Row ${i+1}: Unknown game "${row[COL.GAME]}"`);
-          const hasVal = (parseFloat(row[COL.POINTS])||0) !== 0 || (parseFloat(row[COL.AMOUNT])||0) !== 0;
-          if (!hasVal) errors.push(`Row ${i+1}: Enter points or amount`);
+      // ── Context menu ──
+      function showContextMenu(e,r,c){
+        document.getElementById('bbCtxMenu')?.remove();
+        const m=document.createElement('div');
+        m.id='bbCtxMenu';
+        m.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;background:#1a1530;border:1px solid rgba(124,58,237,0.4);border-radius:8px;z-index:10002;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.7);font-size:12px;padding:4px 0`;
+        const items=[
+          ['Copy','Ctrl+C',()=>doCopy(false)],['Cut','Ctrl+X',()=>doCopy(true)],['Paste','Ctrl+V',()=>doPaste()],null,
+          ['Fill Down','Ctrl+D',()=>doFillDown()],['Fill Right','Ctrl+R',()=>doFillRight()],null,
+          ['Insert Row Below','Ctrl++',()=>doInsertRow()],['Delete Row(s)','Ctrl+-',()=>doDeleteRows()],null,
+          ['Clear','Del',()=>{pushUndo();const{rMin,rMax,cMin,cMax}=getSelection();for(let r2=rMin;r2<=rMax;r2++)for(let c2=cMin;c2<=cMax;c2++)rows[r2][c2]='';renderBody();}],
+        ];
+        m.innerHTML=items.map(it=>it?`<div class="bb-ctx-item" style="padding:6px 14px;cursor:pointer;display:flex;justify-content:space-between;gap:16px"><span style="color:#e2e8f0">${it[0]}</span><span style="color:#666;font-size:10px">${it[1]}</span></div>`:'<div style="height:1px;background:rgba(120,100,200,0.15);margin:3px 0"></div>').join('');
+        document.body.appendChild(m);
+        m.querySelectorAll('.bb-ctx-item').forEach((el,i)=>{
+          const fn=items.filter(Boolean)[Math.floor(i-(items.slice(0,i+1).filter(x=>!x).length))];
+          el.onmouseenter=()=>el.style.background='rgba(124,58,237,0.2)';
+          el.onmouseleave=()=>el.style.background='';
+          el.onmousedown=ev=>{ev.preventDefault();m.remove();const act=items.filter(Boolean).find(it=>it[0]===el.querySelector('span').textContent);act?.[2]?.();};
         });
-        if (errors.length) { alert('Please fix these issues:\n\n' + errors.slice(0,5).join('\n') + (errors.length>5?`\n…and ${errors.length-5} more`:'')); btn.disabled=false; btn.textContent='Submit Bills'; return; }
+        setTimeout(()=>document.addEventListener('click',()=>m.remove(),{once:true}),0);
+      }
 
-        // Group rows by company (each company gets one bill)
-        const byCompany = {};
-        billRows.forEach(row => {
-          const compName = row[COL.COMPANY];
-          if (!byCompany[compName]) byCompany[compName] = [];
-          byCompany[compName].push(row);
+      // ── Global key handler ──
+      const onKey=e=>{
+        const tag=document.activeElement?.tagName;
+        const editing=tag==='INPUT'||tag==='TEXTAREA';
+        if(editing)return;
+        const ctrl=e.ctrlKey||e.metaKey;
+        // Arrow navigation
+        if(e.key==='ArrowUp'){e.preventDefault();if(e.shiftKey)sel2={r:Math.max(0,sel2.r-1),c:sel2.c};else moveSel(-1,0);renderBody();return;}
+        if(e.key==='ArrowDown'){e.preventDefault();if(e.shiftKey)sel2={r:Math.min(rows.length-1,sel2.r+1),c:sel2.c};else moveSel(1,0);renderBody();return;}
+        if(e.key==='ArrowLeft'){e.preventDefault();if(e.shiftKey)sel2={r:sel2.r,c:Math.max(0,sel2.c-1)};else moveSel(0,-1);renderBody();return;}
+        if(e.key==='ArrowRight'){e.preventDefault();if(e.shiftKey)sel2={r:sel2.r,c:Math.min(NC-1,sel2.c+1)};else moveSel(0,1);renderBody();return;}
+        if(e.key==='Tab'){e.preventDefault();moveSel(0,e.shiftKey?-1:1);return;}
+        if(e.key==='Enter'){e.preventDefault();if(e.shiftKey)moveSel(-1,0);else startEdit(sel.r,sel.c);return;}
+        if(e.key==='F2'){e.preventDefault();startEdit(sel.r,sel.c);return;}
+        if(e.key==='Escape'){closeAc();sel2={...sel};renderBody();return;}
+        if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();pushUndo();const{rMin,rMax,cMin,cMax}=getSelection();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)rows[r][c]='';renderBody();return;}
+        if(e.key==='PageUp'){e.preventDefault();moveSel(-20,0);return;}
+        if(e.key==='PageDown'){e.preventDefault();moveSel(20,0);return;}
+        if(ctrl&&e.key==='Home'){e.preventDefault();sel={r:0,c:0};sel2={...sel};renderBody();updateBar();return;}
+        if(ctrl&&e.key==='End'){e.preventDefault();const lr=rows.reduce((m,r,i)=>r.some(c=>c)?i:m,-1);sel={r:Math.max(0,lr),c:NC-1};sel2={...sel};renderBody();updateBar();return;}
+        if(ctrl&&e.shiftKey&&e.key==='End'){e.preventDefault();sel2={r:rows.length-1,c:NC-1};renderBody();return;}
+        // Ctrl shortcuts
+        if(ctrl&&e.key==='c'){e.preventDefault();doCopy(false);return;}
+        if(ctrl&&e.key==='x'){e.preventDefault();doCopy(true);return;}
+        if(ctrl&&e.key==='v'){e.preventDefault();doPaste();return;}
+        if(ctrl&&e.key==='z'){e.preventDefault();doUndo();return;}
+        if(ctrl&&e.key==='d'){e.preventDefault();doFillDown();return;}
+        if(ctrl&&e.key==='r'){e.preventDefault();doFillRight();return;}
+        if(ctrl&&e.key==='a'){e.preventDefault();doSelectAll();return;}
+        if(ctrl&&e.key==='Enter'){e.preventDefault();doPaste();return;} // tile paste over selection
+        if(ctrl&&e.key==='+'){e.preventDefault();doInsertRow();return;}
+        if(ctrl&&e.key==='-'){e.preventDefault();doDeleteRows();return;}
+        if(ctrl&&e.key==="'"){e.preventDefault();doCopyAbove();return;}
+        if(ctrl&&e.key===';'){e.preventDefault();pushUndo();const{rMin,rMax,cMin,cMax}=getSelection();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)if(c===CI.date||!rows[r][c])rows[r][c]=todayStr;renderBody();return;}
+        if(ctrl&&e.shiftKey&&e.key===';'){e.preventDefault();pushUndo();const n=new Date();const t=todayStr+' '+pad(n.getHours())+':'+pad(n.getMinutes());const{rMin,rMax,cMin,cMax}=getSelection();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)rows[r][c]=t;renderBody();return;}
+        if(e.key===' '&&ctrl){e.preventDefault();doSelectCol();return;}
+        if(e.key===' '&&e.shiftKey){e.preventDefault();doSelectRow();return;}
+        // Start typing → begin edit
+        if(!ctrl&&!e.altKey&&e.key.length===1){startEdit(sel.r,sel.c,e.key);}
+      };
+      document.addEventListener('keydown',onKey);
+
+      // ── Submit ──
+      document.getElementById('bbSubmitBtn').onclick=async()=>{
+        const btn=document.getElementById('bbSubmitBtn');
+        btn.disabled=true;btn.textContent='Submitting…';
+        const validRows=rows.filter(r=>r[CI.company]&&r[CI.game]);
+        if(!validRows.length){alert('No rows to submit. Fill Company and Game at minimum.');btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>Submit Bills';return;}
+        const errors=[];
+        validRows.forEach((row,i)=>{
+          if(!compNames.includes(row[CI.company]))errors.push(`Row ${i+1}: Unknown company "${row[CI.company]}"`);
+          if(!masterGames.includes(row[CI.game]))errors.push(`Row ${i+1}: Unknown game "${row[CI.game]}"`);
+          const hasVal=(parseFloat(row[CI.points])||0)!==0||(parseFloat(row[CI.amount])||0)!==0;
+          if(!hasVal)errors.push(`Row ${i+1}: Enter points or amount`);
         });
-
-        let saved = 0, failed = 0;
-        for (const [compName, compRows] of Object.entries(byCompany)) {
-          try {
-            const comp = companies.find(co => co.name === compName);
-            if (!comp) { failed++; continue; }
-
-            // Auto-add new usernames to company
-            for (const row of compRows) {
-              const uname = (row[COL.USERNAME]||'').trim();
-              const gameName = row[COL.GAME];
-              if (uname && comp) {
-                const exists = (comp.usernames||[]).some(u=>(u.username||u.name||'')===uname);
-                if (!exists) {
-                  const lvl = row[COL.LEVEL] || '';
-                  const newUn = { username: uname, level: lvl, gameName };
-                  try {
-                    const ref = await db.collection(userPath()+'/companies/'+comp._id+'/usernames').add(newUn);
-                    comp.usernames = [...(comp.usernames||[]), { _id: ref.id, ...newUn }];
-                    if (state.companies[comp._id]) state.companies[comp._id].usernames = comp.usernames;
-                  } catch(e2) { console.warn('Auto-add username failed:', e2); }
+        if(errors.length){alert('Fix these issues:\n\n'+errors.slice(0,6).join('\n')+(errors.length>6?`\n…+${errors.length-6} more`:''));btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>Submit Bills';return;}
+        // Group by company
+        const byComp={};
+        validRows.forEach(row=>{const k=row[CI.company];if(!byComp[k])byComp[k]=[];byComp[k].push(row);});
+        let saved=0,failed=0;
+        for(const[compName,compRows] of Object.entries(byComp)){
+          try{
+            const comp=companies.find(co=>co.name===compName);
+            if(!comp){failed++;continue;}
+            // Auto-add new usernames
+            for(const row of compRows){
+              const uname=(row[CI.username]||'').trim();
+              if(uname){
+                const exists=(comp.usernames||[]).some(u=>(u.username||u.name||'')===uname);
+                if(!exists){
+                  const lvl=row[CI.level]||'';
+                  const gname=row[CI.game];
+                  const nu={username:uname,level:lvl,gameName:gname};
+                  const ref2=await db.collection(userPath()+'/companies/'+comp._id+'/usernames').add(nu);
+                  comp.usernames=[...(comp.usernames||[]),{_id:ref2.id,...nu}];
+                  if(state.companies[comp._id])state.companies[comp._id].usernames=comp.usernames;
                 }
               }
             }
-
+            // Build bill date
+            const rawDate=compRows[0][CI.date]||todayStr;
+            const billDate=new Date(rawDate.replace(/\//g,'-')+'T00:00:00').toISOString();
+            const convMode=(compRows[0][CI.mode]||'pts→$')==='$→pts'?'dollar2pts':'pts2dollar';
             // Build items
-            const billDate = (() => {
-              const d = compRows[0][COL.DATE] || todayStr;
-              const p = d.replace(/\//g,'-');
-              return new Date(p+'T00:00:00').toISOString();
-            })();
-            const convMode = (compRows[0][COL.MODE]||'pts→$') === '$→pts' ? 'dollar2pts' : 'pts2dollar';
-            let totalPts = 0, totalDollars = 0;
-            const items = compRows.map(row => {
-              const rawPts  = parseFloat(row[COL.POINTS])||0;
-              const rawAmt  = parseFloat(row[COL.AMOUNT])||0;
-              const sellRate = getGameRate(comp, row[COL.GAME]) || 100;
-              const costRate = getCostRate(row[COL.GAME]) || 0;
-              let pts = rawPts, dollars = rawAmt;
-              if (rawPts && !rawAmt) dollars = rawPts * (sellRate/100);
-              else if (rawAmt && !rawPts) pts = rawAmt / (sellRate/100);
-              totalPts += pts; totalDollars += dollars;
-              return { gameName:row[COL.GAME], gameId:'', username:row[COL.USERNAME]||'', value:rawPts||rawAmt, costRate, sellRate, points:pts, dollars, inputAmount:rawPts||rawAmt, feeEmbedded:false };
+            let totalPts=0,totalDollars=0;
+            const items=compRows.map(row=>{
+              const rawPts=parseFloat(row[CI.points])||0;
+              const rawAmt=parseFloat(row[CI.amount])||0;
+              const sellRate=getGameRate(comp,row[CI.game])||100;
+              const costRate=getCostRate(row[CI.game])||0;
+              let pts=rawPts,dollars=rawAmt;
+              if(rawPts&&!rawAmt)dollars=rawPts*(sellRate/100);
+              else if(rawAmt&&!rawPts)pts=rawAmt/(sellRate/100);
+              totalPts+=pts;totalDollars+=dollars;
+              return{gameName:row[CI.game],gameId:'',username:row[CI.username]||'',value:rawPts||rawAmt,costRate,sellRate,points:pts,dollars,inputAmount:rawPts||rawAmt,feeEmbedded:false};
             });
-
-            const grandTotal = totalDollars;
-            const companyCode = comp.companyCode || await generateCompanyCode();
-            const refNum = await generateReferenceNumber(companyCode, billDate);
-            const bill = {
-              companyId:comp._id, companyName:comp.name, date:billDate, convMode,
-              extraFeePercent:0, extraFeeAmount:0, extraFeeCostRate:0, extraFeeProfit:0,
-              creditApplied:0, extraPayments:[], items, totalDollars, totalPoints:totalPts,
-              paymentStatus:'not_received', partialAmount:0, balanceDue:grandTotal,
-              referenceNumber:refNum, companyCode
+            const grandTotal=parseFloat(totalDollars.toFixed(2));
+            // Payment status
+            const rawStatus=compRows[0][CI.paystatus]||'not_received';
+            const rawPartial=parseFloat(compRows[0][CI.partialamt])||0;
+            const payStatus=rawStatus==='received'?'received':rawStatus==='partial'?'partial':'not_received';
+            const partialAmt=payStatus==='received'?grandTotal:payStatus==='partial'?rawPartial:0;
+            const balDue=payStatus==='received'?0:payStatus==='partial'?Math.max(0,grandTotal-rawPartial):grandTotal;
+            const pmName=compRows[0][CI.paymethod]||'';
+            const pm=cfPaymentMethods.find(p=>p.name===pmName);
+            const companyCode=comp.companyCode||await generateCompanyCode();
+            const refNum=await generateReferenceNumber(companyCode,billDate);
+            const bill={
+              companyId:comp._id,companyName:comp.name,date:billDate,convMode,
+              extraFeePercent:0,extraFeeAmount:0,extraFeeCostRate:0,extraFeeProfit:0,
+              creditApplied:0,extraPayments:[],items,totalDollars,totalPoints:totalPts,
+              paymentStatus:payStatus,partialAmount:partialAmt,balanceDue:balDue,
+              referenceNumber:refNum,companyCode,
+              ...(pm?{paymentMethodId:pm.id}:{})
             };
-            const ref = await db.collection(userPath()+'/bills').add(bill);
-            state.bills.push({ _id:ref.id, ...bill });
-
+            const ref=await db.collection(userPath()+'/bills').add(bill);
+            const newBill={_id:ref.id,...bill};
+            state.bills.push(newBill);
             // Update master game balances
-            for (const row of compRows) {
-              const mg = state.masterGames.find(g=>g.name===row[COL.GAME]);
-              if (mg) {
-                const rawPts = parseFloat(row[COL.POINTS])||0;
-                const rawAmt = parseFloat(row[COL.AMOUNT])||0;
-                const sellRate = getGameRate(comp, row[COL.GAME]) || 100;
-                const pts = rawPts || (rawAmt / (sellRate/100));
-                const uname = row[COL.USERNAME]||'';
-                const uLevel = row[COL.LEVEL] || getUserLevel(comp, uname, row[COL.GAME]);
-                const isOrdered = mg.highestLevel && uLevel === mg.highestLevel;
-                if (isOrdered) {
-                  mg.orderedPoints = (mg.orderedPoints||0) + pts;
-                  await db.doc(userPath()+'/masterGames/'+mg._id).update({ orderedPoints: mg.orderedPoints });
-                } else {
-                  mg.remainingPoints = (mg.remainingPoints||0) - pts;
-                  await db.doc(userPath()+'/masterGames/'+mg._id).update({ remainingPoints: mg.remainingPoints });
+            for(const row of compRows){
+              const mg=state.masterGames.find(g=>g.name===row[CI.game]);
+              if(mg){
+                const rawPts=parseFloat(row[CI.points])||0;
+                const rawAmt=parseFloat(row[CI.amount])||0;
+                const sellRate=getGameRate(comp,row[CI.game])||100;
+                const pts=rawPts||(rawAmt/(sellRate/100));
+                const uname=row[CI.username]||'';
+                const uLevel=row[CI.level]||getUserLevel(comp,uname,row[CI.game]);
+                const isOrdered=!!(mg.highestLevel&&uLevel===mg.highestLevel);
+                const billDateStr=new Date(billDate).toISOString().slice(0,10);
+                const billingEntry={date:billDateStr,amount:pts,username:uname,billingType:isOrdered?'Ordered':'Direct'};
+                mg.billingHistory=[...(mg.billingHistory||[]),billingEntry];
+                if(isOrdered){
+                  mg.orderedPoints=(mg.orderedPoints||0)+pts;
+                  await db.doc(userPath()+'/masterGames/'+mg._id).update({orderedPoints:mg.orderedPoints,billingHistory:mg.billingHistory});
+                }else{
+                  mg.remainingPoints=(mg.remainingPoints||0)-pts;
+                  await db.doc(userPath()+'/masterGames/'+mg._id).update({remainingPoints:mg.remainingPoints,billingHistory:mg.billingHistory});
                 }
               }
+            }
+            // Record in CF if payment method selected
+            if(pm&&payStatus!=='not_received'){
+              const amount=payStatus==='received'?grandTotal:rawPartial;
+              if(amount>0)cfRecordExtraPayment(amount,pm.id,billDate,comp._id,comp.name);
             }
             saved++;
-          } catch(e) { console.error('Bulk bill error:', e); failed++; }
+          }catch(e2){console.error('Bulk bill row error:',e2);failed++;}
         }
-        _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
+        _gbCache.set('data',{mg:state.masterGames,bills:state.bills,companies:state.companies});
         invalidateAnalyticsCache?.();
-        btn.disabled = false; btn.textContent = 'Submit Bills';
-        setStatus(`✓ ${saved} bill${saved===1?'':'s'} saved${failed?` · ${failed} failed`:''}`, '#34d399');
-        if (saved > 0 && failed === 0) setTimeout(() => { overlay.remove(); document.removeEventListener('keydown', onKeyDown); render(); }, 1500);
+        btn.disabled=false;
+        btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>Submit Bills';
+        setStatus(`✓ ${saved} bill${saved===1?'':'s'} saved${failed?` · ${failed} failed`:''}`,failed?'#f87171':'#34d399');
+        if(saved>0&&!failed){setTimeout(()=>{overlay.remove();document.removeEventListener('keydown',onKey);invalidateAnalyticsCache?.();render();},1800);}
       };
 
-      // ── Toolbar buttons ──
-      document.getElementById('bbAddRows').onclick  = () => addRows(10);
-      document.getElementById('bbClearAll').onclick = () => { if(confirm('Clear all rows?')){ pushUndo(); rows=rows.map(()=>Array(COL_COUNT).fill('')); renderTable(); updateStatus(); } };
-      document.getElementById('bbClose').onclick    = () => { overlay.remove(); document.removeEventListener('keydown', onKeyDown); closeAc(); };
-      overlay.onclick = (e) => { if (e.target === overlay) { } }; // don't close on overlay click
+      // ── Toolbar bindings ──
+      document.getElementById('bbAddRowsBtn').onclick=()=>{addRows(parseInt(document.getElementById('bbAddRowsCount').value)||10);};
+      document.getElementById('bbClearBtn').onclick=()=>{if(confirm('Clear all rows?')){pushUndo();rows=rows.map(()=>Array(NC).fill(''));renderBody();updateBar();}};
+      document.getElementById('bbCloseBtn').onclick=()=>{overlay.remove();document.removeEventListener('keydown',onKey);closeAc();};
+      document.getElementById('bbInfoBtn').onclick=()=>{const p=document.getElementById('bbShortcutsPanel');p.style.display=p.style.display==='none'?'flex':'none';};
+      document.getElementById('bbShortcutsClose').onclick=()=>{document.getElementById('bbShortcutsPanel').style.display='none';};
 
       // Initial render
-      renderTable();
-      updateStatus();
-      document.getElementById('bbTableWrap').focus?.();
+      renderHead(); renderBody(); updateBar();
     }
-
     function bindCompanyList() {
       $('#bulkBillBtn').onclick = () => showBulkBillSheet();
+      $('#addCompanyBtn').onclick = () => { $('#addCompanyForm').classList.toggle('hidden'); $('#newCompanyName')?.focus(); };
       $('#cancelAddCompany').onclick = () => $('#addCompanyForm').classList.add('hidden');
       $('#confirmAddCompany').onclick = async () => {
         const name = $('#newCompanyName').value.trim();
@@ -9099,7 +9197,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
