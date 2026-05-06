@@ -19,6 +19,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- Google Identity Services – for Drive upload token -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -695,6 +697,9 @@
       /* Live bill print: mobile icon visible, desktop text button hidden */
       #liveBillPrintMobile { display:flex!important; }
       #liveBillPrintDesktop { display:none!important; }
+      .inv-btn-label { display: none !important; }
+      .desktop-date-input { display: none !important; }
+      .mobile-date-icon { display: inline !important; }
       #globalAnalyticsModal .analytics-summary { grid-template-columns: repeat(2, 1fr); }
       #globalAnalyticsModal div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
     }
@@ -1049,6 +1054,18 @@
       flex-direction:column; gap:6px;
     }
     .analytics-nodata svg { opacity:0.4; }
+    /* ── Bulk Bill Sheet ── */
+    #bulkBillSheet { font-family:-apple-system,'Segoe UI',sans-serif; }
+    #bbScrollWrap { scrollbar-width:thin; scrollbar-color:rgba(124,58,237,0.4) transparent; }
+    #bbScrollWrap::-webkit-scrollbar { width:8px; height:8px; }
+    #bbScrollWrap::-webkit-scrollbar-track { background:transparent; }
+    #bbScrollWrap::-webkit-scrollbar-thumb { background:rgba(124,58,237,0.4); border-radius:4px; }
+    #bbTableWrap table { border-collapse:collapse; }
+    #bbTableWrap td[data-c]:hover { filter:brightness(1.18); }
+    #bbTableWrap td[data-c="4"]:hover { filter:none; }
+    .bb-ac-item:hover,.bb-ac-item.highlighted { background:rgba(124,58,237,0.28) !important; color:#e2e8f0 !important; }
+    #bbAcDrop::-webkit-scrollbar { width:5px; }
+    #bbAcDrop::-webkit-scrollbar-thumb { background:rgba(124,58,237,0.4); border-radius:3px; }
     /* Floating add button */
     .fab-add {
       position:fixed; bottom:24px; right:24px; z-index:90;
@@ -1086,6 +1103,9 @@
       /* On desktop: show text Print button, hide mobile icon-only button */
       #liveBillPrintMobile { display:none!important; }
       #liveBillPrintDesktop { display:flex!important; }
+      .inv-btn-label { display: inline !important; }
+      .desktop-date-input { display: inline-block !important; }
+      .mobile-date-icon { display: none !important; }
     }
     @media (max-width:767px) {
       .analytics-summary { grid-template-columns:repeat(2, 1fr); gap:10px; }
@@ -1232,12 +1252,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-    apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -2139,28 +2160,14 @@
         </div>
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" id="btnMasterGames" style="gap:6px">
-            <svg width="20" height="16" viewBox="0 0 30 22" fill="none" stroke="var(--purpleLight)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <!-- Controller body -->
-              <rect x="2" y="8" width="22" height="11" rx="4"/>
-              <!-- D-pad vertical -->
-              <line x1="8" y1="10.5" x2="8" y2="16.5"/>
-              <!-- D-pad horizontal -->
-              <line x1="5" y1="13.5" x2="11" y2="13.5"/>
-              <!-- Right action buttons -->
-              <circle cx="18" cy="12.5" r="1.1"/>
-              <circle cx="20.8" cy="15" r="1.1"/>
-              <!-- Gear overlay top-right -->
-              <circle cx="26" cy="4" r="2" stroke-width="1.5"/>
-              <line x1="26" y1="1" x2="26" y2="2.2"/>
-              <line x1="26" y1="5.8" x2="26" y2="7"/>
-              <line x1="23" y1="4" x2="24.2" y2="4"/>
-              <line x1="27.8" y1="4" x2="29" y2="4"/>
-              <line x1="24.1" y1="2.1" x2="24.9" y2="2.9"/>
-              <line x1="27.1" y1="5.1" x2="27.9" y2="5.9"/>
-              <line x1="27.9" y1="2.1" x2="27.1" y2="2.9"/>
-              <line x1="24.9" y1="5.1" x2="24.1" y2="5.9"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purpleLight)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="2" width="6" height="3" rx="1"/>
+              <path d="M16 3h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h2"/>
+              <line x1="9" y1="12" x2="15" y2="12"/>
+              <line x1="9" y1="16" x2="13" y2="16"/>
+              <line x1="9" y1="8" x2="15" y2="8"/>
             </svg>
-            <span>Games</span>
+            <span class="inv-btn-label" style="display:inline">Inventory</span>
           </button>
           <div style="position:relative" id="accountWrap">
             <div class="account-trigger" id="accountTrigger">
@@ -3210,7 +3217,7 @@
       overlay.id = 'masterGamesModal';
       overlay.innerHTML = `<div class="modal fade-in" style="max-width:580px">
         <div class="modal-header">
-          <h3 class="modal-title">MASTER GAME LIST</h3>
+          <h3 class="modal-title">MASTER INVENTORY LIST</h3>
           <button class="btn btn-ghost btn-sm" id="closeMasterGames"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="search-wrap" style="margin-bottom:14px">
@@ -3239,6 +3246,9 @@
       renderMasterGamesList();
     }
 
+    // State for ordered points date filter
+    var _mgOrdFrom = null, _mgOrdTo = null;
+
     function renderMasterGamesList() {
       const search = ($('#mgSearch')?.value || '').toLowerCase();
       const list = $('#mgList');
@@ -3246,25 +3256,74 @@
       const filtered = state.masterGames.filter(g => g.name.toLowerCase().includes(search));
       const showCostRate = state.empRole !== 'employee' || getEmpPerm('viewCostRate');
       const isManager = state.empRole !== 'employee';
-      list.innerHTML = filtered.map(g => `
-        <div class="mg-row" style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);gap:8px;cursor:pointer;transition:background 0.15s" data-id="${g._id}" onmouseenter="this.style.background='var(--bgHover)'" onmouseleave="this.style.background='transparent'">
+
+      // Compute filtered ordered points from billingHistory per date range
+      function getFilteredOrdered(g) {
+        if (!_mgOrdFrom && !_mgOrdTo) return g.orderedPoints || 0;
+        const bh = g.billingHistory || [];
+        const fromD = _mgOrdFrom ? new Date(_mgOrdFrom + 'T00:00:00') : null;
+        const toD   = _mgOrdTo   ? new Date(_mgOrdTo   + 'T23:59:59') : null;
+        // billingType 'Ordered' = orderedPoints; also sum all if no type distinction
+        return bh.reduce((s, r) => {
+          if (r.billingType && r.billingType !== 'Ordered') return s;
+          const d = r.date ? new Date(r.date) : null;
+          if (!d || isNaN(d.getTime())) return s;
+          if (fromD && d < fromD) return s;
+          if (toD   && d > toD)   return s;
+          return s + (r.amount || 0);
+        }, 0);
+      }
+
+      list.innerHTML = filtered.map(g => {
+        const filtOrd = getFilteredOrdered(g);
+        const ordLabel = (_mgOrdFrom || _mgOrdTo) ? ' (filtered)' : '';
+        return `<div class="mg-row" style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);gap:8px;cursor:pointer;transition:background 0.15s" data-id="${g._id}" onmouseenter="this.style.background='var(--bgHover)'" onmouseleave="this.style.background='transparent'">
           <span style="font-size:16px">🎮</span>
           <div style="flex:1;min-width:0">
             <div style="font-weight:600;font-size:14px">${esc(g.name)}</div>
             ${isManager && g.assignedUsername ? `<div style="font-size:10px;color:var(--textMuted);margin-top:1px">${esc(g.assignedUsername)} · ${esc(g.assignedLevel||'')}</div>` : ''}
           </div>
           ${showCostRate ? `<span class="badge badge-orange" style="margin-right:2px">${g.costRate||0}%</span>` : ''}
-          ${(g.orderedPoints||0) > 0 ? `<span class="badge badge-yellow" title="Ordered Points">${(g.orderedPoints||0).toLocaleString()} ord pts</span>` : ''}
+          ${filtOrd > 0 ? `<span class="badge badge-yellow" title="Ordered Points${ordLabel}">${filtOrd.toLocaleString()} ord pts</span>` : ''}
           <span class="badge ${(g.remainingPoints||0) > 0 ? 'badge-cyan' : 'badge-red'}">${(g.remainingPoints||0).toLocaleString()} pts</span>
           <span style="color:var(--textMuted);font-size:12px">▸</span>
-        </div>
-      `).join('') || '<div style="padding:20px;text-align:center;color:var(--textMuted)">No games found</div>';
+        </div>`;
+      }).join('') || '<div style="padding:20px;text-align:center;color:var(--textMuted)">No games found</div>';
     }
 
     function bindMasterGamesModal() {
       $('#closeMasterGames').onclick = () => { state.masterGamesModalOpen = false; $('#masterGamesModal')?.remove(); };
       $('#masterGamesModal').onclick = (e) => { if (e.target.id === 'masterGamesModal') { state.masterGamesModalOpen = false; e.target.remove(); } };
       $('#mgSearch').oninput = () => { renderMasterGamesList(); bindMasterGameListEvents(); };
+
+      // Inject ordered points date filter row above mgList (only show for managers)
+      const _mgListEl = $('#mgList');
+      if (_mgListEl && !document.getElementById('mgOrdFilterWrap')) {
+        const now = new Date();
+        const _dfrom = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01';
+        const _dto   = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+        const filterWrap = document.createElement('div');
+        filterWrap.id = 'mgOrdFilterWrap';
+        filterWrap.style.cssText = 'display:flex;gap:6px;align-items:flex-end;margin-bottom:10px;padding:8px 10px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.15);border-radius:8px;flex-wrap:wrap';
+        filterWrap.innerHTML = `
+          <span style="font-size:10px;color:#fbbf24;font-weight:700;text-transform:uppercase;letter-spacing:.5px;align-self:center;flex-shrink:0">Ord Pts Filter</span>
+          <div style="flex:1;min-width:90px"><span style="font-size:9px;color:var(--textMuted);display:block;margin-bottom:2px">From</span><input class="input" type="date" id="mgOrdFrom" value="${_dfrom}" style="font-size:11px;padding:4px 8px"/></div>
+          <div style="flex:1;min-width:90px"><span style="font-size:9px;color:var(--textMuted);display:block;margin-bottom:2px">To</span><input class="input" type="date" id="mgOrdTo" value="${_dto}" style="font-size:11px;padding:4px 8px"/></div>
+          <button class="btn btn-sm" id="mgOrdApply" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;font-size:10px;padding:4px 10px;align-self:flex-end">Apply</button>
+          <button class="btn btn-sm" id="mgOrdReset" style="font-size:10px;color:var(--textMuted);padding:4px 8px;align-self:flex-end">All</button>
+        `;
+        _mgListEl.parentNode.insertBefore(filterWrap, _mgListEl);
+        // Pre-apply default: no filter (show all-time ordered)
+        document.getElementById('mgOrdApply').onclick = () => {
+          _mgOrdFrom = document.getElementById('mgOrdFrom').value || null;
+          _mgOrdTo   = document.getElementById('mgOrdTo').value   || null;
+          renderMasterGamesList(); bindMasterGameListEvents();
+        };
+        document.getElementById('mgOrdReset').onclick = () => {
+          _mgOrdFrom = null; _mgOrdTo = null;
+          renderMasterGamesList(); bindMasterGameListEvents();
+        };
+      }
       const mgAddHandler = () => $('#mgAdd').click();
       if ($('#mgNewName')) $('#mgNewName').onkeydown = (e) => { if (e.key === 'Enter') mgAddHandler(); };
       if ($('#mgNewPoints')) $('#mgNewPoints').onkeydown = (e) => { if (e.key === 'Enter') mgAddHandler(); };
@@ -3299,7 +3358,7 @@
     // ============================================================
     // HIERARCHY LEVELS FOR MASTER GAME INVENTORY
     // ============================================================
-    const MG_HIERARCHY_LEVELS = ['Supermaster', 'Master', 'Agent', 'Distributor', 'Subdistributor', 'Store'];
+    const MG_HIERARCHY_LEVELS = ['Agent', 'Supermaster', 'Master', 'Distributor', 'Subdistributor', 'Store'];
 
     function showMasterGameDetail(g) {
       $('#mgDetailOverlay')?.remove();
@@ -3365,10 +3424,12 @@
       const orderHistory   = g.orderHistory   || [];
       const billingHistory = g.billingHistory || [];
 
-      const lvlOptions = MG_HIERARCHY_LEVELS.map(l =>
-        `<option value="${l}" ${(g.assignedLevel||'') === l ? 'selected' : ''}>${l}</option>`).join('');
-      const highLvlOptions = MG_HIERARCHY_LEVELS.map(l =>
-        `<option value="${l}" ${(g.highestLevel||'') === l ? 'selected' : ''}>${l}</option>`).join('');
+      // Build searchable dropdown items for hierarchy level pickers
+      function mgLvlItems(selected) {
+        return ['', ...MG_HIERARCHY_LEVELS].map(l =>
+          `<div class="dropdown-item mg-lvl-option" data-value="${l}" style="${l===selected?'background:rgba(124,58,237,0.13);color:var(--purpleLight)':''}">${l||'<span style=\'color:var(--textMuted);font-style:italic\'>— None —</span>'}</div>`
+        ).join('');
+      }
 
       // Build history rows
       function fmtHistRows(arr, cols, emptyMsg) {
@@ -3453,11 +3514,23 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
             <div>
               <span class="label">Assigned Account Level</span>
-              <select class="input" id="mgDetailAssignedLevel"><option value="">— Select —</option>${lvlOptions}</select>
+              <div style="position:relative" id="mgAssignedLevelWrap">
+                <input class="input mg-lvl-search" id="mgDetailAssignedLevel" data-field="assignedLevel" placeholder="Search level..." value="${esc(g.assignedLevel||'')}" autocomplete="off" readonly style="cursor:pointer" />
+                <div class="mg-lvl-dropdown hidden" id="mgAssignedLevelDrop" style="position:absolute;top:calc(100% + 2px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:9999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+                  <div class="dropdown-search"><input class="input" id="mgAssignedLevelSearch" placeholder="Search..." style="font-size:12px;padding:6px 10px" /></div>
+                  <div id="mgAssignedLevelList">${mgLvlItems(g.assignedLevel||'')}</div>
+                </div>
+              </div>
             </div>
             <div>
               <span class="label">Highest Level (This Game)</span>
-              <select class="input" id="mgDetailHighestLevel"><option value="">— Select —</option>${highLvlOptions}</select>
+              <div style="position:relative" id="mgHighestLevelWrap">
+                <input class="input mg-lvl-search" id="mgDetailHighestLevel" data-field="highestLevel" placeholder="Search level..." value="${esc(g.highestLevel||'')}" autocomplete="off" readonly style="cursor:pointer" />
+                <div class="mg-lvl-dropdown hidden" id="mgHighestLevelDrop" style="position:absolute;top:calc(100% + 2px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:9999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+                  <div class="dropdown-search"><input class="input" id="mgHighestLevelSearch" placeholder="Search..." style="font-size:12px;padding:6px 10px" /></div>
+                  <div id="mgHighestLevelList">${mgLvlItems(g.highestLevel||'')}</div>
+                </div>
+              </div>
             </div>
           </div>
           <div style="display:flex;gap:8px">
@@ -3482,11 +3555,14 @@
             </div>
             <div>
               <span class="label">Action</span>
-              <select class="input" id="mgStockAction">
-                <option value="Add">Add Stock (+)</option>
-                <option value="Set">Set Total (replace)</option>
-                <option value="Deduct">Deduct (correction)</option>
-              </select>
+              <div style="position:relative" id="mgStockActionWrap">
+                <input class="input" id="mgStockAction" placeholder="Select action..." value="Add Stock (+)" autocomplete="off" readonly style="cursor:pointer" data-value="Add" />
+                <div class="mg-lvl-dropdown hidden" id="mgStockActionDrop" style="position:absolute;top:calc(100% + 2px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:9999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.6)">
+                  <div class="dropdown-item mg-stock-option" data-value="Add">Add Stock <span style="color:var(--textMuted);font-size:11px">(+)</span></div>
+                  <div class="dropdown-item mg-stock-option" data-value="Set">Set Total <span style="color:var(--textMuted);font-size:11px">(replace)</span></div>
+                  <div class="dropdown-item mg-stock-option" data-value="Deduct">Deduct <span style="color:var(--textMuted);font-size:11px">(correction)</span></div>
+                </div>
+              </div>
             </div>
           </div>
           <button class="btn btn-green" id="mgStockApply" style="width:100%">
@@ -3552,6 +3628,76 @@
       overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
       $('#closeMgDetail').onclick = () => overlay.remove();
 
+      // ── SEARCHABLE LEVEL DROPDOWNS ────────────────────────────────
+      function bindMgLevelDropdown(inputId, dropId, searchId, listId) {
+        const inp = $('#' + inputId);
+        const drop = $('#' + dropId);
+        const srch = $('#' + searchId);
+        const list = $('#' + listId);
+        if (!inp || !drop) return;
+        const allItems = () => drop.querySelectorAll('.mg-lvl-option');
+        inp.onclick = (e) => {
+          e.stopPropagation();
+          // Close other mg dropdowns
+          $$('.mg-lvl-dropdown').forEach(d => { if (d.id !== dropId) d.classList.add('hidden'); });
+          drop.classList.toggle('hidden');
+          if (!drop.classList.contains('hidden') && srch) { srch.value = ''; srch.focus(); filterItems(''); }
+        };
+        function filterItems(q) {
+          allItems().forEach(item => {
+            const val = (item.dataset.value || '').toLowerCase();
+            item.style.display = (!q || val.includes(q.toLowerCase())) ? '' : 'none';
+          });
+        }
+        if (srch) srch.oninput = () => filterItems(srch.value);
+        allItems().forEach(item => {
+          item.onclick = (e) => {
+            e.stopPropagation();
+            const val = item.dataset.value || '';
+            inp.value = val;
+            drop.classList.add('hidden');
+            // Highlight selected
+            allItems().forEach(i => i.style.background = '');
+            item.style.background = 'rgba(124,58,237,0.13)';
+          };
+        });
+      }
+      bindMgLevelDropdown('mgDetailAssignedLevel', 'mgAssignedLevelDrop', 'mgAssignedLevelSearch', 'mgAssignedLevelList');
+      bindMgLevelDropdown('mgDetailHighestLevel',  'mgHighestLevelDrop',  'mgHighestLevelSearch',  'mgHighestLevelList');
+
+      // ── STOCK ACTION DROPDOWN ─────────────────────────────────────
+      (function() {
+        const inp = $('#mgStockAction');
+        const drop = $('#mgStockActionDrop');
+        if (!inp || !drop) return;
+        inp.onclick = (e) => { e.stopPropagation(); drop.classList.toggle('hidden'); };
+        drop.querySelectorAll('.mg-stock-option').forEach(item => {
+          item.onclick = (e) => {
+            e.stopPropagation();
+            inp.dataset.value = item.dataset.value;
+            inp.value = item.textContent.trim();
+            drop.classList.add('hidden');
+            drop.querySelectorAll('.mg-stock-option').forEach(i => i.style.background = '');
+            item.style.background = 'rgba(124,58,237,0.13)';
+          };
+        });
+      })();
+
+      // Close all mg dropdowns on outside click
+      document.addEventListener('click', function _mgDropClose(e) {
+        if (!e.target.closest('#mgDetailOverlay')) {
+          $$('.mg-lvl-dropdown').forEach(d => d.classList.add('hidden'));
+          document.removeEventListener('click', _mgDropClose);
+        } else {
+          $$('.mg-lvl-dropdown').forEach(d => {
+            if (!e.target.closest('#' + d.id) && !e.target.closest('[id$="LevelWrap"]') && e.target.id !== 'mgStockAction') {
+              d.classList.add('hidden');
+            }
+          });
+        }
+      });
+      // ─────────────────────────────────────────────────────────────
+
       // CONFIG SAVE
       $('#mgConfigSave').onclick = async () => {
         const newName = $('#mgDetailName').value.trim();
@@ -3587,7 +3733,7 @@
       $('#mgStockApply').onclick = async () => {
         const amt = parseFloat($('#mgStockAmt').value) || 0;
         if (amt <= 0) { showPopup('Enter a valid amount', 'error'); return; }
-        const action = $('#mgStockAction').value;
+        const action = $('#mgStockAction').dataset.value || 'Add';
         const prev = g.remainingPoints || 0;
         let newAvail;
         if (action === 'Add')    newAvail = prev + amt;
@@ -3628,7 +3774,13 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
           <h2 style="font-size:20px"><span style="color:var(--purpleLight)">Companies</span>
             <span style="color:var(--textMuted);font-size:13px;font-weight:400;margin-left:8px">(${list.length})</span></h2>
-          <button class="btn btn-purple" id="addCompanyBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> New Company</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" id="bulkBillBtn" style="background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(6,182,212,0.2));border:1px solid rgba(124,58,237,0.4);color:var(--purpleLight);gap:6px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+              Bulk Bill
+            </button>
+            <button class="btn btn-purple" id="addCompanyBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> New Company</button>
+          </div>
         </div>
         <div class="search-wrap" style="margin-bottom:14px">
           <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
@@ -3660,8 +3812,548 @@
       </div>`;
     }
 
+    // ============================================================
+    // BULK BILL SHEET
+    // ============================================================
+    function showBulkBillSheet() {
+      document.getElementById('bulkBillSheet')?.remove();
+
+      const companies   = Object.values(state.companies).filter(c => c.active !== false).sort((a,b) => a.name.localeCompare(b.name));
+      const compNames   = companies.map(c => c.name);
+      const masterGames = state.masterGames.map(g => g.name);
+      const COL = { DATE:0, COMPANY:1, GAME:2, USERNAME:3, LEVEL:4, POINTS:5, AMOUNT:6, MODE:7 };
+      const COL_COUNT = 8;
+      const today = new Date(); const pad = n => String(n).padStart(2,'0');
+      const todayStr = today.getFullYear()+'/'+pad(today.getMonth()+1)+'/'+pad(today.getDate());
+
+      // Sheet state
+      let rows = []; // each row: array of 8 cell values (strings)
+      let sel  = { r:0, c:0 };   // active cell
+      let sel2 = { r:0, c:0 };   // selection anchor
+      let isDragging = false;
+      let copyBuffer = null;      // { data: 2d array, cut: bool }
+      let editingCell = null;     // { r, c, el }
+      let undoStack = [];
+
+      // Add 20 empty rows to start
+      for (let i = 0; i < 20; i++) rows.push(Array(COL_COUNT).fill(''));
+
+      const pushUndo = () => { undoStack.push(rows.map(r => [...r])); if (undoStack.length > 50) undoStack.shift(); };
+
+      // ── Build overlay ──
+      const overlay = document.createElement('div');
+      overlay.id = 'bulkBillSheet';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:var(--bgPrimary,#0a0a0f);display:flex;flex-direction:column;overflow:hidden';
+
+      overlay.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(124,58,237,0.1);border-bottom:1px solid rgba(124,58,237,0.25);flex-shrink:0;flex-wrap:wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--purpleLight)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          <span style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--purpleLight)">BULK BILL SHEET</span>
+          <span style="font-size:11px;color:var(--textMuted);flex:1">Tab/Enter to move · Ctrl+C/V copy/paste · Ctrl+Z undo · Del clear · Ctrl+Enter add rows</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button id="bbAddRows" class="btn btn-sm btn-ghost" style="font-size:11px">+ 10 Rows</button>
+            <button id="bbClearAll" class="btn btn-sm btn-ghost" style="font-size:11px;color:#f87171">Clear All</button>
+            <button id="bbSave" class="btn btn-sm" style="background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;font-size:12px;font-weight:700;padding:6px 18px">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg>
+              Submit Bills
+            </button>
+            <button id="bbClose" class="btn btn-sm btn-ghost" style="font-size:11px">✕ Close</button>
+          </div>
+        </div>
+        <div id="bbStatusBar" style="padding:4px 16px;font-size:11px;color:var(--textMuted);background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(120,100,200,0.1);min-height:22px;flex-shrink:0"></div>
+        <div style="flex:1;overflow:auto;position:relative" id="bbScrollWrap">
+          <div id="bbTableWrap" style="min-width:900px"></div>
+        </div>
+        <!-- Autocomplete dropdown portal -->
+        <div id="bbAcDrop" style="display:none;position:fixed;background:rgba(16,13,30,0.98);border:1px solid rgba(124,58,237,0.35);border-radius:8px;z-index:10001;max-height:200px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px"></div>
+      `;
+      document.body.appendChild(overlay);
+
+      // ── Column headers & widths ──
+      const COLS = [
+        { label:'Date',        w:110, hint:'YYYY/MM/DD' },
+        { label:'Company',     w:160, hint:'Company name' },
+        { label:'Game',        w:150, hint:'Game from inventory' },
+        { label:'Username',    w:130, hint:'Player username' },
+        { label:'Level',       w:90,  hint:'Auto-filled' },
+        { label:'Points',      w:100, hint:'Points value' },
+        { label:'Amount ($)',  w:100, hint:'Dollar value' },
+        { label:'Mode',        w:80,  hint:'pts→$ or $→pts' },
+      ];
+
+      // ── Render the table ──
+      function renderTable() {
+        const wrap = document.getElementById('bbTableWrap');
+        if (!wrap) return;
+        const rMin = Math.min(sel.r, sel2.r), rMax = Math.max(sel.r, sel2.r);
+        const cMin = Math.min(sel.c, sel2.c), cMax = Math.max(sel.c, sel2.c);
+
+        let html = '<table style="border-collapse:collapse;font-size:12px;font-family:-apple-system,sans-serif;table-layout:fixed">';
+        // Header row
+        html += '<thead><tr><th style="width:36px;min-width:36px;background:#1a1530;border:1px solid rgba(120,100,200,0.2);color:var(--textMuted);font-size:10px;padding:6px 4px;position:sticky;top:0;left:0;z-index:3">#</th>';
+        COLS.forEach((col,ci) => {
+          html += `<th style="width:${col.w}px;min-width:${col.w}px;background:#1a1530;border:1px solid rgba(120,100,200,0.2);color:var(--purpleLight);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:6px 6px;position:sticky;top:0;z-index:2;user-select:none" data-col="${ci}">${col.label}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        rows.forEach((row, ri) => {
+          html += `<tr data-row="${ri}">`;
+          // Row number
+          html += `<td style="background:#1a1530;border:1px solid rgba(120,100,200,0.15);color:var(--textMuted);font-size:10px;text-align:center;padding:0;position:sticky;left:0;z-index:1;user-select:none">${ri+1}</td>`;
+          row.forEach((val, ci) => {
+            const isActive = ri===sel.r && ci===sel.c;
+            const isSelected = ri>=rMin && ri<=rMax && ci>=cMin && ci<=cMax;
+            const isFilled = val !== '';
+            // Level col: read-only, dimmed
+            const isReadOnly = ci === COL.LEVEL;
+            const bg = isActive ? 'rgba(124,58,237,0.25)' : isSelected ? 'rgba(124,58,237,0.12)' : isFilled ? 'rgba(15,12,28,0.95)' : 'rgba(10,8,20,0.8)';
+            const border = isActive ? '2px solid #7c3aed' : '1px solid rgba(120,100,200,0.15)';
+            const color = ci === COL.LEVEL ? '#a78bfa' : ci === COL.AMOUNT ? '#34d399' : ci === COL.POINTS ? '#22d3ee' : ci === COL.MODE ? '#fbbf24' : 'var(--textPrimary,#e2e8f0)';
+            let displayVal = val;
+            if (ci === COL.MODE && !val) displayVal = 'pts→$';
+            html += `<td data-r="${ri}" data-c="${ci}" style="background:${bg};border:${border};padding:0;cursor:${isReadOnly?'default':'cell'};max-width:${COLS[ci].w}px;overflow:hidden">
+              <div style="padding:4px 6px;height:28px;display:flex;align-items:center;color:${color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;opacity:${isReadOnly&&!val?0.4:1}">${esc(displayVal)}</div>
+            </td>`;
+          });
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
+
+        // Bind cell events
+        wrap.querySelectorAll('td[data-r]').forEach(td => {
+          const ri = parseInt(td.dataset.r), ci = parseInt(td.dataset.c);
+          td.onmousedown = (e) => {
+            e.preventDefault();
+            closeEdit(); closeAc();
+            if (e.shiftKey) { sel2 = {r:ri,c:ci}; }
+            else { sel = {r:ri,c:ci}; sel2 = {r:ri,c:ci}; isDragging = true; }
+            renderTable(); updateStatus();
+          };
+          td.onmouseover = (e) => { if (isDragging && e.buttons===1) { sel2={r:ri,c:ci}; renderTable(); } };
+          td.ondblclick = () => { if (ci !== COL.LEVEL) startEdit(ri, ci); };
+        });
+
+        wrap.onmouseup = () => { isDragging = false; };
+        // Scroll active cell into view
+        const activeTd = wrap.querySelector(`td[data-r="${sel.r}"][data-c="${sel.c}"]`);
+        if (activeTd) activeTd.scrollIntoView({ block:'nearest', inline:'nearest' });
+      }
+
+      // ── Inline editor ──
+      function startEdit(r, c, initialChar) {
+        closeEdit(); closeAc();
+        if (c === COL.LEVEL) return;
+        const wrap = document.getElementById('bbTableWrap');
+        const td = wrap?.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+        if (!td) return;
+        const input = document.createElement('input');
+        input.value = initialChar != null ? initialChar : (rows[r][c] || '');
+        input.style.cssText = 'width:100%;height:100%;border:none;background:transparent;color:inherit;font-size:12px;padding:4px 6px;outline:none;box-sizing:border-box;position:absolute;inset:0';
+        td.style.position = 'relative';
+        td.style.overflow = 'visible';
+        td.appendChild(input);
+        input.focus();
+        if (initialChar == null) input.select(); else { input.setSelectionRange(input.value.length, input.value.length); }
+        editingCell = { r, c, el: input };
+
+        // Autocomplete
+        input.oninput = () => {
+          const q = input.value;
+          let items = [];
+          if (c === COL.COMPANY) items = compNames.filter(n => n.toLowerCase().includes(q.toLowerCase()));
+          else if (c === COL.GAME) {
+            // Get games for the selected company if set, else all master games
+            const compName = rows[r][COL.COMPANY];
+            const comp = companies.find(co => co.name === compName);
+            const compGames = comp ? (comp.assignedGames||[]).map(g=>g.gameName) : masterGames;
+            items = compGames.filter(n => n.toLowerCase().includes(q.toLowerCase()));
+          }
+          else if (c === COL.USERNAME) {
+            const compName = rows[r][COL.COMPANY];
+            const comp = companies.find(co => co.name === compName);
+            const gameName = rows[r][COL.GAME];
+            let users = [];
+            if (comp) {
+              // Users from company usernames
+              users = (comp.usernames||[]).map(u => u.username||u.name||'').filter(Boolean);
+              // Also users from this game's username list
+              const ag = (comp.assignedGames||[]).find(g=>g.gameName===gameName);
+              if (ag && ag.usernames) users = [...new Set([...users, ...ag.usernames.map(u=>u.username||u.name||'').filter(Boolean)])];
+            }
+            items = q ? users.filter(n => n.toLowerCase().includes(q.toLowerCase())) : users.slice(0,10);
+          }
+          else if (c === COL.MODE) items = ['pts→$','$→pts'];
+          showAc(input, items, (val) => {
+            rows[r][c] = val;
+            autoFill(r, c, val);
+            closeEdit();
+            renderTable();
+            moveSel(0,1);
+          });
+        };
+
+        input.onkeydown = (e) => {
+          if (e.key === 'Escape') { closeEdit(); closeAc(); renderTable(); return; }
+          if (e.key === 'Tab') { e.preventDefault(); commitEdit(r,c,input.value); moveSel(0, e.shiftKey?-1:1); return; }
+          if (e.key === 'Enter') {
+            const acDrop = document.getElementById('bbAcDrop');
+            const highlighted = acDrop?.querySelector('.bb-ac-item.highlighted');
+            if (highlighted) { highlighted.click(); return; }
+            commitEdit(r,c,input.value); moveSel(1,0); return;
+          }
+          if (e.key === 'ArrowDown' && document.getElementById('bbAcDrop')?.style.display !== 'none') {
+            e.preventDefault(); moveAcHighlight(1); return;
+          }
+          if (e.key === 'ArrowUp' && document.getElementById('bbAcDrop')?.style.display !== 'none') {
+            e.preventDefault(); moveAcHighlight(-1); return;
+          }
+        };
+
+        input.onblur = (e) => {
+          setTimeout(() => {
+            const acDrop = document.getElementById('bbAcDrop');
+            if (acDrop && acDrop.contains(document.activeElement)) return;
+            commitEdit(r,c,input.value);
+          }, 120);
+        };
+      }
+
+      function commitEdit(r, c, val) {
+        if (!rows[r]) return;
+        pushUndo();
+        rows[r][c] = val.trim();
+        autoFill(r, c, val.trim());
+        closeEdit();
+        renderTable();
+      }
+
+      function closeEdit() {
+        if (editingCell) {
+          const { el } = editingCell;
+          if (el && el.parentNode) { el.parentNode.style.overflow = ''; el.parentNode.style.position = ''; el.remove(); }
+          editingCell = null;
+        }
+      }
+
+      // ── Auto-fill dependent cells ──
+      function autoFill(r, c, val) {
+        if (c === COL.COMPANY) {
+          // Auto-fill date if empty
+          if (!rows[r][COL.DATE]) rows[r][COL.DATE] = todayStr;
+          // Clear game/username/level if company changed
+          rows[r][COL.GAME] = ''; rows[r][COL.USERNAME] = ''; rows[r][COL.LEVEL] = '';
+        }
+        if (c === COL.GAME) {
+          rows[r][COL.USERNAME] = ''; rows[r][COL.LEVEL] = '';
+        }
+        if (c === COL.USERNAME) {
+          // Auto-fill level
+          const compName = rows[r][COL.COMPANY];
+          const comp = companies.find(co => co.name === compName);
+          const gameName = rows[r][COL.GAME];
+          if (comp && val) {
+            const level = getUserLevel(comp, val, gameName);
+            rows[r][COL.LEVEL] = level || '';
+          }
+        }
+        // If date empty on any edit, default to today
+        if (!rows[r][COL.DATE] && c !== COL.DATE) rows[r][COL.DATE] = todayStr;
+      }
+
+      // ── Autocomplete dropdown ──
+      function showAc(inputEl, items, onSelect) {
+        const drop = document.getElementById('bbAcDrop');
+        if (!items.length) { drop.style.display = 'none'; return; }
+        const r2 = inputEl.getBoundingClientRect();
+        drop.style.top  = (r2.bottom + 2) + 'px';
+        drop.style.left = r2.left + 'px';
+        drop.style.minWidth = Math.max(r2.width, 160) + 'px';
+        drop.style.display = 'block';
+        drop.innerHTML = items.slice(0,12).map((item,i) =>
+          `<div class="bb-ac-item${i===0?' highlighted':''}" style="padding:7px 12px;cursor:pointer;font-size:12px;color:var(--textPrimary,#e2e8f0);border-bottom:1px solid rgba(120,100,200,0.1);transition:background .1s" data-val="${esc(item)}">${esc(item)}</div>`
+        ).join('');
+        drop.querySelectorAll('.bb-ac-item').forEach(item => {
+          item.onmouseenter = () => { drop.querySelectorAll('.bb-ac-item').forEach(i=>i.classList.remove('highlighted')); item.classList.add('highlighted'); };
+          item.onmousedown = (e) => { e.preventDefault(); onSelect(item.dataset.val); };
+        });
+      }
+
+      function closeAc() {
+        const drop = document.getElementById('bbAcDrop');
+        if (drop) drop.style.display = 'none';
+      }
+
+      function moveAcHighlight(dir) {
+        const drop = document.getElementById('bbAcDrop');
+        if (!drop) return;
+        const items = Array.from(drop.querySelectorAll('.bb-ac-item'));
+        const cur = items.findIndex(i => i.classList.contains('highlighted'));
+        items.forEach(i => i.classList.remove('highlighted'));
+        const next = Math.max(0, Math.min(items.length-1, cur + dir));
+        items[next]?.classList.add('highlighted');
+        items[next]?.scrollIntoView({ block:'nearest' });
+      }
+
+      // ── Selection movement ──
+      function moveSel(dr, dc) {
+        closeAc();
+        let nr = sel.r + dr, nc = sel.c + dc;
+        if (nc >= COL_COUNT) { nc = 0; nr++; }
+        if (nc < 0) { nc = COL_COUNT-1; nr--; }
+        if (nr >= rows.length) { rows.push(Array(COL_COUNT).fill('')); }
+        if (nr < 0) nr = 0;
+        // Skip read-only level column when tabbing
+        if (nc === COL.LEVEL && dc !== 0) nc += dc > 0 ? 1 : -1;
+        sel = { r:nr, c:nc }; sel2 = { r:nr, c:nc };
+        renderTable(); updateStatus();
+      }
+
+      // ── Status bar ──
+      function updateStatus() {
+        const bar = document.getElementById('bbStatusBar');
+        if (!bar) return;
+        const colName = COLS[sel.c]?.label || '';
+        const hint = COLS[sel.c]?.hint || '';
+        const filledRows = rows.filter(r => r[COL.COMPANY] && r[COL.GAME]).length;
+        bar.textContent = `Cell: ${String.fromCharCode(65+sel.c)}${sel.r+1}  |  ${colName}: ${hint}  |  ${filledRows} bill row${filledRows===1?'':'s'} ready`;
+      }
+
+      // ── Global keyboard handler ──
+      const onKeyDown = (e) => {
+        const tag = document.activeElement?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+        // Navigation
+        if (e.key === 'ArrowUp')    { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:Math.max(0,sel2.r-1),c:sel2.c}; else moveSel(-1,0); }
+        else if (e.key === 'ArrowDown')  { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:Math.min(rows.length-1,sel2.r+1),c:sel2.c}; else moveSel(1,0); }
+        else if (e.key === 'ArrowLeft')  { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:sel2.r,c:Math.max(0,sel2.c-1)}; else moveSel(0,-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); closeAc(); if (e.shiftKey) sel2={r:sel2.r,c:Math.min(COL_COUNT-1,sel2.c+1)}; else moveSel(0,1); }
+        else if (e.key === 'Tab')   { e.preventDefault(); moveSel(0, e.shiftKey?-1:1); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (sel.c===COL.LEVEL) moveSel(1,0); else startEdit(sel.r,sel.c); }
+        else if (e.key === 'F2')    { e.preventDefault(); startEdit(sel.r,sel.c); }
+        else if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          pushUndo();
+          const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
+          const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
+          for (let r=rMin;r<=rMax;r++) for (let c=cMin;c<=cMax;c++) if (c!==COL.LEVEL) rows[r][c]='';
+          renderTable();
+        }
+        else if (e.key === 'Escape') { closeAc(); sel2={...sel}; renderTable(); }
+        // Ctrl shortcuts
+        else if ((e.ctrlKey||e.metaKey) && e.key === 'c') { e.preventDefault(); doCopy(false); }
+        else if ((e.ctrlKey||e.metaKey) && e.key === 'x') { e.preventDefault(); doCopy(true); }
+        else if ((e.ctrlKey||e.metaKey) && e.key === 'v') { e.preventDefault(); doPaste(); }
+        else if ((e.ctrlKey||e.metaKey) && e.key === 'z') { e.preventDefault(); doUndo(); }
+        else if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); addRows(10); }
+        else if ((e.ctrlKey||e.metaKey) && e.key === 'd') { e.preventDefault(); doFillDown(); }
+        // Printable char starts editing
+        else if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length===1 && sel.c!==COL.LEVEL) {
+          startEdit(sel.r, sel.c, e.key);
+        }
+        if (e.key.startsWith('Arrow') || e.key === 'Tab') { renderTable(); updateStatus(); }
+      };
+      document.addEventListener('keydown', onKeyDown);
+
+      // ── Copy / Paste / Undo ──
+      function doCopy(cut) {
+        const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
+        const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
+        const data = [];
+        for (let r=rMin;r<=rMax;r++) { const row=[]; for(let c=cMin;c<=cMax;c++) row.push(rows[r][c]); data.push(row); }
+        copyBuffer = { data, cut };
+        if (cut) { pushUndo(); for(let r=rMin;r<=rMax;r++) for(let c=cMin;c<=cMax;c++) if(c!==COL.LEVEL) rows[r][c]=''; renderTable(); }
+        // Also put to clipboard as TSV
+        const tsv = data.map(r=>r.join('\t')).join('\n');
+        navigator.clipboard?.writeText(tsv).catch(()=>{});
+        setStatus(`Copied ${data.length}×${data[0].length} cells`);
+      }
+
+      async function doPaste() {
+        // Try system clipboard first (handles paste from Excel/Sheets)
+        let tsv = '';
+        try { tsv = await navigator.clipboard.readText(); } catch(e) {}
+        if (tsv) {
+          pushUndo();
+          const pasteRows = tsv.split('\n').map(r=>r.split('\t'));
+          for (let dr=0;dr<pasteRows.length;dr++) {
+            const tr = sel.r+dr; if (tr>=rows.length) rows.push(Array(COL_COUNT).fill(''));
+            for (let dc=0;dc<pasteRows[dr].length;dc++) {
+              const tc = sel.c+dc; if (tc<COL_COUNT && tc!==COL.LEVEL) rows[tr][tc] = pasteRows[dr][dc];
+            }
+          }
+          // Re-run autoFill for all pasted rows
+          for (let dr=0;dr<pasteRows.length;dr++) {
+            const tr = sel.r+dr;
+            if (rows[tr][COL.USERNAME]) autoFill(tr, COL.USERNAME, rows[tr][COL.USERNAME]);
+            if (!rows[tr][COL.DATE] && rows[tr][COL.COMPANY]) rows[tr][COL.DATE] = todayStr;
+          }
+          renderTable(); updateStatus();
+        } else if (copyBuffer) {
+          pushUndo();
+          copyBuffer.data.forEach((row,dr) => {
+            const tr=sel.r+dr; if(tr>=rows.length) rows.push(Array(COL_COUNT).fill(''));
+            row.forEach((val,dc) => { const tc=sel.c+dc; if(tc<COL_COUNT&&tc!==COL.LEVEL) rows[tr][tc]=val; });
+          });
+          renderTable(); updateStatus();
+        }
+      }
+
+      function doUndo() {
+        if (!undoStack.length) return;
+        rows = undoStack.pop();
+        renderTable(); updateStatus();
+      }
+
+      function doFillDown() {
+        const rMin=Math.min(sel.r,sel2.r),rMax=Math.max(sel.r,sel2.r);
+        const cMin=Math.min(sel.c,sel2.c),cMax=Math.max(sel.c,sel2.c);
+        pushUndo();
+        for (let c=cMin;c<=cMax;c++) {
+          const srcVal = rows[rMin][c];
+          for (let r=rMin+1;r<=rMax;r++) if(c!==COL.LEVEL) rows[r][c]=srcVal;
+        }
+        renderTable();
+      }
+
+      function addRows(n) {
+        for (let i=0;i<n;i++) rows.push(Array(COL_COUNT).fill(''));
+        renderTable(); updateStatus();
+      }
+
+      function setStatus(msg, color) {
+        const bar = document.getElementById('bbStatusBar');
+        if (bar) { bar.textContent = msg; bar.style.color = color||'var(--textMuted)'; setTimeout(()=>updateStatus(),2500); }
+      }
+
+      // ── Submit bills ──
+      document.getElementById('bbSave').onclick = async () => {
+        const btn = document.getElementById('bbSave');
+        btn.disabled = true; btn.textContent = 'Submitting…';
+        // Validate and collect rows
+        const billRows = rows.filter(r => r[COL.COMPANY] && r[COL.GAME]);
+        if (!billRows.length) { alert('No rows to submit. Fill in at least Company and Game.'); btn.disabled=false; btn.textContent='Submit Bills'; return; }
+
+        // Validate each row
+        const errors = [];
+        billRows.forEach((row, i) => {
+          if (!compNames.includes(row[COL.COMPANY])) errors.push(`Row ${i+1}: Unknown company "${row[COL.COMPANY]}"`);
+          if (!masterGames.includes(row[COL.GAME])) errors.push(`Row ${i+1}: Unknown game "${row[COL.GAME]}"`);
+          const hasVal = (parseFloat(row[COL.POINTS])||0) !== 0 || (parseFloat(row[COL.AMOUNT])||0) !== 0;
+          if (!hasVal) errors.push(`Row ${i+1}: Enter points or amount`);
+        });
+        if (errors.length) { alert('Please fix these issues:\n\n' + errors.slice(0,5).join('\n') + (errors.length>5?`\n…and ${errors.length-5} more`:'')); btn.disabled=false; btn.textContent='Submit Bills'; return; }
+
+        // Group rows by company (each company gets one bill)
+        const byCompany = {};
+        billRows.forEach(row => {
+          const compName = row[COL.COMPANY];
+          if (!byCompany[compName]) byCompany[compName] = [];
+          byCompany[compName].push(row);
+        });
+
+        let saved = 0, failed = 0;
+        for (const [compName, compRows] of Object.entries(byCompany)) {
+          try {
+            const comp = companies.find(co => co.name === compName);
+            if (!comp) { failed++; continue; }
+
+            // Auto-add new usernames to company
+            for (const row of compRows) {
+              const uname = (row[COL.USERNAME]||'').trim();
+              const gameName = row[COL.GAME];
+              if (uname && comp) {
+                const exists = (comp.usernames||[]).some(u=>(u.username||u.name||'')===uname);
+                if (!exists) {
+                  const lvl = row[COL.LEVEL] || '';
+                  const newUn = { username: uname, level: lvl, gameName };
+                  try {
+                    const ref = await db.collection(userPath()+'/companies/'+comp._id+'/usernames').add(newUn);
+                    comp.usernames = [...(comp.usernames||[]), { _id: ref.id, ...newUn }];
+                    if (state.companies[comp._id]) state.companies[comp._id].usernames = comp.usernames;
+                  } catch(e2) { console.warn('Auto-add username failed:', e2); }
+                }
+              }
+            }
+
+            // Build items
+            const billDate = (() => {
+              const d = compRows[0][COL.DATE] || todayStr;
+              const p = d.replace(/\//g,'-');
+              return new Date(p+'T00:00:00').toISOString();
+            })();
+            const convMode = (compRows[0][COL.MODE]||'pts→$') === '$→pts' ? 'dollar2pts' : 'pts2dollar';
+            let totalPts = 0, totalDollars = 0;
+            const items = compRows.map(row => {
+              const rawPts  = parseFloat(row[COL.POINTS])||0;
+              const rawAmt  = parseFloat(row[COL.AMOUNT])||0;
+              const sellRate = getGameRate(comp, row[COL.GAME]) || 100;
+              const costRate = getCostRate(row[COL.GAME]) || 0;
+              let pts = rawPts, dollars = rawAmt;
+              if (rawPts && !rawAmt) dollars = rawPts * (sellRate/100);
+              else if (rawAmt && !rawPts) pts = rawAmt / (sellRate/100);
+              totalPts += pts; totalDollars += dollars;
+              return { gameName:row[COL.GAME], gameId:'', username:row[COL.USERNAME]||'', value:rawPts||rawAmt, costRate, sellRate, points:pts, dollars, inputAmount:rawPts||rawAmt, feeEmbedded:false };
+            });
+
+            const grandTotal = totalDollars;
+            const companyCode = comp.companyCode || await generateCompanyCode();
+            const refNum = await generateReferenceNumber(companyCode, billDate);
+            const bill = {
+              companyId:comp._id, companyName:comp.name, date:billDate, convMode,
+              extraFeePercent:0, extraFeeAmount:0, extraFeeCostRate:0, extraFeeProfit:0,
+              creditApplied:0, extraPayments:[], items, totalDollars, totalPoints:totalPts,
+              paymentStatus:'not_received', partialAmount:0, balanceDue:grandTotal,
+              referenceNumber:refNum, companyCode
+            };
+            const ref = await db.collection(userPath()+'/bills').add(bill);
+            state.bills.push({ _id:ref.id, ...bill });
+
+            // Update master game balances
+            for (const row of compRows) {
+              const mg = state.masterGames.find(g=>g.name===row[COL.GAME]);
+              if (mg) {
+                const rawPts = parseFloat(row[COL.POINTS])||0;
+                const rawAmt = parseFloat(row[COL.AMOUNT])||0;
+                const sellRate = getGameRate(comp, row[COL.GAME]) || 100;
+                const pts = rawPts || (rawAmt / (sellRate/100));
+                const uname = row[COL.USERNAME]||'';
+                const uLevel = row[COL.LEVEL] || getUserLevel(comp, uname, row[COL.GAME]);
+                const isOrdered = mg.highestLevel && uLevel === mg.highestLevel;
+                if (isOrdered) {
+                  mg.orderedPoints = (mg.orderedPoints||0) + pts;
+                  await db.doc(userPath()+'/masterGames/'+mg._id).update({ orderedPoints: mg.orderedPoints });
+                } else {
+                  mg.remainingPoints = (mg.remainingPoints||0) - pts;
+                  await db.doc(userPath()+'/masterGames/'+mg._id).update({ remainingPoints: mg.remainingPoints });
+                }
+              }
+            }
+            saved++;
+          } catch(e) { console.error('Bulk bill error:', e); failed++; }
+        }
+        _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
+        invalidateAnalyticsCache?.();
+        btn.disabled = false; btn.textContent = 'Submit Bills';
+        setStatus(`✓ ${saved} bill${saved===1?'':'s'} saved${failed?` · ${failed} failed`:''}`, '#34d399');
+        if (saved > 0 && failed === 0) setTimeout(() => { overlay.remove(); document.removeEventListener('keydown', onKeyDown); render(); }, 1500);
+      };
+
+      // ── Toolbar buttons ──
+      document.getElementById('bbAddRows').onclick  = () => addRows(10);
+      document.getElementById('bbClearAll').onclick = () => { if(confirm('Clear all rows?')){ pushUndo(); rows=rows.map(()=>Array(COL_COUNT).fill('')); renderTable(); updateStatus(); } };
+      document.getElementById('bbClose').onclick    = () => { overlay.remove(); document.removeEventListener('keydown', onKeyDown); closeAc(); };
+      overlay.onclick = (e) => { if (e.target === overlay) { } }; // don't close on overlay click
+
+      // Initial render
+      renderTable();
+      updateStatus();
+      document.getElementById('bbTableWrap').focus?.();
+    }
+
     function bindCompanyList() {
-      $('#addCompanyBtn').onclick = () => { $('#addCompanyForm').classList.toggle('hidden'); $('#newCompanyName').focus(); };
+      $('#bulkBillBtn').onclick = () => showBulkBillSheet();
       $('#cancelAddCompany').onclick = () => $('#addCompanyForm').classList.add('hidden');
       $('#confirmAddCompany').onclick = async () => {
         const name = $('#newCompanyName').value.trim();
@@ -3691,17 +4383,22 @@
               usernames: [] 
             };
           }
-          $('#newCompanyName').value = '';
-          $('#addCompanyForm').classList.add('hidden');
+          // Clear form fields while DOM still exists, BEFORE render()
+          const _nameEl = $('#newCompanyName');
+          const _formEl = $('#addCompanyForm');
+          if (_nameEl) _nameEl.value = '';
+          if (_formEl) _formEl.classList.add('hidden');
           render();
         } catch(e) {
           console.error('Add company error:', e);
+          // Re-enable button before alerting so UI stays responsive
+          btn.disabled = false;
+          btn.textContent = 'Add';
           alert('Failed to add company: ' + e.message);
         } finally {
-          if ($('#confirmAddCompany')) {
-            btn.disabled = false;
-            btn.textContent = 'Add';
-          }
+          // btn may be stale after render() — look it up fresh if needed
+          const _freshBtn = $('#confirmAddCompany');
+          if (_freshBtn) { _freshBtn.disabled = false; _freshBtn.textContent = 'Add'; }
         }
       };
       $('#newCompanyName').onkeydown = (e) => { if (e.key === 'Enter') $('#confirmAddCompany').click(); };
@@ -3774,8 +4471,8 @@
           <button class="tab tab-cyan ${state.companyTab==='games'?'active':''}" data-tab="games"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="16" cy="11" r="0.5" fill="currentColor"/><circle cx="18" cy="13" r="0.5" fill="currentColor"/></svg> Games Config</button>
           <button class="tab tab-purple ${state.companyTab==='analytics'?'active':''}" data-tab="analytics"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${state.empRole==='employee'?'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M6 8h.01M9 8h.01M6 12h12"/>':'<path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/>'}</svg> ${state.empRole==='employee'?'Balance':'Analytics'}</button>
         </div>
-        <div id="tabContent">
-          ${state.companyTab === 'billing' ? '<div id="billingContent">' + renderBilling(c) + '</div>' : ''}
+        <div id="tabContent" style="padding:0 2px">
+          ${state.companyTab === 'billing' ? '<div id="billingContent" style="padding-bottom:80px">' + renderBilling(c) + '</div>' : ''}
           ${state.companyTab === 'games' ? renderGamesRates(c) : ''}
           ${state.companyTab === 'analytics' ? renderAnalytics(c) : ''}
         </div>
@@ -3834,9 +4531,13 @@
           <span class="label" style="margin:0;font-size:12px">Default Mode</span>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
             <div style="position:relative;display:inline-flex;align-items:center;gap:4px">
-              <svg id="billDateIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${state.billDateOverride?'#22d3ee':'#a78bfa'}" stroke-width="2" style="cursor:pointer;flex-shrink:0;vertical-align:middle" title="${state.billDateOverride?'Custom date active — click to change':'Set custom bill date'}" onclick="var p=document.getElementById('billDatePicker');if(p.showPicker)p.showPicker();else p.focus()"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              ${state.billDateOverride ? '<span id="billDateOverrideLabel" style="font-size:10px;color:#22d3ee;font-family:Rajdhani,sans-serif;cursor:pointer;white-space:nowrap" title="Click to clear custom date" onclick="state.billDateOverride=null;refreshBillingPanel()">'+(function(){var d=new Date(state.billDateOverride);return String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")+" "+d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true})})()+" ×</span>" : ""}
-              <input type="datetime-local" id="billDatePicker" value="${(function(){if(state.billDateOverride){var d=new Date(state.billDateOverride);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}var n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0")+"T"+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")})()}" onchange="if(this.value){state.billDateOverride=new Date(this.value).toISOString();var lbl=document.getElementById('billDateOverrideLabel');if(lbl){var _d=new Date(state.billDateOverride);lbl.textContent=String(_d.getMonth()+1).padStart(2,'0')+'/'+String(_d.getDate()).padStart(2,'0')+' '+_d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' ×'}else{var _ic=document.getElementById('billDateIcon');if(_ic){_ic.style.stroke='#22d3ee';var _sp=document.createElement('span');_sp.id='billDateOverrideLabel';_sp.style.cssText='font-size:10px;color:#22d3ee;font-family:Rajdhani,sans-serif;cursor:pointer;white-space:nowrap';_sp.title='Click to clear custom date';var _dd=new Date(state.billDateOverride);_sp.textContent=String(_dd.getMonth()+1).padStart(2,'0')+'/'+String(_dd.getDate()).padStart(2,'0')+' '+_dd.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' ×';_sp.onclick=function(){state.billDateOverride=null;refreshBillingPanel();};_ic.parentNode.insertBefore(_sp,_ic.nextSibling)}}}" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden" />
+              <!-- Mobile only: calendar icon -->
+              <svg id="billDateIcon" class="mobile-date-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${state.billDateOverride?'#22d3ee':'#a78bfa'}" stroke-width="2" style="cursor:pointer;flex-shrink:0;vertical-align:middle" title="${state.billDateOverride?'Custom date active':'Set custom bill date'}" onclick="var p=document.getElementById('billDatePicker');if(p.showPicker)p.showPicker();else p.focus()"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              ${state.billDateOverride ? '<span id="billDateOverrideLabel" class="mobile-date-icon" style="font-size:10px;color:#22d3ee;font-family:Rajdhani,sans-serif;cursor:pointer;white-space:nowrap" title="Click to clear custom date" onclick="state.billDateOverride=null;refreshBillingPanel()">'+(function(){var d=new Date(state.billDateOverride);return String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getDate()).padStart(2,"0")+" "+d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true})})()+' ×</span>' : ""}
+              <!-- Hidden picker: drives state on both mobile and desktop -->
+              <input type="datetime-local" id="billDatePicker" value="${(function(){if(state.billDateOverride){var d=new Date(state.billDateOverride);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}var n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')+'T'+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')})()}" onchange="if(this.value){state.billDateOverride=new Date(this.value).toISOString();var _vdt=document.getElementById('billDateVisibleInput');if(_vdt)_vdt.value=this.value;var lbl=document.getElementById('billDateOverrideLabel');if(lbl){var _d=new Date(state.billDateOverride);lbl.textContent=String(_d.getMonth()+1).padStart(2,'0')+'/'+String(_d.getDate()).padStart(2,'0')+' '+_d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' ×'}else{var _ic=document.getElementById('billDateIcon');if(_ic){_ic.style.stroke='#22d3ee';var _sp=document.createElement('span');_sp.id='billDateOverrideLabel';_sp.className='mobile-date-icon';_sp.style.cssText='font-size:10px;color:#22d3ee;font-family:Rajdhani,sans-serif;cursor:pointer;white-space:nowrap';_sp.title='Click to clear custom date';var _dd=new Date(state.billDateOverride);_sp.textContent=String(_dd.getMonth()+1).padStart(2,'0')+'/'+String(_dd.getDate()).padStart(2,'0')+' '+_dd.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' ×';_sp.onclick=function(){state.billDateOverride=null;refreshBillingPanel();};_ic.parentNode.insertBefore(_sp,_ic.nextSibling)}}}" style="position:absolute;opacity:0;width:1px;height:1px;overflow:hidden" />
+              <!-- Desktop only: visible datetime input, defaults to current datetime -->
+              <input type="datetime-local" id="billDateVisibleInput" class="input desktop-date-input" value="${(function(){if(state.billDateOverride){var d=new Date(state.billDateOverride);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'T'+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}var n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')+'T'+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')})()}" onchange="if(this.value){var _hp=document.getElementById('billDatePicker');if(_hp){_hp.value=this.value;_hp.dispatchEvent(new Event('change'))}}" style="font-size:11px;padding:4px 8px;height:30px;color:#22d3ee;border-color:rgba(34,211,238,0.3);background:rgba(34,211,238,0.05);min-width:170px" />
             </div>
             <div id="convToggle" style="display:inline-flex;align-items:center;gap:0;cursor:pointer;user-select:none">
             <div style="padding:6px 0;min-width:58px;text-align:center;border-radius:6px 0 0 6px;font-family:'Orbitron',monospace;font-size:11px;font-weight:700;line-height:1;
@@ -3849,7 +4550,7 @@
           </div>
         </div>
 
-        <div id="billItemsContainer" style="position:relative;">
+        <div id="billItemsContainer" style="position:relative;margin-bottom:8px">
           ${items.map((item, idx) => renderBillItem(item, idx, assignedGames, usernames)).join('')}
         </div>
 
@@ -3857,6 +4558,8 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
           ADD GAME TO BILL
         </button>
+
+        ${items.length === 0 ? '' : `
 
         <div class="card totals-card" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -3924,9 +4627,6 @@
                   <input class="input" id="pmDropInput" value="${esc((cfPaymentMethods.find(pm=>pm.id===state.selectedPaymentMethodId)||cfPaymentMethods[0]||{name:''}).name)}" autocomplete="off" style="cursor:pointer;padding-right:28px;background:rgba(16,185,129,0.07);border-color:rgba(52,211,153,0.25);font-size:13px" readonly />
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--textMuted)" stroke-width="2.5" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none"><polyline points="6,9 12,15 18,9"/></svg>
                   <input type="hidden" id="pmDropHidden" value="${esc(state.selectedPaymentMethodId||'')}"/>
-                  <div id="pmDropList" class="hidden" style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:rgba(16,13,30,0.97);border:1px solid var(--glassBorder);border-radius:10px;z-index:9999;max-height:200px;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
-                    ${cfPaymentMethods.map(pm => `<div class="dropdown-item pm-drop-opt${state.selectedPaymentMethodId===pm.id?' selected':''}" data-pmid="${esc(pm.id)}" data-pmname="${esc(pm.name)}">${esc(pm.name)}</div>`).join('')}
-                  </div>
                 </div>
               </div>
             ` : ''}
@@ -3944,6 +4644,7 @@
             <span style="color:var(--green);font-weight:600">✓ Bill saved successfully!</span>
           </div>
         </div>
+        `}
 
         <div class="card" style="margin-top:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -4075,7 +4776,7 @@
                 <span style="padding:2px 6px;background:${(item.mode||state.convMode)==='dollar2pts'?'var(--green)':'transparent'};color:${(item.mode||state.convMode)==='dollar2pts'?'#000':'var(--textMuted)'};transition:all 0.2s">$</span>
               </div>
             </div>
-            <input class="input bill-value-input" data-idx="${idx}" type="number" placeholder="${(item.mode||state.convMode)==='pts2dollar'?'Enter points':'Enter $'}" value="${item.value}" />
+            <input class="input bill-value-input" data-idx="${idx}" type="text" inputmode="text" placeholder="${(item.mode||state.convMode)==='pts2dollar'?'Enter points':'Enter $'}" value="${item.value}" />
           </div>
         </div>
         ${item.value ? `<div class="bill-result">
@@ -4260,6 +4961,19 @@
             opt.style.display = opt.dataset.gamename.toLowerCase().includes(q) ? '' : 'none';
           });
         };
+        inp.onblur = () => {
+          setTimeout(() => {
+            const q = inp.value.trim().toLowerCase();
+            if (!q) { dropdown.classList.add('hidden'); return; }
+            // If current value exactly matches already-selected game, just close
+            if (state.billItems[idx] && state.billItems[idx].gameName.toLowerCase() === q) { dropdown.classList.add('hidden'); return; }
+            // Only auto-select on EXACT match to prevent e.g. "juwa" triggering "juwa 2.0"
+            const visible = Array.from(dropdown.querySelectorAll('.dropdown-item')).filter(o => o.style.display !== 'none');
+            const exact = visible.find(o => o.dataset.gamename.toLowerCase() === q);
+            if (exact) exact.click();
+            else dropdown.classList.add('hidden');
+          }, 200);
+        };
         dropdown.querySelectorAll('.dropdown-item').forEach(opt => {
           opt.onclick = () => {
             state.billItems[idx].gameId = opt.dataset.gameid;
@@ -4269,7 +4983,8 @@
             dropdown.classList.add('hidden');
             const billCard2 = inp.closest('.bill-item');
             if (billCard2) billCard2.classList.remove('dropdown-open');
-            render();
+            // Use refreshBillingPanel instead of render() to avoid full page flicker
+            refreshBillingPanel();
           };
         });
       });
@@ -4303,6 +5018,18 @@
             // Always show "No Username" option
             opt.style.display = (user === '' || text.includes(q)) ? '' : 'none';
           });
+        };
+        inp.onblur = () => {
+          setTimeout(() => {
+            const q = inp.value.trim().toLowerCase();
+            if (!q) { dropdown.classList.add('hidden'); return; }
+            if (state.billItems[idx] && state.billItems[idx].username.toLowerCase() === q) { dropdown.classList.add('hidden'); return; }
+            const visible = Array.from(dropdown.querySelectorAll('.dropdown-item[data-user]')).filter(o => o.dataset.user !== '' && o.style.display !== 'none');
+            // Only auto-select on exact match
+            const exact = visible.find(o => o.dataset.user.toLowerCase() === q);
+            if (exact) exact.click();
+            else dropdown.classList.add('hidden');
+          }, 200);
         };
 
         dropdown.querySelectorAll('.dropdown-item').forEach(opt => {
@@ -4443,30 +5170,72 @@
         };
       });
       // Bind custom payment method dropdown
-      if ($('#pmDropInput') && $('#pmDropList') && $('#pmDropWrap')) {
+      if ($('#pmDropInput') && $('#pmDropWrap')) {
         var _pmInput = $('#pmDropInput');
-        var _pmList  = $('#pmDropList');
         var _pmHid   = $('#pmDropHidden');
-        var _openPm  = () => { _pmList.classList.toggle('hidden'); };
-        var _closePm = () => { _pmList.classList.add('hidden'); };
-        _pmInput.onclick = (e) => { e.stopPropagation(); _openPm(); };
-        $$('.pm-drop-opt').forEach(opt => {
-          opt.onclick = (e) => {
+
+        // Remove any leftover portal from previous renders
+        var _oldPortal = document.getElementById('pmDropPortal');
+        if (_oldPortal) _oldPortal.remove();
+
+        // Build portal dropdown appended directly to <body> — escapes all stacking contexts
+        var _portal = document.createElement('div');
+        _portal.id = 'pmDropPortal';
+        _portal.style.cssText = 'position:fixed;background:rgba(16,13,30,0.98);border:1px solid rgba(120,100,200,0.3);border-radius:10px;z-index:2147483647;max-height:220px;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,0.8);display:none';
+        cfPaymentMethods.forEach(function(pm) {
+          var item = document.createElement('div');
+          item.className = 'dropdown-item pm-drop-opt' + (state.selectedPaymentMethodId === pm.id ? ' selected' : '');
+          item.dataset.pmid   = pm.id;
+          item.dataset.pmname = pm.name;
+          item.textContent    = pm.name;
+          item.onclick = function(e) {
             e.stopPropagation();
-            state.selectedPaymentMethodId = opt.dataset.pmid;
-            _pmInput.value = opt.dataset.pmname;
-            if (_pmHid) _pmHid.value = opt.dataset.pmid;
-            $$('.pm-drop-opt').forEach(o => o.classList.remove('selected'));
-            opt.classList.add('selected');
-            _closePm();
+            state.selectedPaymentMethodId = pm.id;
+            _pmInput.value = pm.name;
+            if (_pmHid) _pmHid.value = pm.id;
+            _portal.querySelectorAll('.pm-drop-opt').forEach(function(o){ o.classList.remove('selected'); });
+            item.classList.add('selected');
+            _portal.style.display = 'none';
           };
+          _portal.appendChild(item);
         });
-        document.addEventListener('click', function _pmOutside(e) {
-          if (!$('#pmDropWrap') || !$('#pmDropWrap').contains(e.target)) {
-            _closePm();
+        document.body.appendChild(_portal);
+
+        var _openPm = function() {
+          var r = _pmInput.getBoundingClientRect();
+          _portal.style.left     = r.left + 'px';
+          _portal.style.width    = r.width + 'px';
+          _portal.style.display  = _portal.style.display === 'none' ? 'block' : 'none';
+          // Position above or below depending on available space
+          var spaceBelow = window.innerHeight - r.bottom;
+          if (spaceBelow < 240 && r.top > 240) {
+            _portal.style.top    = 'auto';
+            _portal.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+          } else {
+            _portal.style.bottom = 'auto';
+            _portal.style.top    = (r.bottom + 4) + 'px';
+          }
+        };
+
+        _pmInput.onclick = function(e) { e.stopPropagation(); _openPm(); };
+
+        var _pmOutside = function(e) {
+          var wrap = document.getElementById('pmDropWrap');
+          if (!wrap || (!wrap.contains(e.target) && !_portal.contains(e.target))) {
+            _portal.style.display = 'none';
+          }
+        };
+        document.addEventListener('click', _pmOutside);
+
+        // Clean up portal and listener when billing panel is re-rendered
+        var _observer = new MutationObserver(function() {
+          if (!document.getElementById('pmDropWrap')) {
+            _portal.remove();
             document.removeEventListener('click', _pmOutside);
+            _observer.disconnect();
           }
         });
+        _observer.observe(document.getElementById('tabContent') || document.body, { childList: true, subtree: true });
       }
 
       if ($('#partialAmountInput')) {
@@ -4544,8 +5313,10 @@
                   const _highestLevel = mg.highestLevel || '';
                   const _assignedLevel = mg.assignedLevel || '';
                   // isOrdered = true when billing to a username whose level equals the game's
-                  // highest configured account level (peer-level load → must source from ordered)
-                  const _isOrdered = _highestLevel &&
+                  // highest configured account level (peer-level load → must source from ordered).
+                  // Agent accounts can load to anyone — always treated as Direct, never Ordered.
+                  const _isAgent = _userLevel === 'Agent' || _assignedLevel === 'Agent';
+                  const _isOrdered = !_isAgent && _highestLevel &&
                     (_userLevel === _highestLevel || _assignedLevel === _highestLevel && _itemUsername === (mg.assignedUsername || ''));
                   const _mgUpdatePayload = {};
                   if (_isOrdered) {
@@ -4823,11 +5594,116 @@
       } catch(e){ console.warn('Invoice settings load failed:', e); }
     }
 
+    // ============================================================
+    // GOOGLE DRIVE LOGO UPLOAD
+    // ============================================================
+    const _DRIVE_CLIENT_ID = '909535669253-mbpqlochobbb1jvoj9gpvm2a5o4bnu10.apps.googleusercontent.com';
+    const _DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
+    let   _driveToken       = null; // cached access token (in-memory only)
+
+    // Get a Drive access token via GIS popup (only asks permission once per session)
+    function getDriveToken() {
+      return new Promise((resolve, reject) => {
+        if (_driveToken && _driveToken.expires > Date.now()) { resolve(_driveToken.token); return; }
+        if (typeof google === 'undefined' || !google.accounts) {
+          reject(new Error('Google Identity Services not loaded. Check your internet connection and try again.')); return;
+        }
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: _DRIVE_CLIENT_ID,
+          scope:     _DRIVE_SCOPE,
+          callback:  (resp) => {
+            if (resp.error) { reject(new Error('Google auth error: ' + resp.error)); return; }
+            _driveToken = { token: resp.access_token, expires: Date.now() + (resp.expires_in - 60) * 1000 };
+            resolve(resp.access_token);
+          }
+        });
+        client.requestAccessToken({ prompt: _driveToken ? '' : 'consent' });
+      });
+    }
+
+    // Upload a File object (PNG/JPEG) to Google Drive, make it public, return { url, fileId, fileName }
+    async function uploadLogoToDrive(file) {
+      const token    = await getDriveToken();
+      const fileName = 'sweepAdmin_invoice_logo.' + (file.type === 'image/png' ? 'png' : 'jpg');
+
+      // Read file as ArrayBuffer
+      const buf = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload  = () => res(fr.result);
+        fr.onerror = () => rej(new Error('File read failed'));
+        fr.readAsArrayBuffer(file);
+      });
+
+      // Multipart upload: metadata + binary
+      const boundary = '-------SweepAdminBoundary';
+      const delimiter = '\r\n--' + boundary + '\r\n';
+      const closeDelim = '\r\n--' + boundary + '--';
+      const metadata  = JSON.stringify({ name: fileName, mimeType: file.type });
+
+      // Convert ArrayBuffer to base64 safely (chunked to avoid call stack overflow)
+      const uint8 = new Uint8Array(buf);
+      let binary = '';
+      const chunkSize = 8192;
+      for (let i = 0; i < uint8.length; i += chunkSize) {
+        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+      }
+      const base64Data = btoa(binary);
+
+      const bodyParts = [
+        delimiter,
+        'Content-Type: application/json\r\n\r\n',
+        metadata,
+        delimiter,
+        'Content-Type: ' + file.type + '\r\n',
+        'Content-Transfer-Encoding: base64\r\n\r\n',
+        base64Data,
+        closeDelim
+      ].join('');
+      const uploadResp = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',
+        {
+          method:  'POST',
+          headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type':  'multipart/related; boundary=' + boundary,
+          },
+          body: bodyParts
+        }
+      );
+      if (!uploadResp.ok) {
+        const err = await uploadResp.text();
+        throw new Error('Drive upload failed: ' + err);
+      }
+      const { id: fileId } = await uploadResp.json();
+
+      // Make the file publicly readable so the invoice <img> can load it
+      await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '/permissions', {
+        method:  'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ role: 'reader', type: 'anyone' })
+      });
+
+      // Use the direct download URL (works in <img> tags)
+      const url = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w200';
+      return { url, fileId, fileName };
+    }
+
+    // Delete a file from Drive (used when removing logo)
+    async function deleteLogoFromDrive(fileId) {
+      try {
+        const token = await getDriveToken();
+        await fetch('https://www.googleapis.com/drive/v3/files/' + fileId, {
+          method:  'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+      } catch(e) { console.warn('Drive delete failed (may already be gone):', e); }
+    }
+
     function showInvoiceSettingsModal() {
       document.getElementById('invoiceSettingsModal')?.remove();
       const s = getInvoiceSettings();
       const ov = document.createElement('div'); ov.className='modal-overlay'; ov.id='invoiceSettingsModal';
-      ov.innerHTML = `<div class="modal fade-in" style="max-width:460px">
+      ov.innerHTML = `<div class="modal fade-in" style="max-width:460px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">
           <h3 class="modal-title">INVOICE SETTINGS</h3>
           <button class="btn btn-ghost btn-sm" id="invSetClose"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -4843,10 +5719,61 @@
             <input class="input" id="invContactInfo" placeholder="e.g. +1 234 567 8900 · contact@example.com" value="${esc(s.contactInfo||'')}" />
             <div style="font-size:10px;color:var(--textMuted);margin-top:3px">Shown below branding name. Can be phone, email, address, etc.</div>
           </div>
+
+          <!-- ── Branding Logo Upload ── -->
+          <div style="padding:14px;border-radius:10px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.18)">
+            <div style="font-size:12px;font-weight:700;color:var(--purpleLight);margin-bottom:10px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.5px">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+              Branding Logo
+            </div>
+
+            ${s.logoUrl ? `
+            <!-- Current logo preview -->
+            <div id="invLogoCurrentWrap" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.2);margin-bottom:10px">
+              <img id="invLogoPreview" src="${esc(s.logoUrl)}" referrerpolicy="no-referrer"
+                style="width:56px;height:56px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid #e5e7eb;flex-shrink:0"
+                onerror="this.style.display='none'" />
+              <div style="flex:1;min-width:0">
+                <div style="font-size:11px;font-weight:700;color:#34d399">✓ Logo active</div>
+                <div style="font-size:10px;color:var(--textMuted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.logoFileName||'invoice_logo')}</div>
+              </div>
+              <button id="invLogoRemoveBtn" style="flex-shrink:0;padding:5px 10px;border-radius:7px;border:1px solid rgba(248,113,113,0.35);background:rgba(248,113,113,0.08);color:#f87171;font-size:11px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                Remove
+              </button>
+            </div>` : ''}
+
+            <!-- Upload area -->
+            <div id="invLogoDropZone" style="border:2px dashed rgba(124,58,237,0.35);border-radius:10px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s"
+              onclick="document.getElementById('invLogoFile').click()"
+              ondragover="event.preventDefault();this.style.borderColor='var(--purple)';this.style.background='rgba(124,58,237,0.08)'"
+              ondragleave="this.style.borderColor='rgba(124,58,237,0.35)';this.style.background=''"
+              ondrop="event.preventDefault();this.style.borderColor='rgba(124,58,237,0.35)';this.style.background='';var f=event.dataTransfer.files[0];if(f)window._invLogoHandler(f)">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purpleLight)" stroke-width="1.5" style="margin-bottom:6px"><polyline points="16,16 12,12 8,16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+              <div style="font-size:12px;font-weight:600;color:var(--textSecondary)">Click or drag &amp; drop to upload</div>
+              <div style="font-size:10px;color:var(--textMuted);margin-top:3px">PNG or JPEG · Max 5MB · Saved to your Google Drive</div>
+              <input type="file" id="invLogoFile" accept="image/png,image/jpeg" style="display:none" />
+            </div>
+
+            <!-- Preview of newly chosen file (before upload) -->
+            <div id="invLogoNewPreview" style="display:none;margin-top:10px;padding:10px;border-radius:8px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);align-items:center;gap:10px">
+              <img id="invLogoNewImg" style="width:52px;height:52px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid #e5e7eb;flex-shrink:0" />
+              <div style="flex:1;min-width:0">
+                <div id="invLogoNewName" style="font-size:11px;font-weight:600;color:var(--textPrimary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+                <div id="invLogoNewSize" style="font-size:10px;color:var(--textMuted);margin-top:2px"></div>
+              </div>
+              <button id="invLogoClearNew" style="flex-shrink:0;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--textMuted);font-size:10px;cursor:pointer">✕ Clear</button>
+            </div>
+
+            <!-- Upload status -->
+            <div id="invLogoStatus" style="font-size:11px;margin-top:8px;min-height:14px;text-align:center"></div>
+          </div>
+          <!-- ── End Logo Upload ── -->
+
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.15)">
             <div>
               <div style="font-size:13px;font-weight:600;color:var(--textPrimary)">Use Google Account Photo</div>
-              <div style="font-size:10px;color:var(--textMuted);margin-top:2px">Show your Google profile picture as logo</div>
+              <div style="font-size:10px;color:var(--textMuted);margin-top:2px">Show your Google profile picture as logo (overrides uploaded logo)</div>
             </div>
             <label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;cursor:pointer">
               <input type="checkbox" id="invUsePhoto" style="opacity:0;width:0;height:0" ${s.usePhoto?'checked':''}>
@@ -4870,6 +5797,7 @@
       ov.onclick = e => { if(e.target===ov) ov.remove(); };
       document.getElementById('invSetClose').onclick = () => ov.remove();
 
+      // Toggle track
       const cb = document.getElementById('invUsePhoto');
       const track = document.getElementById('invPhotoToggleTrack');
       const thumb = document.getElementById('invPhotoToggleThumb');
@@ -4878,22 +5806,120 @@
         thumb.style.left = cb.checked ? '21px' : '3px';
       };
 
-      document.getElementById('invSetSave').onclick = async () => {
-        const btn = document.getElementById('invSetSave');
-        const statusEl = document.getElementById('invSetStatus');
-        btn.disabled = true; btn.textContent = 'Saving...';
-        const ns = {
-          brandName:   document.getElementById('invBrandName').value.trim(),
-          contactInfo: document.getElementById('invContactInfo').value.trim(),
-          usePhoto:    document.getElementById('invUsePhoto').checked,
-          footerNote:  document.getElementById('invFooterNote').value.trim()
-        };
+      // ── Logo upload logic ──
+      let _pendingLogoFile = null; // the File chosen but not yet saved
+
+      const _setStatus = (msg, color) => {
+        const el = document.getElementById('invLogoStatus');
+        if (el) { el.textContent = msg; el.style.color = color || 'var(--textMuted)'; }
+      };
+
+      // Show newly chosen file in preview panel (before Drive upload)
+      window._invLogoHandler = (file) => {
+        if (!file) return;
+        if (!['image/png','image/jpeg'].includes(file.type)) {
+          _setStatus('❌ Only PNG or JPEG files are allowed.', '#f87171'); return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          _setStatus('❌ File too large. Max 5 MB.', '#f87171'); return;
+        }
+        _pendingLogoFile = file;
+        const preview = document.getElementById('invLogoNewPreview');
+        const img     = document.getElementById('invLogoNewImg');
+        const nameEl  = document.getElementById('invLogoNewName');
+        const sizeEl  = document.getElementById('invLogoNewSize');
+        if (preview && img) {
+          const reader = new FileReader();
+          reader.onload = e2 => { img.src = e2.target.result; };
+          reader.readAsDataURL(file);
+          nameEl.textContent = file.name;
+          sizeEl.textContent = (file.size / 1024).toFixed(1) + ' KB · ' + (file.type === 'image/png' ? 'PNG' : 'JPEG');
+          preview.style.display = 'flex';
+          _setStatus('File ready — click "Save & Sync Settings" to upload to Drive.', '#a78bfa');
+        }
+      };
+
+      // File input change
+      const fileInput = document.getElementById('invLogoFile');
+      if (fileInput) fileInput.onchange = (e) => { window._invLogoHandler(e.target.files[0]); };
+
+      // Clear newly chosen file
+      const clearBtn = document.getElementById('invLogoClearNew');
+      if (clearBtn) clearBtn.onclick = () => {
+        _pendingLogoFile = null;
+        const preview = document.getElementById('invLogoNewPreview');
+        if (preview) preview.style.display = 'none';
+        if (fileInput) fileInput.value = '';
+        _setStatus('');
+      };
+
+      // Remove existing logo
+      const removeBtn = document.getElementById('invLogoRemoveBtn');
+      if (removeBtn) removeBtn.onclick = async () => {
+        removeBtn.disabled = true; removeBtn.textContent = 'Removing…';
+        const cur = getInvoiceSettings();
+        if (cur.logoFileId) await deleteLogoFromDrive(cur.logoFileId);
+        const ns = Object.assign({}, cur, { logoUrl: '', logoFileId: '', logoFileName: '' });
         await saveInvoiceSettings(ns);
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Save &amp; Sync Settings';
-        statusEl.style.color = '#34d399';
-        statusEl.textContent = '✓ Saved and synced to cloud';
-        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+        ov.remove(); showInvoiceSettingsModal();
+      };
+
+      // ── Save handler ──
+      document.getElementById('invSetSave').onclick = async () => {
+        const btn      = document.getElementById('invSetSave');
+        const statusEl = document.getElementById('invSetStatus');
+        btn.disabled = true; btn.textContent = 'Saving…';
+
+        try {
+          const cur = getInvoiceSettings();
+          let logoUrl      = cur.logoUrl      || '';
+          let logoFileId   = cur.logoFileId   || '';
+          let logoFileName = cur.logoFileName || '';
+
+          // Upload new logo if one was chosen
+          if (_pendingLogoFile) {
+            _setStatus('Connecting to Google Drive…', '#a78bfa');
+            btn.textContent = 'Uploading logo…';
+            // Delete old file if replacing
+            if (logoFileId) await deleteLogoFromDrive(logoFileId);
+            const result = await uploadLogoToDrive(_pendingLogoFile);
+            logoUrl      = result.url;
+            logoFileId   = result.fileId;
+            logoFileName = result.fileName;
+            _setStatus('✓ Logo uploaded to Drive!', '#34d399');
+            _pendingLogoFile = null;
+          }
+
+          const ns = {
+            brandName:   document.getElementById('invBrandName').value.trim(),
+            contactInfo: document.getElementById('invContactInfo').value.trim(),
+            usePhoto:    document.getElementById('invUsePhoto').checked,
+            footerNote:  document.getElementById('invFooterNote').value.trim(),
+            logoUrl,
+            logoFileId,
+            logoFileName
+          };
+          await saveInvoiceSettings(ns);
+
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Save &amp; Sync Settings';
+          statusEl.style.color = '#34d399';
+          statusEl.textContent = '✓ Saved and synced to cloud';
+          setTimeout(() => {
+            statusEl.textContent = '';
+            if (ns.logoUrl && ns.logoUrl !== (cur && cur.logoUrl)) {
+              ov.remove(); showInvoiceSettingsModal(); // refresh to show new logo preview
+            }
+          }, 2000);
+
+        } catch(e) {
+          console.error('Invoice settings save error:', e);
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Save &amp; Sync Settings';
+          _setStatus('❌ ' + (e.message || 'Unknown error'), '#f87171');
+          const statusEl2 = document.getElementById('invSetStatus');
+          if (statusEl2) { statusEl2.style.color = '#f87171'; statusEl2.textContent = 'Error: ' + e.message; }
+        }
       };
     }
 
@@ -5171,8 +6197,10 @@
       }
 
       const logoHTML = usePhoto
-        ? `<img src="${esc(u.photoURL)}" referrerpolicy="no-referrer" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;flex-shrink:0" />`
-        : `<div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>`;
+        ? `<img src="${esc(u.photoURL)}" referrerpolicy="no-referrer" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;flex-shrink:0" />`
+        : s.logoUrl
+          ? `<img src="${esc(s.logoUrl)}" referrerpolicy="no-referrer" style="width:56px;height:56px;object-fit:contain;border-radius:10px;border:1px solid #e5e7eb;background:#fff;flex-shrink:0" />`
+          : `<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>`;
 
       const html = `<!DOCTYPE html>
 <html>
@@ -6395,12 +7423,197 @@
         var tag=h.kind==='general'?tg2('RECEIVED','#34d399'):h.kind==='credit'?tg2('CREDIT +','#22d3ee'):h.kind==='applied'?tg2('CREDIT USED','#f472b6'):h.status==='received'?tg2('FULL','#34d399'):tg2('PARTIAL','#fbbf24');
         var billRef=h.billTotal!==undefined?'<span style="color:var(--textMuted);font-size:10px">bill $'+h.billTotal.toFixed(2)+'</span>':'';
         var poolBadge='<span style="color:#a78bfa;font-size:9px;background:rgba(124,58,237,0.12);padding:1px 5px;border-radius:4px;margin-left:4px">pool $'+h._poolAfter.toFixed(2)+'</span>';
-        return '<div class="analytics-detail-item" style="padding:8px 10px;font-size:12px;flex-wrap:wrap;gap:4px"><span style="color:'+amtColor+';font-weight:700;min-width:60px">'+sign+h.amount.toFixed(2)+'</span>'+tag+billRef+poolBadge+'<span style="color:var(--textMuted);font-size:10px;margin-left:auto">'+toLocalDate(h.date).toLocaleDateString()+'</span></div>';
+        var actionBtns='';
+        if((h.kind==='general'||h.kind==='credit')&&h.billId!=null&&h.payIdx!=null){
+          var epDate=(h.date&&typeof h.date==='string')?h.date.slice(0,10):(h.date instanceof Date?h.date.toISOString().slice(0,10):'');
+          actionBtns=''
+            +'<button class="pay-edit-btn btn btn-ghost btn-sm" data-billid="'+h.billId+'" data-payidx="'+h.payIdx+'" data-amt="'+h.amount.toFixed(2)+'" data-date="'+epDate+'" style="padding:3px 7px;font-size:10px;margin-left:4px;color:#22d3ee;border-color:rgba(34,211,238,0.25)" title="Edit payment">'
+            +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+            +'</button>'
+            +'<button class="pay-del-btn btn btn-ghost btn-sm" data-billid="'+h.billId+'" data-payidx="'+h.payIdx+'" style="padding:3px 7px;font-size:10px;margin-left:2px;color:#f87171;border-color:rgba(248,113,113,0.25)" title="Delete payment">'
+            +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+            +'</button>';
+        }
+        return '<div class="analytics-detail-item" style="padding:8px 10px;font-size:12px;flex-wrap:wrap;gap:4px;align-items:center"><span style="color:'+amtColor+';font-weight:700;min-width:60px">'+sign+h.amount.toFixed(2)+'</span>'+tag+billRef+poolBadge+'<span style="color:var(--textMuted);font-size:10px;margin-left:auto">'+toLocalDate(h.date).toLocaleDateString()+'</span>'+actionBtns+'</div>';
       }).join(''):'<div style="padding:14px;text-align:center;color:var(--textMuted);font-size:12px">No payments yet</div>';
-      var ov=document.createElement('div');ov.className='modal-overlay';ov.id='paymentRecordModal';ov.innerHTML='<div class="modal fade-in" style="max-width:480px"><div class="modal-header"><h3 class="modal-title">PAYMENTS</h3><button class="btn btn-ghost btn-sm" id="closePayM"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div style="display:flex;gap:10px;padding:14px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);margin-bottom:14px;flex-wrap:wrap"><div style="flex:1;text-align:center;min-width:80px"><div style="font-size:10px;color:#22d3ee;text-transform:uppercase;font-weight:700;margin-bottom:2px">Received</div><div style="font-size:18px;font-weight:800;color:#34d399;font-family:Orbitron,monospace">$'+d.totalReceived.toFixed(2)+'</div></div><div style="width:1px;background:rgba(120,100,200,0.12)"></div><div style="flex:1;text-align:center;min-width:80px"><div style="font-size:10px;color:'+(d.totalBalance>0?'#f472b6':'#34d399')+';text-transform:uppercase;font-weight:700;margin-bottom:2px">'+(d.totalBalance<0?'Credit':'Balance')+'</div><div style="font-size:18px;font-weight:800;color:'+(d.totalBalance>0?'#f472b6':'#34d399')+';font-family:Orbitron,monospace">'+'$'+Math.abs(d.totalBalance).toFixed(2)+'</div></div>'+(d.totalRedeemedDollars>0?'<div style="width:100%;padding:6px 10px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.1);font-size:11px;display:flex;justify-content:space-between"><span style="color:#fbbf24;font-weight:600">Redeemed Value</span><span style="color:#fbbf24;font-weight:700">$'+d.totalRedeemedDollars.toFixed(2)+'</span></div><div style="width:100%;padding:4px 10px;font-size:11px;display:flex;justify-content:space-between"><span style="color:var(--textMuted)">Net Received</span><span style="color:#22d3ee;font-weight:700">$'+(d.totalReceived-d.totalRedeemedDollars).toFixed(2)+'</span></div>':'')+'</div>'+(creditBal>0?'<div style="padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);margin-bottom:14px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg><span style="font-size:12px;color:#34d399;font-weight:700">Available Credit: $'+creditBal.toFixed(2)+'</span><span style="font-size:10px;color:var(--textMuted);margin-left:auto">Auto-applied to future bills</span></div>':'')+'<div style="margin-bottom:14px"><h4 style="font-family:Orbitron,monospace;font-size:11px;color:var(--textSecondary);margin-bottom:8px">RECORD PAYMENT</h4><div style="margin-bottom:8px"><span class="label" style="font-size:9px">Bill</span><select class="input styled-select" id="payBill" style="font-size:12px;background-color:var(--bgInput)">'+opts+'</select></div><div style="display:flex;gap:8px"><div style="flex:1"><span class="label" style="font-size:9px">Amount ($)</span><input class="input" type="number" id="payAmt" placeholder="0.00" step="0.01" min="0"/></div><div style="flex:1"><span class="label" style="font-size:9px">Date</span><input class="input" type="date" id="payDt" value="'+localDateStr()+'"/></div></div><button class="btn btn-green btn-full btn-sm" id="paySave" style="margin-top:10px;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Record</button></div><h4 style="font-family:Orbitron,monospace;font-size:11px;color:var(--textSecondary);margin-bottom:6px">HISTORY</h4><div style="max-height:200px;overflow-y:auto;border-radius:10px;background:rgba(15,12,28,0.4);border:1px solid rgba(120,100,200,0.08)">'+hH+'</div></div>';
+      // Build payment method options for the record payment form
+      var _pmOpts = cfPaymentMethods.length > 0
+        ? '<option value="">— None —</option>' + cfPaymentMethods.map(function(pm){ return '<option value="'+esc(pm.id)+'">'+esc(pm.name)+'</option>'; }).join('')
+        : '<option value="">No payment methods</option>';
+        // Pre-build payment method list items for custom dropdown (safe from escaping issues)
+        var _pmListItems = '<div class=\"dropdown-item\" data-pmid=\"\" style=\"font-style:italic;color:var(--textMuted)\">— None —</div>';
+        if(cfPaymentMethods.length>0){ cfPaymentMethods.forEach(function(pm){ _pmListItems += '<div class=\"dropdown-item\" data-pmid=\"'+esc(pm.id)+'\" data-pmname=\"'+esc(pm.name)+'\">'+esc(pm.name)+'</div>'; }); }
+      var ov=document.createElement('div');
+      ov.className='modal-overlay';
+      ov.id='paymentRecordModal';
+      // Build modal HTML cleanly to avoid escaping issues
+      var _modalInner = '<div class="modal fade-in" style="max-width:480px">'
+        + '<div class="modal-header"><h3 class="modal-title">PAYMENTS</h3>'
+        + '<button class="btn btn-ghost btn-sm" id="closePayM"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
+        // Stats row
+        + '<div style="display:flex;gap:10px;padding:14px;border-radius:12px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.12);margin-bottom:14px;flex-wrap:wrap">'
+        +   '<div style="flex:1;text-align:center;min-width:80px"><div style="font-size:10px;color:#22d3ee;text-transform:uppercase;font-weight:700;margin-bottom:2px">Received</div>'
+        +   '<div style="font-size:18px;font-weight:800;color:#34d399;font-family:Orbitron,monospace">$' + d.totalReceived.toFixed(2) + '</div></div>'
+        +   '<div style="width:1px;background:rgba(120,100,200,0.12)"></div>'
+        +   '<div style="flex:1;text-align:center;min-width:80px">'
+        +     '<div style="font-size:10px;color:' + (d.totalBalance>0?'#f472b6':'#34d399') + ';text-transform:uppercase;font-weight:700;margin-bottom:2px">' + (d.totalBalance<0?'Credit':'Balance') + '</div>'
+        +     '<div style="font-size:18px;font-weight:800;color:' + (d.totalBalance>0?'#f472b6':'#34d399') + ';font-family:Orbitron,monospace">$' + Math.abs(d.totalBalance).toFixed(2) + '</div>'
+        +   '</div>'
+        +   (d.totalRedeemedDollars>0
+              ? '<div style="width:100%;padding:6px 10px;border-radius:8px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.1);font-size:11px;display:flex;justify-content:space-between">'
+              +   '<span style="color:#fbbf24;font-weight:600">Redeemed Value</span>'
+              +   '<span style="color:#fbbf24;font-weight:700">$' + d.totalRedeemedDollars.toFixed(2) + '</span></div>'
+              +   '<div style="width:100%;padding:4px 10px;font-size:11px;display:flex;justify-content:space-between">'
+              +   '<span style="color:var(--textMuted)">Net Received</span>'
+              +   '<span style="color:#22d3ee;font-weight:700">$' + (d.totalReceived-d.totalRedeemedDollars).toFixed(2) + '</span></div>'
+              : '')
+        + '</div>'
+        // Credit badge
+        + (creditBal>0
+            ? '<div style="padding:10px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+            +   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>'
+            +   '<span style="font-size:12px;color:#34d399;font-weight:700">Credit Balance: $' + creditBal.toFixed(2) + '</span>'
+            +   '<div style="margin-left:auto;display:flex;gap:4px">'
+            +     '<button id="editCreditBalBtn" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.08);color:#22d3ee;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:4px">'
+            +       '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit'
+            +     '</button>'
+            +     '<button id="clearCreditBalBtn" style="padding:3px 8px;border-radius:6px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.08);color:#f87171;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:4px">'
+            +       '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Clear'
+            +     '</button>'
+            +   '</div>'
+            + '</div>'
+            : '')
+        // Record payment form
+        + '<div style="margin-bottom:14px">'
+        +   '<h4 style="font-family:Orbitron,monospace;font-size:11px;color:var(--textSecondary);margin-bottom:8px">RECORD PAYMENT</h4>'
+        +   '<div style="margin-bottom:8px"><span class="label" style="font-size:9px">Bill</span>'
+        +   '<select class="input styled-select" id="payBill" style="font-size:12px;background-color:var(--bgInput)">' + opts + '</select></div>'
+        +   '<div style="display:flex;gap:8px">'
+        +     '<div style="flex:1"><span class="label" style="font-size:9px">Amount ($)</span>'
+        +     '<input class="input" type="number" id="payAmt" placeholder="0.00" step="0.01" min="0"/></div>'
+        +     '<div style="flex:1"><span class="label" style="font-size:9px">Date</span>'
+        +     '<input class="input" type="date" id="payDt" value="' + localDateStr() + '"/></div>'
+        +   '</div>'
+        // Payment method custom dropdown
+        + (cfPaymentMethods.length > 0
+            ? '<div style="margin-top:8px" id="payMethodWrap">'
+            +   '<span class="label" style="font-size:9px">Payment Method</span>'
+            +   '<div id="payMethodBtn" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bgInput);font-size:12px;color:var(--textPrimary);user-select:none">'
+            +     '<span id="payMethodLabel">— None —</span>'
+            +     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>'
+            +   '</div>'
+            +   '<input type="hidden" id="payMethod" value=""/>'
+            +   '<div id="payMethodList" class="hidden" style="position:fixed;background:rgba(16,13,30,0.98);border:1px solid var(--glassBorder);border-radius:10px;z-index:99999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.7)">'
+            +     _pmListItems
+            +   '</div></div>'
+            : '')
+        +   '<button class="btn btn-green btn-full btn-sm" id="paySave" style="margin-top:10px;justify-content:center">'
+        +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Record'
+        +   '</button>'
+        + '</div>'
+        // History
+        + '<h4 style="font-family:Orbitron,monospace;font-size:11px;color:var(--textSecondary);margin-bottom:6px">HISTORY</h4>'
+        + '<div style="max-height:200px;overflow-y:auto;border-radius:10px;background:rgba(15,12,28,0.4);border:1px solid rgba(120,100,200,0.08)">' + hH + '</div>'
+        + '</div>';
+      ov.innerHTML = _modalInner;
       document.body.appendChild(ov);ov.onclick=function(e){if(e.target===ov)ov.remove()};document.getElementById('closePayM').onclick=function(){ov.remove()};
+      // ── Payment method dropdown: portal to body to escape modal overflow clipping ──
+      var _pmList = document.getElementById('payMethodList');
+      var _pmBtn  = document.getElementById('payMethodBtn');
+      // Detach list from modal and re-attach directly to body
+      if(_pmList && _pmBtn){
+        document.body.appendChild(_pmList);
+        // Ensure it starts hidden
+        _pmList.classList.add('hidden');
+        _pmList.style.position = 'fixed';
+        _pmList.style.zIndex   = '2147483647';
+
+        var _positionList = function(){
+          var r = _pmBtn.getBoundingClientRect();
+          _pmList.style.top   = (r.bottom + 3) + 'px';
+          _pmList.style.left  = r.left + 'px';
+          _pmList.style.width = r.width + 'px';
+        };
+
+        _pmBtn.onclick = function(e){
+          e.stopPropagation();
+          _positionList();
+          _pmList.classList.toggle('hidden');
+        };
+
+        _pmList.querySelectorAll('.dropdown-item[data-pmid]').forEach(function(item){
+          item.onclick = function(e){
+            e.stopPropagation();
+            document.getElementById('payMethod').value = item.dataset.pmid || '';
+            document.getElementById('payMethodLabel').textContent = item.dataset.pmname || '— None —';
+            _pmList.classList.add('hidden');
+          };
+        });
+
+        // Reposition on scroll/resize in case modal scrolls
+        var _reposFn = function(){ if(!_pmList.classList.contains('hidden')) _positionList(); };
+        window.addEventListener('scroll', _reposFn, true);
+        window.addEventListener('resize', _reposFn);
+
+        // Close on outside click
+        var _pmOutsideFn = function(e){
+          if(!document.body.contains(_pmList)){ document.removeEventListener('click',_pmOutsideFn); window.removeEventListener('scroll',_reposFn,true); window.removeEventListener('resize',_reposFn); return; }
+          if(!_pmBtn.contains(e.target) && !_pmList.contains(e.target)) _pmList.classList.add('hidden');
+        };
+        document.addEventListener('click', _pmOutsideFn);
+
+        // Clean up portal when modal is closed
+        var _origClose = document.getElementById('closePayM').onclick;
+        document.getElementById('closePayM').onclick = function(){
+          _pmList.remove();
+          document.removeEventListener('click',_pmOutsideFn);
+          window.removeEventListener('scroll',_reposFn,true);
+          window.removeEventListener('resize',_reposFn);
+          ov.remove();
+        };
+        ov.onclick = function(e){
+          if(e.target===ov){
+            _pmList.remove();
+            document.removeEventListener('click',_pmOutsideFn);
+            window.removeEventListener('scroll',_reposFn,true);
+            window.removeEventListener('resize',_reposFn);
+            ov.remove();
+          }
+        };
+      }
+      // Edit / Clear credit balance buttons
+      var _editCrBtn = document.getElementById('editCreditBalBtn');
+      var _clearCrBtn = document.getElementById('clearCreditBalBtn');
+      if(_editCrBtn){ _editCrBtn.onclick = async function(){
+        var _cur = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
+        var _newVal = prompt('Edit credit balance for ' + (c.name||'this company') + ':\nCurrent: $' + _cur.toFixed(2) + '\n\nEnter new credit balance amount:', _cur.toFixed(2));
+        if(_newVal===null)return;
+        var _parsed = parseFloat(_newVal);
+        if(isNaN(_parsed)||_parsed<0){alert('Invalid amount');return;}
+        _parsed = parseFloat(_parsed.toFixed(2));
+        try{
+          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_parsed})});
+          if(state.companies[c._id])state.companies[c._id].creditBalance=_parsed;
+          c.creditBalance=_parsed;
+          invalidateAnalyticsCache();
+          ov.remove();
+          showPaymentDetailModal(c, d);
+        }catch(e){alert('Error: '+e.message);}
+      }; }
+      if(_clearCrBtn){ _clearCrBtn.onclick = async function(){
+        var _cur = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
+        if(!confirm('Clear credit balance of $' + _cur.toFixed(2) + ' for ' + (c.name||'this company') + '?\n\nThis will set it to $0.'))return;
+        try{
+          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:0})});
+          if(state.companies[c._id])state.companies[c._id].creditBalance=0;
+          c.creditBalance=0;
+          invalidateAnalyticsCache();
+          ov.remove();
+          showPaymentDetailModal(c, d);
+        }catch(e){alert('Error: '+e.message);}
+      }; }
+
       ov.querySelectorAll('.pay-edit-btn').forEach(function(eb){eb.onclick=function(){
-        var bid=eb.dataset.billid,pidx=parseInt(eb.dataset.payidx),oldAmt=eb.dataset.amt,oldDate=eb.dataset.date;
         var pev=document.createElement('div');pev.className='modal-overlay';pev.id='payEditModal';pev.style.zIndex='1002';
         var billOpts=d.compBills.map(function(b2){return '<option value="'+b2._id+'"'+(b2._id===bid?' selected':'')+'>'+new Date(b2.date&&b2.date.seconds?b2.date.seconds*1000:b2.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</option>'}).join('');
         pev.innerHTML='<div class="modal fade-in" style="max-width:360px"><div class="modal-header"><h3 class="modal-title">EDIT PAYMENT</h3><button class="btn btn-ghost btn-sm" onclick="this.closest(\'.modal-overlay\').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div style="margin-bottom:8px"><span class="label" style="font-size:9px">Amount ($)</span><input class="input" type="number" id="peAmt" value="'+oldAmt+'" step="0.01" /></div><div style="margin-bottom:8px"><span class="label" style="font-size:9px">Date</span><input class="input" type="date" id="peDate" value="'+oldDate+'" /></div><div style="margin-bottom:10px"><span class="label" style="font-size:9px">Bill</span><select class="input styled-select" id="peBill" style="font-size:12px;background-color:var(--bgInput)">'+billOpts+'</select></div><button class="btn btn-green btn-full btn-sm" id="peSave" style="justify-content:center">Save</button></div>';
@@ -6419,14 +7632,33 @@
         };
       }});
       ov.querySelectorAll('.pay-del-btn').forEach(function(pb){pb.onclick=async function(){
-        if(!confirm('Delete this payment?'))return;
+        if(!confirm('Delete this payment? The credit balance will be adjusted accordingly.'))return;
         var bid=pb.dataset.billid,pidx=parseInt(pb.dataset.payidx);
-        try{var ref=db.doc(userPath()+'/bills/'+bid);var snap=await ref.get();var eps=(snap.data().extraPayments||[]);
-        eps.splice(pidx,1);await trackedWrite(function(){return ref.update({extraPayments:eps})});
-        var lb=state.bills.find(function(bb){return bb._id===bid});if(lb)lb.extraPayments=eps;
-        invalidateAnalyticsCache();ov.remove();render();}catch(e){alert('Error: '+e.message)}
+        try{
+          var ref=db.doc(userPath()+'/bills/'+bid);
+          var snap=await ref.get();
+          var eps=(snap.data().extraPayments||[]);
+          var delEp=eps[pidx];
+          var delAmt=delEp?(delEp.amount||0):0;
+          var isAddedToCredit=(delEp&&(delEp.isCredit||delEp.isGeneral))||false;
+          eps.splice(pidx,1);
+          await trackedWrite(function(){return ref.update({extraPayments:eps})});
+          var lb=state.bills.find(function(bb){return bb._id===bid});
+          if(lb)lb.extraPayments=eps;
+          // Always subtract this payment from the credit balance
+          if(delAmt>0&&isAddedToCredit){
+            var _prevCr=typeof c.creditBalance==='number'?c.creditBalance:getCompanyCreditBalance(c);
+            var _newCr=parseFloat(Math.max(0,_prevCr-delAmt).toFixed(2));
+            await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_newCr})});
+            if(state.companies[c._id])state.companies[c._id].creditBalance=_newCr;
+            if(c)c.creditBalance=_newCr;
+          }
+          invalidateAnalyticsCache();ov.remove();render();
+        }catch(e){alert('Error: '+e.message)}
       }});
-      document.getElementById('paySave').onclick=async function(){var bid=document.getElementById('payBill').value,amt=parseFloat(document.getElementById('payAmt').value)||0,dt=document.getElementById('payDt').value;if(!bid||amt<=0){alert('Enter an amount');return}
+      document.getElementById('paySave').onclick=async function(){var bid=document.getElementById('payBill').value,amt=parseFloat(document.getElementById('payAmt').value)||0,dt=document.getElementById('payDt').value;
+        var _payMethEl=document.getElementById('payMethod'); var _payMethId=_payMethEl?(_payMethEl.value||''):'';
+        if(!bid||amt<=0){alert('Enter an amount');return}
         try{
           if(bid==='__general__'){
             var payDate = dt || localDateStr();
@@ -6437,66 +7669,58 @@
 
             if(allCompBills.length===0){
               // No bills at all — create a holder bill to record the payment
-              var payBill={companyId:c._id,companyName:c.name,date:new Date().toISOString(),convMode:'pts2dollar',items:[],totalDollars:0,totalPoints:0,paymentStatus:'received',partialAmount:0,balanceDue:0,extraPayments:[{amount:amt,date:payDate,isGeneral:true}]};
+              var _epEntry={amount:amt,date:payDate,isGeneral:true}; if(_payMethId) _epEntry.paymentMethodId=_payMethId;
+              var payBill={companyId:c._id,companyName:c.name,date:new Date().toISOString(),convMode:'pts2dollar',items:[],totalDollars:0,totalPoints:0,paymentStatus:'received',partialAmount:0,balanceDue:0,extraPayments:[_epEntry]};
               await trackedWrite(function(){return db.collection(userPath()+'/bills').add(payBill)});
               // Update company creditBalance
               await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: Math.max(0,(c.creditBalance||0)+amt)})});
               if(state.companies[c._id]) state.companies[c._id].creditBalance = Math.max(0,(c.creditBalance||0)+amt);
+              // Record in cash flow
+              if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
             } else {
               var remaining = amt;
-
-              // Apply payment to each unpaid bill oldest-first.
-              // Only update balanceDue / paymentStatus / partialAmount — do NOT push any
-              // extraPayments entry on the cleared bill.  Analytics counts the payment via
-              // the updated partialAmount (bPaid), so no extra entry is needed and none
-              // would cause a double-count.
               for(let ubi=0; ubi<unpaidBills.length && remaining>0.001; ubi++){
                 let ubill = unpaidBills[ubi];
-                // Fetch fresh from Firestore to avoid stale data
                 let uref = db.doc(userPath()+'/bills/'+ubill._id);
                 let usn = await uref.get(); let udata = usn.data();
                 let uDue = udata.balanceDue||0;
                 if(uDue <= 0.001) continue;
-
                 let applyAmt = Math.min(remaining, uDue);
                 let newDue = parseFloat((uDue - applyAmt).toFixed(2));
                 let uupdates = { balanceDue: newDue };
                 uupdates.paymentStatus = newDue <= 0.001 ? 'received' : 'partial';
-                // partialAmount = total actually paid toward this bill's grand total
                 let grandTotal = (udata.totalDollars||0)+(udata.extraFeeAmount||0);
                 uupdates.partialAmount = parseFloat((grandTotal - newDue).toFixed(2));
-                // Push an extraPayments record so this payment is visible in history
                 let existingEps = udata.extraPayments || [];
-                existingEps.push({ amount: parseFloat(applyAmt.toFixed(2)), date: payDate, isGeneral: true });
+                var _epEntry2={amount: parseFloat(applyAmt.toFixed(2)), date: payDate, isGeneral: true}; if(_payMethId) _epEntry2.paymentMethodId=_payMethId;
+                existingEps.push(_epEntry2);
                 uupdates.extraPayments = existingEps;
-
+                if(_payMethId) uupdates.paymentMethodId = _payMethId;
                 await trackedWrite(function(){return uref.update(uupdates)});
-                // Update local state immediately
                 let lbU=state.bills.find(function(bb){return bb._id===ubill._id});
                 if(lbU){Object.assign(lbU,uupdates);}
                 remaining -= applyAmt;
               }
 
-              // Remaining amount after clearing all bills = new credit
               var newCredit = parseFloat((Math.max(0, remaining)).toFixed(2));
               var prevCredit = typeof c.creditBalance==='number' ? c.creditBalance : 0;
               var totalCredit = parseFloat((prevCredit + newCredit).toFixed(2));
 
-              // Record the credit portion on the newest bill for visibility in payment history.
-              // isCredit:true marks this as a standalone credit addition (not a bill payment),
-              // so analytics correctly adds it to totalReceived without double-counting.
               if(newCredit > 0.001){
                 var newestBill = allCompBills[allCompBills.length-1];
                 var nbRef = db.doc(userPath()+'/bills/'+newestBill._id);
                 var nbSnap = await nbRef.get(); var nbData = nbSnap.data();
                 var nbEp = (nbData.extraPayments||[]);
-                nbEp.push({amount:newCredit, date:payDate, isCredit:true});
+                var _crEpEntry={amount:newCredit, date:payDate, isCredit:true}; if(_payMethId) _crEpEntry.paymentMethodId=_payMethId;
+                nbEp.push(_crEpEntry);
                 await trackedWrite(function(){return nbRef.update({extraPayments:nbEp})});
                 var lbN=state.bills.find(function(bb){return bb._id===newestBill._id});
                 if(lbN){lbN.extraPayments=nbEp;}
               }
 
-              // Update company creditBalance — single source of truth
+              // Record in cash flow for payment method tracking
+              if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
+
               await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: totalCredit})});
               if(state.companies[c._id]) state.companies[c._id].creditBalance = totalCredit;
             }
@@ -6505,17 +7729,19 @@
             var sn=await ref.get(); var bData=sn.data();
             var ep=(bData.extraPayments||[]);
             var payDate2=dt||localDateStr();
-            ep.push({amount:amt,date:payDate2});
+            var _epEntry3={amount:amt,date:payDate2}; if(_payMethId) _epEntry3.paymentMethodId=_payMethId;
+            ep.push(_epEntry3);
             var curDue = bData.balanceDue||0;
             var newDue2 = parseFloat(Math.max(0, curDue - amt).toFixed(2));
             var updates2={extraPayments:ep, balanceDue:newDue2};
             updates2.paymentStatus = newDue2 <= 0.001 ? 'received' : 'partial';
             var grandTotal2=(bData.totalDollars||0)+(bData.extraFeeAmount||0);
             updates2.partialAmount = parseFloat((grandTotal2 - newDue2).toFixed(2));
+            if(_payMethId) updates2.paymentMethodId = _payMethId;
             await trackedWrite(function(){return ref.update(updates2)});
             var lb4=state.bills.find(function(bb){return bb._id===bid});
             if(lb4){Object.assign(lb4,updates2);}
-            // If payment exceeded balance, remainder is credit
+            if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate2, c._id, c.name);
             var overpay = parseFloat(Math.max(0, amt - curDue).toFixed(2));
             if(overpay > 0.001){
               var prevCr = typeof c.creditBalance==='number' ? c.creditBalance : 0;
@@ -6840,6 +8066,10 @@
       if (!state.globalDateTo) state.globalDateTo=today;
       var f=new Date(state.globalDateFrom+'T00:00:00');var t=localEndOfDay(state.globalDateTo);
       var d=computeGlobalData(f,t);
+      // Cache the latest gPr so Cash Flow Shareholders tab can reuse it without recomputing
+      state._lastGaPr = d.gPr;
+      state._lastGaF  = f;
+      state._lastGaT  = t;
       // Compute operating expenses async and inject into card after render
       var opEx = state.globalOpEx || { total:0, empData:[], loaded:false };
       if (!opEx.loaded) {
@@ -6847,6 +8077,8 @@
           state.globalOpEx = result;
           window._gaOpEx = result;
           var grossProfit = d.gPr - result.total;
+          // Update cached gross profit so shareholders tab has fresh value
+          state._lastGaGrossProfit = grossProfit;
           var gpS = grossProfit>=0?'+':'';
           // Update OpEx card values
           var valEl = document.getElementById('gaOpExVal');
@@ -7868,7 +9100,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -8033,11 +9265,14 @@
     // ─────────────────────────────────────────────────────────────────────────────
 
     async function checkUserAccessByUid(ownerUid) {
+      let anyReadSucceeded = false;
+
       // Primary: read embedded access from employeeLinks doc (cashier can read their own)
       try {
         const linkKey = emailToKey((state.user?.email || '').toLowerCase().trim());
         const linkDoc = await db.collection('employeeLinks').doc(linkKey).get();
         console.log('[checkAccess] employeeLinks read — exists:', linkDoc.exists, '| key:', linkKey);
+        anyReadSucceeded = true;
         if (linkDoc.exists) {
           const link = linkDoc.data();
           console.log('[checkAccess] link data:', JSON.stringify({
@@ -8050,6 +9285,11 @@
             console.log('[checkAccess] ✓ Access granted via embedded ownerHasAccess flag');
             return { hasAccess: true };
           }
+          // Explicit denial
+          if (link.ownerHasAccess === false) {
+            console.log('[checkAccess] ✗ Access explicitly denied via ownerHasAccess=false');
+            return { hasAccess: false };
+          }
           // Fallback: check expiry date embedded at sync time
           if (link.ownerAccessExpiry) {
             const exp = link.ownerAccessExpiry.toDate ? link.ownerAccessExpiry.toDate() : new Date(link.ownerAccessExpiry);
@@ -8057,6 +9297,10 @@
             console.log('[checkAccess] ownerAccessExpiry daysLeft:', daysLeft);
             if (daysLeft > 0) return { hasAccess: true };
           }
+          // Doc exists but has no access flags yet (owner hasn't synced yet) — grant tentative access
+          // The employee was already found in the org, trust that
+          console.log('[checkAccess] employeeLinks doc exists but no access flags — granting tentative access');
+          return { hasAccess: true };
         }
       } catch(e) {
         console.error('[checkAccess] employeeLinks read failed:', e.code, e.message);
@@ -8066,6 +9310,7 @@
       try {
         const doc = await db.collection('userAccess').doc(ownerUid).get();
         console.log('[checkAccess] userAccess fallback — exists:', doc.exists);
+        anyReadSucceeded = true;
         if (doc.exists) {
           const data = doc.data();
           console.log('[checkAccess] userAccess data:', JSON.stringify({
@@ -8084,6 +9329,14 @@
         }
       } catch(e) {
         console.warn('[checkAccess] userAccess read blocked (expected if security rules deny cross-user reads):', e.code);
+      }
+
+      // If both Firestore reads failed due to errors (not explicit denial), fail-open:
+      // the employee has already been authenticated via Firebase Auth and found in the org.
+      // Blocking them due to a transient read error would be incorrect.
+      if (!anyReadSucceeded) {
+        console.log('[checkAccess] All reads failed — granting fail-open access (transient error)');
+        return { hasAccess: true };
       }
 
       console.log('[checkAccess] No access found via any method');
@@ -9643,7 +10896,7 @@
       wrap.innerHTML = employees.map((emp, idx) => {
         const myShift     = activeShifts.find(s => s.employeeId === emp._id);
         const isActive    = !!myShift;
-        const activeDurMs = isActive && myShift.startTime?.toDate ? now - myShift.startTime.toDate().getTime() : 0;
+        const activeDurMs = isActive && myShift.startTime?.toDate ? Math.max(0, now - myShift.startTime.toDate().getTime()) : 0;
         const clr         = colors[idx % colors.length];
         const isDeactivated = emp.active === false;
         const isLinked    = linkMap[emp._id];
@@ -9680,7 +10933,7 @@
           activeShifts.forEach(s => {
             const el = document.getElementById('ot_' + s.employeeId);
             if (!el) return;
-            const ms = s.startTime?.toDate ? Date.now() - s.startTime.toDate().getTime() : 0;
+            const ms = s.startTime?.toDate ? Math.max(0, Date.now() - s.startTime.toDate().getTime()) : 0;
             el.textContent = formatHHMMSS(ms);
           });
         }, 1000);
@@ -10361,15 +11614,23 @@
       if (!bill || state.empRole === 'employee') return;
       var status = bill.paymentStatus;
       if (status === 'not_received') return; // no cash received
-      var amount = 0;
-      if (status === 'received') amount = (bill.totalDollars || 0) + (bill.extraFeeAmount || 0);
-      else if (status === 'partial') amount = bill.partialAmount || 0;
-      if (amount <= 0) return;
+
+      // If the entire bill was covered by pre-recorded credit (no new cash collected at billing
+      // time), skip recording — the cash was already logged when the extra payment was recorded.
+      var grandTotal = (bill.totalDollars || 0) + (bill.extraFeeAmount || 0);
+      var creditApplied = bill.creditApplied || 0;
+      var newCashCollected = 0;
+      if (status === 'received') newCashCollected = grandTotal - creditApplied;
+      else if (status === 'partial') newCashCollected = (bill.partialAmount || 0) - creditApplied;
+      // Clamp — credit can't exceed what was actually due
+      newCashCollected = Math.max(0, parseFloat(newCashCollected.toFixed(2)));
+      if (newCashCollected <= 0) return; // entirely credit-paid — already recorded
+
       var pmId = state.selectedPaymentMethodId || (cfPaymentMethods[0] && cfPaymentMethods[0].id) || '';
       var tx = {
         type: 'income',
         category: 'bill',
-        amount: parseFloat(amount.toFixed(2)),
+        amount: newCashCollected,
         paymentMethodId: pmId,
         companyId: companyId,
         companyName: bill.companyName || '',
@@ -10378,17 +11639,35 @@
         note: bill.referenceNumber || ''
       };
       // Check if transaction for this bill already exists (prevent duplicates on retry)
-      var existing = cfTransactions.find(t => t.billId === tx.billId && t.billId !== '');
+      var existing = cfTransactions.find(t => t.billId === tx.billId && tx.billId !== '');
       if (existing) {
-        // Update existing
         db.doc(cfPath('transactions') + '/' + existing.id).update(tx).catch(()=>{});
         Object.assign(existing, tx);
       } else {
-        // Create new
         db.collection(cfPath('transactions')).add(tx).then(ref => {
           cfTransactions.push(Object.assign({ id: ref.id }, tx));
         }).catch(()=>{});
       }
+    }
+
+    // ── Record an extra/standalone payment in cfTransactions ──
+    // Called when a payment is recorded via the Payment Received modal with a payment method selected.
+    function cfRecordExtraPayment(amount, pmId, date, companyId, companyName) {
+      if (!pmId || state.empRole === 'employee') return;
+      var tx = {
+        type: 'income',
+        category: 'extra_payment',
+        amount: parseFloat((amount||0).toFixed(2)),
+        paymentMethodId: pmId,
+        companyId: companyId || '',
+        companyName: companyName || '',
+        date: date ? (typeof date === 'string' ? date : new Date(date).toISOString()) : new Date().toISOString(),
+        billId: '',
+        note: 'Extra payment – ' + (companyName || '')
+      };
+      db.collection(cfPath('transactions')).add(tx).then(ref => {
+        cfTransactions.push(Object.assign({ id: ref.id }, tx));
+      }).catch(e => { console.error('cfRecordExtraPayment:', e); });
     }
 
     // ── Sync all existing bills into cfTransactions (backfill) ──
@@ -10409,9 +11688,13 @@
         var existing = cfTransactions.find(function(t){ return t.billId === refId; });
         if (existing) return; // already tracked
         var amount = 0;
-        if (status === 'received') amount = (bill.totalDollars || 0) + (bill.extraFeeAmount || 0);
-        else if (status === 'partial') amount = bill.partialAmount || 0;
-        if (amount <= 0) return;
+        if (status === 'received') {
+          var grandTotalS = (bill.totalDollars || 0) + (bill.extraFeeAmount || 0);
+          amount = Math.max(0, grandTotalS - (bill.creditApplied || 0));
+        } else if (status === 'partial') {
+          amount = Math.max(0, (bill.partialAmount || 0) - (bill.creditApplied || 0));
+        }
+        if (amount <= 0) return; // credit-only — already recorded as extra payment
         // Determine payment method: prefer the one stored on the bill, then most-used for company, then first
         var pmId = bill.paymentMethodId || cfGetMostUsedPaymentMethod(bill.companyId) || (cfPaymentMethods[0] && cfPaymentMethods[0].id) || '';
         var companyObj = state.companies && state.companies[bill.companyId];
@@ -10512,6 +11795,24 @@
               paymentMethodId: pmId
             });
           }
+        }
+      });
+
+      // Also include extra_payment transactions (general company payments) in byMethod breakdown
+      cfTransactions.forEach(function(tx) {
+        if (tx.category !== 'extra_payment') return;
+        var txDate = tx.date ? new Date(tx.date.length === 10 ? tx.date + 'T00:00:00' : tx.date) : null;
+        if (!txDate || isNaN(txDate.getTime())) return;
+        if (fD && txDate < fD) return;
+        if (tD && txDate > tD) return;
+        var pmId = tx.paymentMethodId || '';
+        if (pmId && byMethod[pmId]) {
+          byMethod[pmId].total += (tx.amount || 0);
+          byMethod[pmId].txs.push({
+            date: tx.date, amount: tx.amount || 0,
+            note: tx.note || 'Extra payment', companyName: tx.companyName || '',
+            paymentMethodId: pmId
+          });
         }
       });
 
@@ -10616,17 +11917,15 @@
     // CASH FLOW: RENDER
     // ============================================================
     function renderCashFlowPage() {
-      var tab = state.cashFlowTab || 'overview';
+      var tab = state.cashFlowTab || 'tracking';
       // SVG icons for tabs — no emojis
       var tabSvgs = {
-        overview:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
         tracking:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>',
         methods:      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
         expenses:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
         shareholders: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
       };
       var tabs = [
-        { id: 'overview',    label: 'Overview'     },
         { id: 'tracking',    label: 'Cash Flow'    },
         { id: 'methods',     label: 'Payments'     },
         { id: 'expenses',    label: 'Expenses'     },
@@ -10665,11 +11964,19 @@
       }
 
       var content = '';
-      if (tab === 'overview') content = renderCFOverview(summary, fromDate, toDate, fromDateD, toDateD);
-      else if (tab === 'tracking') content = renderCFTracking(summary, fromDate, toDate, fromDateD, toDateD);
+      if (tab === 'tracking') content = renderCFTracking(summary, fromDate, toDate, fromDateD, toDateD);
       else if (tab === 'methods') content = renderCFMethods();
       else if (tab === 'expenses') content = renderCFExpenses(summary);
-      else if (tab === 'shareholders') content = renderCFShareholders(summary.grossProfit);
+      else if (tab === 'shareholders') {
+        // Pool = Global Analytics Gross Profit (same value shown in GA P/L card)
+        // Use the cached value from the last GA page render to avoid recomputing
+        // (recomputing can give 0 if getGameRate returns 0 or items are not loaded)
+        var _gaPr = state._lastGaPr != null ? state._lastGaPr : computeGlobalData(null, null).gPr;
+        var _opExTotal = (state.globalOpEx && state.globalOpEx.total) || 0;
+        var _cfOpExTotal = (cfOperatingExpenses || []).reduce(function(s, e){ return s + (e.amount || 0); }, 0);
+        var _poolAmount = _gaPr - _opExTotal - _cfOpExTotal;
+        content = renderCFShareholders(_poolAmount);
+      }
 
       return `<div class="page fade-in">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
@@ -10677,11 +11984,8 @@
           <h2 style="font-family:'Orbitron',monospace;font-size:18px;color:#34d399;flex:1">Cash Flow Management</h2>
           <button class="btn btn-sm" id="cfExportBtn" style="background:rgba(52,211,153,0.12);border:1px solid rgba(52,211,153,0.25);color:#34d399;font-size:11px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:16px">
-          ${tabs.slice(0,3).map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="padding:9px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:rgba(15,12,28,0.5);color:var(--textMuted);border:1px solid rgba(120,100,200,0.15)'}">${tabSvgs[t.id]} ${t.label}</button>`).join('')}
-        </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-bottom:16px">
-          ${tabs.slice(3).map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="padding:9px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:rgba(15,12,28,0.5);color:var(--textMuted);border:1px solid rgba(120,100,200,0.15)'}">${tabSvgs[t.id]} ${t.label}</button>`).join('')}
+          ${tabs.map(t => `<button class="btn btn-sm cf-tab-btn" data-tab="${t.id}" style="padding:9px 4px;border-radius:9px;font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px;width:100%;${tab===t.id?'background:rgba(52,211,153,0.2);color:#34d399;border:1px solid rgba(52,211,153,0.3)':'background:rgba(15,12,28,0.5);color:var(--textMuted);border:1px solid rgba(120,100,200,0.15)'}">${tabSvgs[t.id]} ${t.label}</button>`).join('')}
         </div>
         ${content}
       </div>`;
@@ -11052,7 +12356,7 @@
           if (!name) { $('#cfPmName').focus(); return; }
           var doc = await db.collection(cfPath('paymentMethods')).add({ name, createdAt: new Date().toISOString() });
           cfPaymentMethods.push({ id: doc.id, name, createdAt: new Date().toISOString() });
-          $('#cfPmName').value = '';
+          var _pmEl = $('#cfPmName'); if (_pmEl) _pmEl.value = '';
           render();
         };
       }
@@ -11130,8 +12434,8 @@
           var rec = { title, amount: parseFloat(amount.toFixed(2)), date, createdAt: new Date().toISOString() };
           var doc = await db.collection(cfPath('opExpenses')).add(rec);
           cfOperatingExpenses.push(Object.assign({ id: doc.id }, rec));
-          $('#cfExpTitle').value = '';
-          $('#cfExpAmount').value = '';
+          var _etEl=$('#cfExpTitle'); if(_etEl) _etEl.value='';
+          var _eaEl=$('#cfExpAmount'); if(_eaEl) _eaEl.value='';
           render();
         };
       }
@@ -11186,8 +12490,8 @@
           var rec = { name, percentage: pct, createdAt: new Date().toISOString() };
           var doc = await db.collection(cfPath('shareholders')).add(rec);
           cfShareholders.push(Object.assign({ id: doc.id }, rec));
-          $('#cfShName').value = '';
-          $('#cfShPct').value = '';
+          var _snEl=$('#cfShName'); if(_snEl) _snEl.value='';
+          var _spEl=$('#cfShPct'); if(_spEl) _spEl.value='';
           render();
         };
       }
