@@ -700,6 +700,7 @@
       .inv-btn-label { display: none !important; }
       .desktop-date-input { display: none !important; }
       .mobile-date-icon { display: inline !important; }
+      #bulkBillBtn { display: none !important; }
       #globalAnalyticsModal .analytics-summary { grid-template-columns: repeat(2, 1fr); }
       #globalAnalyticsModal div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
     }
@@ -1066,6 +1067,9 @@
     .bb-ac-item:hover,.bb-ac-item.highlighted { background:rgba(124,58,237,0.28) !important; color:#e2e8f0 !important; }
     #bbAcDrop::-webkit-scrollbar { width:5px; }
     #bbAcDrop::-webkit-scrollbar-thumb { background:rgba(124,58,237,0.4); border-radius:3px; }
+    #bbScroll { scrollbar-width:thin; scrollbar-color:rgba(124,58,237,0.3) transparent; }
+    #bbScroll::-webkit-scrollbar { width:8px; height:8px; }
+    #bbScroll::-webkit-scrollbar-thumb { background:rgba(124,58,237,0.3); border-radius:4px; }
     /* Floating add button */
     .fab-add {
       position:fixed; bottom:24px; right:24px; z-index:90;
@@ -1252,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -3822,7 +3827,6 @@
       const companies   = Object.values(state.companies).filter(c=>c.active!==false).sort((a,b)=>a.name.localeCompare(b.name));
       const compNames   = companies.map(c=>c.name);
       const masterGames = state.masterGames.map(g=>g.name);
-      const pmNames     = cfPaymentMethods.map(p=>p.name);
       const PAY_STATUSES= ['not_received','partial','received'];
       const MODES       = ['pts→$','$→pts'];
 
@@ -3842,9 +3846,13 @@
       const CI = {}; COLS.forEach((c,i)=>CI[c.id]=i);
       const NC = COLS.length;
 
+      // Authoritative account levels (same as MG_HIERARCHY_LEVELS + Player)
+      const ACCOUNT_LEVELS = ['Agent','Supermaster','Master','Distributor','Subdistributor','Store','Player'];
+
       const today = new Date();
       const pad = n=>String(n).padStart(2,'0');
-      const todayStr = today.getFullYear()+'/'+pad(today.getMonth()+1)+'/'+pad(today.getDate());
+      // MM/DD/YYYY format
+      const todayStr = pad(today.getMonth()+1)+'/'+pad(today.getDate())+'/'+today.getFullYear();
 
       // State
       let rows = [];
@@ -3900,24 +3908,26 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
               ${[
                 ['Arrow keys','Navigate cells'],['Tab / Shift+Tab','Move right / left'],
-                ['Enter','Confirm & move down'],['Shift+Enter','Confirm & move up'],
-                ['F2 / double-click','Edit cell'],['Escape','Cancel edit / deselect'],
-                ['Delete / Backspace','Clear cell(s)'],['Ctrl+Z','Undo (100 levels)'],
+                ['Enter','Edit cell / confirm down'],['Shift+Enter','Confirm & move up'],
+                ['F2 / double-click','Edit (keep value)'],['Any letter/digit','Start editing (replace)'],
+                ['Escape','Cancel edit or close AC'],['Delete / Backspace','Clear selected cells'],
+                ['Ctrl+Z','Undo (100 levels)'],['Ctrl+Y','Redo (coming soon)'],
                 ['Ctrl+C','Copy selection'],['Ctrl+X','Cut selection'],
-                ['Ctrl+V','Paste'],['Ctrl+D','Fill down'],
-                ['Ctrl+R','Fill right'],['Ctrl+Shift+V','Paste special (values only)'],
-                ['Ctrl+;','Insert today\'s date'],['Ctrl+Enter','Expand selection & paste'],
-                ['Ctrl+A','Select all'],['Shift+Arrow','Extend selection'],
-                ['Ctrl+Shift+End','Select to last row'],['Ctrl+Home','Go to A1'],
-                ['Ctrl+End','Go to last used cell'],['Page Up / Down','Scroll 20 rows'],
-                ['Ctrl+F','Find in sheet (browser)'],['Ctrl+Space','Select column'],
-                ['Shift+Space','Select row'],['Alt+Enter','New line in cell (multi)'],
-                ['Ctrl++','Insert row below'],['Ctrl+-','Delete selected rows'],
-                ['Ctrl+Shift+;','Insert current time'],['Ctrl+\'','Copy value from above'],
+                ['Ctrl+V','Paste at cursor'],['Ctrl+D','Fill down selection'],
+                ['Ctrl+R','Fill right selection'],['Ctrl+Enter','Smart fill (down/right/block)'],
+                ['Ctrl+;','Insert today\'s date (MM/DD/YYYY)'],['Ctrl+Shift+;','Insert current time'],
+                ['Ctrl+\'','Copy value from row above'],['Ctrl+A','Select all cells'],
+                ['Ctrl+Space','Select entire column'],['Shift+Space','Select entire row'],
+                ['Ctrl+Home','Go to cell A1'],['Ctrl+End','Go to last used cell'],
+                ['Ctrl+Shift+End','Extend to last row'],['Shift+Arrows','Extend selection'],
+                ['Page Up / Down','Scroll 20 rows'],['Ctrl++ (Plus)','Insert row below'],
+                ['Ctrl+- (Minus)','Delete selected row(s)'],['Right-click','Context menu'],
               ].map(([k,v])=>`<div style="padding:5px 8px;background:rgba(124,58,237,0.07);border-radius:6px;display:flex;justify-content:space-between;gap:8px"><span style="color:#22d3ee;font-family:monospace;font-size:11px;flex-shrink:0">${k}</span><span style="color:#b0a8c8;font-size:11px;text-align:right">${v}</span></div>`).join('')}
             </div>
             <div style="margin-top:14px;padding:10px;background:rgba(34,211,238,0.06);border-radius:8px;font-size:11px;color:#888">
-              <strong style="color:#22d3ee">Smart fill:</strong> Start typing in Company, Game, Username, Mode, Pay Method, or Pay Status to see autocomplete suggestions. Arrow keys navigate the list, Enter or Tab selects.
+              <strong style="color:#22d3ee">Smart fill (Ctrl+Enter):</strong> Fills down if selection is taller, right if wider, both if block. Pastes for single cell.<br><br>
+              <strong style="color:#a78bfa">Autocomplete:</strong> Shows suggestions for Company, Game, Username, Level, Pay Method, Pay Status. Arrow keys ↑↓ navigate, Enter or Tab selects. Escape closes without selecting.<br><br>
+              <strong style="color:#34d399">Date:</strong> Type MM/DD/YYYY · Ctrl+; inserts today · Click an existing date to open calendar picker.
             </div>
           </div>
         </div>
@@ -4101,42 +4111,104 @@
         }
         if(c===CI.username){
           const comp=companies.find(co=>co.name===rows[r][CI.company]);
-          if(!comp)return[];
+          if(!comp) return [];
           const gname=rows[r][CI.game];
-          // Only show usernames from the specific assigned game if available
           const ag=(comp.assignedGames||[]).find(g=>g.gameName===gname);
           let us=[];
           if(ag&&(ag.usernames||[]).length){
             us=ag.usernames.map(u=>u.username||u.name||'').filter(Boolean);
           } else {
-            // fallback: all company usernames that match this game
             us=(comp.usernames||[]).filter(u=>!u.gameName||u.gameName===gname).map(u=>u.username||u.name||'').filter(Boolean);
           }
           us=[...new Set(us)];
           return q?us.filter(n=>n.toLowerCase().includes(q)):us.slice(0,15);
         }
         if(c===CI.level){
-          const levels=['Agent','Sub-Agent','Master','Player','VIP','Platinum','Gold','Silver'];
-          return q?levels.filter(l=>l.toLowerCase().includes(q)):levels;
+          return q?ACCOUNT_LEVELS.filter(l=>l.toLowerCase().includes(q)):ACCOUNT_LEVELS;
         }
-        if(c===CI.paymethod) return pmNames.filter(n=>!q||n.toLowerCase().includes(q));
-        if(c===CI.paystatus) return PAY_STATUSES.filter(s=>!q||s.includes(q));
-        if(c===CI.date) return []; // date uses picker
-        return[];
+        if(c===CI.paymethod){
+          // Read fresh from cfPaymentMethods (loaded async)
+          const names=(cfPaymentMethods||[]).map(p=>p.name).filter(Boolean);
+          return q?names.filter(n=>n.toLowerCase().includes(q)):names;
+        }
+        if(c===CI.paystatus) return PAY_STATUSES.filter(s=>!q||s.toLowerCase().includes(q));
+        if(c===CI.date) return [];
+        return [];
       }
       function autoFillRow(r,c,val){
         if(c===CI.company){
           if(!rows[r][CI.date])rows[r][CI.date]=todayStr;
           rows[r][CI.game]='';rows[r][CI.username]='';rows[r][CI.level]='';
         }
-        if(c===CI.game){rows[r][CI.username]='';rows[r][CI.level]='';}
+        if(c===CI.game && val){
+          rows[r][CI.username]='';rows[r][CI.level]='';
+          // Check if selling rate is set for this game in this company
+          const comp=companies.find(co=>co.name===rows[r][CI.company]);
+          if(comp){
+            const ag=(comp.assignedGames||[]).find(g=>g.gameName===val);
+            const rate=ag?parseFloat(ag.rate||ag.sellRate||0):0;
+            if(!rate||rate<=0){
+              // Prompt user to set the selling rate right here
+              setTimeout(()=>promptSetGameRate(comp,val,r),100);
+            }
+          }
+        }
         if(c===CI.username){
           const comp=companies.find(co=>co.name===rows[r][CI.company]);
           if(comp&&val){const lv=getUserLevel(comp,val,rows[r][CI.game]);if(lv)rows[r][CI.level]=lv;}
         }
-        // Only default date and paystatus when not already set
         if(!rows[r][CI.date]&&rows[r][CI.company])rows[r][CI.date]=todayStr;
-        // Never override paystatus - let user set it freely
+      }
+
+      // Prompt to set selling rate for a game in a company — updates live
+      function promptSetGameRate(comp, gameName, rowIdx){
+        document.getElementById('bbRatePrompt')?.remove();
+        const modal=document.createElement('div');
+        modal.id='bbRatePrompt';
+        modal.style.cssText='position:fixed;inset:0;z-index:10010;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center';
+        modal.innerHTML=`<div style="background:#1a1530;border:1px solid rgba(248,113,113,0.4);border-radius:14px;padding:22px;max-width:340px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.8)">
+          <div style="font-family:'Orbitron',monospace;font-size:13px;color:#f87171;margin-bottom:6px">⚠ Selling Rate Not Set</div>
+          <div style="font-size:12px;color:#b0a8c8;margin-bottom:14px">
+            <strong style="color:#e2e8f0">${esc(gameName)}</strong> has no selling rate set for <strong style="color:#e2e8f0">${esc(comp.name)}</strong>.<br><br>
+            Set the selling rate now (% of face value):
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
+            <input id="bbRateInp" type="number" min="0" max="1000" step="0.01" placeholder="e.g. 85" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(124,58,237,0.4);background:rgba(0,0,0,0.3);color:#fff;font-size:14px;outline:none"/>
+            <span style="color:#888;font-size:13px">%</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="bbRateSave" class="btn btn-sm" style="flex:1;background:rgba(124,58,237,0.3);border:1px solid rgba(124,58,237,0.5);color:#e2e8f0;justify-content:center">Set Rate</button>
+            <button id="bbRateSkip" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">Skip</button>
+          </div>
+        </div>`;
+        document.body.appendChild(modal);
+        const inp=modal.querySelector('#bbRateInp');
+        inp.focus();
+        inp.onkeydown=e=>{ if(e.key==='Enter') modal.querySelector('#bbRateSave').click(); if(e.key==='Escape') modal.querySelector('#bbRateSkip').click(); };
+        modal.querySelector('#bbRateSkip').onclick=()=>modal.remove();
+        modal.querySelector('#bbRateSave').onclick=async()=>{
+          const newRate=parseFloat(inp.value);
+          if(isNaN(newRate)||newRate<0){inp.focus();inp.select();return;}
+          modal.remove();
+          try{
+            // Update the assigned game rate in Firestore
+            const ag=(comp.assignedGames||[]).find(g=>g.gameName===gameName);
+            if(ag){
+              ag.rate=newRate;
+              await db.doc(userPath()+'/companies/'+comp._id).update({assignedGames:comp.assignedGames});
+              if(state.companies[comp._id])state.companies[comp._id].assignedGames=comp.assignedGames;
+            } else {
+              // Game not yet assigned — assign it with this rate
+              const mg=state.masterGames.find(g=>g.name===gameName);
+              const newAg={gameName,gameId:mg?._id||'',rate:newRate,usernames:[]};
+              const updatedGames=[...(comp.assignedGames||[]),newAg];
+              await db.doc(userPath()+'/companies/'+comp._id).update({assignedGames:updatedGames});
+              comp.assignedGames=updatedGames;
+              if(state.companies[comp._id])state.companies[comp._id].assignedGames=updatedGames;
+            }
+            renderBody(); // refresh to show updated state
+          }catch(e2){console.error('Rate save failed:',e2);}
+        };
       }
 
       // ── Edit ──
@@ -4152,9 +4224,12 @@
         // Special: date column with existing value — open native date picker
         if(c===CI.date && rows[r][c] && initChar==null){
           const dateInp=document.createElement('input');
-          const existingDate=rows[r][c].replace(/\//g,'-'); // YYYY/MM/DD → YYYY-MM-DD
+          const existing=rows[r][c]; // MM/DD/YYYY
+          // Convert MM/DD/YYYY → YYYY-MM-DD for input[type=date]
+          let isoVal='';
+          try { const p=existing.split('/'); if(p.length===3) isoVal=p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0'); } catch(e){}
           dateInp.type='date';
-          dateInp.value=existingDate;
+          dateInp.value=isoVal;
           dateInp.style.cssText='position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:3';
           td.style.position='relative';
           td.appendChild(dateInp);
@@ -4163,8 +4238,9 @@
           dateInp.showPicker?.();
           dateInp.onchange=()=>{
             if(dateInp.value){
+              // Convert YYYY-MM-DD → MM/DD/YYYY
               const parts=dateInp.value.split('-');
-              commitEdit(r,c,parts[0]+'/'+parts[1]+'/'+parts[2]);
+              commitEdit(r,c,parts[1]+'/'+parts[2]+'/'+parts[0]);
             } else closeEdit();
           };
           dateInp.onblur=()=>setTimeout(()=>closeEdit(),200);
@@ -4186,9 +4262,15 @@
           inp.select();
         }
 
+        let acJustSelected = false; // set true when AC item clicked, prevents onblur overwrite
+
         const doShowAc = () => {
           const sugg=getSuggestions(r,c,inp.value);
-          if(sugg.length) showAc(inp,sugg, v => { commitEdit(r,c,v); moveSel(0,1); });
+          if(sugg.length) showAc(inp,sugg, v => {
+            acJustSelected = true;
+            commitEdit(r,c,v);
+            moveSel(0,1);
+          });
           else closeAc();
         };
 
@@ -4242,7 +4324,7 @@
         };
 
         inp.onblur=()=>setTimeout(()=>{
-          // Don't commit if AC was clicked (mousedown fires before blur)
+          if(acJustSelected) return; // AC selection already committed
           if(document.getElementById('bbAcDrop')?.style.display!=='none') return;
           commitEdit(r,c,inp.value);
         },160);
@@ -4438,17 +4520,16 @@
         if(ctrl&&e.key==='+'){e.preventDefault();doInsertRow();return;}
         if(ctrl&&e.key==='-'){e.preventDefault();doDeleteRows();return;}
         if(ctrl&&e.key==="'"){e.preventDefault();doCopyAbove();return;}
-        if(ctrl&&e.key===';'){e.preventDefault();pushUndo();const{rMin,rMax,cMin,cMax}=getSelection();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)if(c===CI.date||!rows[r][c])rows[r][c]=todayStr;renderBody();return;}
+        if(ctrl&&!e.shiftKey&&e.key===';'){e.preventDefault();pushUndo();const{rMin,rMax,cMin,cMax}=getSelection();for(let ri2=rMin;ri2<=rMax;ri2++)for(let ci2=cMin;ci2<=cMax;ci2++){if(ci2===CI.date||!rows[ri2][ci2])rows[ri2][ci2]=todayStr;}renderBody();return;}
         if(ctrl&&e.shiftKey&&e.key===';'){e.preventDefault();pushUndo();const n=new Date();const t=todayStr+' '+pad(n.getHours())+':'+pad(n.getMinutes());const{rMin,rMax,cMin,cMax}=getSelection();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)rows[r][c]=t;renderBody();return;}
         if(e.key===' '&&ctrl){e.preventDefault();doSelectCol();return;}
         if(e.key===' '&&e.shiftKey){e.preventDefault();doSelectRow();return;}
         // Start typing → begin edit (replace mode like Google Sheets)
-        // preventDefault stops the char from being inserted by browser default,
-        // but startEdit sets inp.value='' so the next keypress/input event inserts it naturally.
-        if(!ctrl&&!e.altKey&&!e.shiftKey&&e.key.length===1){
+        // Allow shift+letter (uppercase). Only block ctrl/meta/alt combos.
+        if(!ctrl&&!e.altKey&&e.key.length===1){
           e.preventDefault();
           startEdit(sel.r,sel.c,e.key);
-          // After the input is focused, manually insert the char
+          // After the input is focused, insert the char (handles shift for capitals)
           setTimeout(()=>{
             const ed=editingCell?.el;
             if(ed&&ed.tagName==='INPUT'&&ed.type!=='date'){
@@ -4499,7 +4580,15 @@
             }
             // Build bill date
             const rawDate=compRows[0][CI.date]||todayStr;
-            const billDate=new Date(rawDate.replace(/\//g,'-')+'T00:00:00').toISOString();
+            // Parse MM/DD/YYYY
+            let billDate;
+            try {
+              const parts=rawDate.split('/');
+              if(parts.length===3){
+                const [mm,dd,yyyy]=parts;
+                billDate=new Date(parseInt(yyyy),parseInt(mm)-1,parseInt(dd)).toISOString();
+              } else { billDate=new Date().toISOString(); }
+            } catch(e3){ billDate=new Date().toISOString(); }
             const convMode = 'pts2dollar'; // default since mode column removed
             // Build items
             let totalPts=0,totalDollars=0;
@@ -9334,7 +9423,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
