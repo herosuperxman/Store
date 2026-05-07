@@ -1252,12 +1252,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -3835,7 +3836,6 @@
         {id:'level',     label:'Level',           w:90,  hint:'Auto-filled · editable if new user', ro:false},
         {id:'points',    label:'Points',          w:100, hint:'Points value (signed, neg=redeem)'},
         {id:'amount',    label:'Amount ($)',       w:100, hint:'Dollar value (or leave for auto-calc)'},
-        {id:'mode',      label:'Mode',            w:82,  hint:'pts→$ or $→pts'},
         {id:'paymethod', label:'Pay Method',      w:120, hint:'Payment method from Cash Flow'},
         {id:'paystatus', label:'Pay Status',      w:110, hint:'not_received · partial · received'},
         {id:'partialamt',label:'Partial $',       w:90,  hint:'Paid amount if partial'},
@@ -3868,7 +3868,10 @@
           <input id="bbAddRowsCount" type="number" value="10" min="1" max="500" style="width:48px;font-size:11px;padding:3px 6px;border-radius:6px;border:1px solid rgba(120,100,200,0.25);background:rgba(0,0,0,0.3);color:#e2e8f0;text-align:center"/>
           <button id="bbClearBtn" class="btn btn-ghost btn-sm" style="font-size:11px;color:#f87171">Clear</button>
           <div style="width:1px;height:20px;background:rgba(124,58,237,0.3)"></div>
-          <button id="bbInfoBtn" class="btn btn-ghost btn-sm" style="font-size:11px;color:#22d3ee" title="Keyboard shortcuts">⌨ Shortcuts</button>
+          <button id="bbInfoBtn" class="btn btn-ghost btn-sm" style="font-size:11px;color:#22d3ee" title="Keyboard shortcuts">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Shortcuts
+          </button>
           <div style="flex:1"></div>
           <button id="bbSubmitBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;font-size:12px;font-weight:700;padding:6px 20px;gap:6px">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>Submit Bills
@@ -3971,9 +3974,8 @@
             const col=COLS[ci];
             let bg=isAct?'rgba(124,58,237,0.3)':isSel?'rgba(124,58,237,0.12)':val?'rgba(18,14,34,0.95)':'rgba(13,11,24,0.9)';
             let border=isAct?'2px solid #7c3aed':'1px solid rgba(120,100,200,0.15)';
-            let color=ci===CI.level?'#a78bfa':ci===CI.amount?'#34d399':ci===CI.points?'#22d3ee':ci===CI.mode?'#fbbf24':ci===CI.paymethod?'#f472b6':ci===CI.paystatus?'#fb923c':ci===CI.partialamt?'#34d399':'#e2e8f0';
+            let color=ci===CI.level?'#a78bfa':ci===CI.amount?'#34d399':ci===CI.points?'#22d3ee':ci===CI.paymethod?'#f472b6':ci===CI.paystatus?'#fb923c':ci===CI.partialamt?'#34d399':'#e2e8f0';
             let display=val;
-            if(!display&&ci===CI.mode) { display='pts→$'; color='rgba(251,191,36,0.3)'; }
             if(!display&&ci===CI.paystatus) { display='not_received'; color='rgba(251,146,60,0.3)'; }
             h+=`<td data-r="${ri}" data-c="${ci}" style="background:${bg};border:${border};padding:0;max-width:${colWidths[ci]}px;overflow:hidden;cursor:cell;position:relative">
               <div style="padding:3px 5px;height:26px;display:flex;align-items:center;color:${color};white-space:nowrap;overflow:hidden;font-size:12px">${esc(display)}</div>
@@ -4016,68 +4018,111 @@
         document.getElementById('bbStatus').textContent=`Cell ${col}${sel.r+1} · ${rows.length} total rows · ${ready} ready to submit`;
       }
 
-      // ── Autocomplete ──
-      let acCallback=null;
+      // ── Autocomplete — Google Sheets style ──
+      // acState holds the currently active suggestion session
+      let acState = { items:[], hiIdx:-1, onSelect:null, anchorEl:null };
+
       function showAc(anchorEl, items, onSelect) {
-        const drop=document.getElementById('bbAcDrop');
-        if(!items.length){drop.style.display='none';return;}
-        acCallback=onSelect;
-        const r2=anchorEl.getBoundingClientRect();
-        drop.style.top=(r2.bottom+2)+'px';
-        drop.style.left=r2.left+'px';
-        drop.style.minWidth=Math.max(r2.width,160)+'px';
-        drop.style.display='block';
-        drop.innerHTML=items.slice(0,14).map((item,i)=>
-          `<div class="bb-ac-item${i===0?' bb-ac-hi':''}" data-val="${esc(item)}" style="padding:6px 12px;cursor:pointer;color:#e2e8f0;border-bottom:1px solid rgba(120,100,200,0.1)">${esc(item)}</div>`
-        ).join('');
-        drop.querySelectorAll('.bb-ac-item').forEach(item=>{
-          item.onmouseenter=()=>{drop.querySelectorAll('.bb-ac-item').forEach(i=>i.classList.remove('bb-ac-hi'));item.classList.add('bb-ac-hi');};
-          item.onmousedown=e=>{e.preventDefault();onSelect(item.dataset.val);};
+        const drop = document.getElementById('bbAcDrop');
+        if (!drop) return;
+        if (!items.length) { drop.style.display='none'; acState.items=[]; return; }
+        // Don't rebuild if same items (prevents resetting highlight on every keystroke)
+        const key = items.join('|');
+        const prevKey = acState.items.join('|');
+        const rebuild = key !== prevKey;
+        acState = { items, hiIdx: rebuild ? 0 : acState.hiIdx, onSelect, anchorEl };
+        const r2 = anchorEl.getBoundingClientRect();
+        drop.style.left     = r2.left + 'px';
+        drop.style.top      = (r2.bottom + 2) + 'px';
+        drop.style.minWidth = Math.max(r2.width, 160) + 'px';
+        drop.style.display  = 'block';
+        if (rebuild) {
+          drop.innerHTML = items.slice(0,15).map((item,i) =>
+            '<div class="bb-ac-item" data-val="'+esc(item)+'" data-idx="'+i+'" style="padding:6px 12px;cursor:pointer;color:#e2e8f0;border-bottom:1px solid rgba(120,100,200,0.08);white-space:nowrap">'+esc(item)+'</div>'
+          ).join('');
+          drop.querySelectorAll('.bb-ac-item').forEach(el => {
+            el.onmouseenter = () => { acState.hiIdx = parseInt(el.dataset.idx); _acRenderHighlight(); };
+            el.onmousedown  = e  => { e.preventDefault(); e.stopPropagation(); _acCommit(parseInt(el.dataset.idx)); };
+          });
+        }
+        _acRenderHighlight();
+      }
+
+      function _acRenderHighlight() {
+        const drop = document.getElementById('bbAcDrop');
+        if (!drop) return;
+        drop.querySelectorAll('.bb-ac-item').forEach((el,i) => {
+          el.style.background = i === acState.hiIdx ? 'rgba(124,58,237,0.35)' : '';
+          el.style.color      = i === acState.hiIdx ? '#fff' : '#e2e8f0';
+          if (i === acState.hiIdx) el.scrollIntoView({block:'nearest'});
         });
       }
-      function closeAc(){const d=document.getElementById('bbAcDrop');if(d)d.style.display='none'; acCallback=null;}
-      function acHighlight(dir){
-        const d=document.getElementById('bbAcDrop');if(!d||d.style.display==='none')return false;
-        const items=[...d.querySelectorAll('.bb-ac-item')];
-        const cur=items.findIndex(i=>i.classList.contains('bb-ac-hi'));
-        items.forEach(i=>i.classList.remove('bb-ac-hi'));
-        const next=Math.max(0,Math.min(items.length-1,cur+dir));
-        items[next]?.classList.add('bb-ac-hi');
-        items[next]?.scrollIntoView({block:'nearest'});
+
+      function _acCommit(idx) {
+        if (!acState.onSelect) return;
+        const val = acState.items[idx];
+        if (val == null) return;
+        const cb = acState.onSelect;
+        closeAc();
+        cb(val);
+      }
+
+      function closeAc() {
+        const d = document.getElementById('bbAcDrop');
+        if (d) d.style.display = 'none';
+        acState = { items:[], hiIdx:-1, onSelect:null, anchorEl:null };
+      }
+
+      function acIsOpen() {
+        const d = document.getElementById('bbAcDrop');
+        return d && d.style.display !== 'none' && acState.items.length > 0;
+      }
+
+      function acMoveHighlight(dir) {
+        if (!acIsOpen()) return false;
+        acState.hiIdx = Math.max(0, Math.min(acState.items.length-1, acState.hiIdx + dir));
+        _acRenderHighlight();
         return true;
       }
-      function acSelect(){
-        const d=document.getElementById('bbAcDrop');if(!d||d.style.display==='none')return false;
-        const hi=d.querySelector('.bb-ac-item.bb-ac-hi');
-        if(hi&&acCallback){hi.dispatchEvent(new MouseEvent('mousedown'));return true;}
-        return false;
+
+      function acConfirm() {
+        if (!acIsOpen()) return false;
+        _acCommit(acState.hiIdx);
+        return true;
       }
 
       // ── Helpers ──
       function getSuggestions(r,c,q){
         q=(q||'').toLowerCase();
-        if(c===CI.company) return compNames.filter(n=>n.toLowerCase().includes(q));
+        if(c===CI.company) return compNames.filter(n=>!q||n.toLowerCase().includes(q));
         if(c===CI.game){
           const comp=companies.find(co=>co.name===rows[r][CI.company]);
           const list=comp?(comp.assignedGames||[]).map(g=>g.gameName):masterGames;
-          return list.filter(n=>n.toLowerCase().includes(q));
+          return list.filter(n=>!q||n.toLowerCase().includes(q));
         }
         if(c===CI.username){
           const comp=companies.find(co=>co.name===rows[r][CI.company]);
           if(!comp)return[];
           const gname=rows[r][CI.game];
-          let us=(comp.usernames||[]).map(u=>u.username||u.name||'').filter(Boolean);
+          // Only show usernames from the specific assigned game if available
           const ag=(comp.assignedGames||[]).find(g=>g.gameName===gname);
-          if(ag&&ag.usernames)us=[...new Set([...us,...ag.usernames.map(u=>u.username||u.name||'').filter(Boolean)])];
-          return q?us.filter(n=>n.toLowerCase().includes(q)):us.slice(0,12);
+          let us=[];
+          if(ag&&(ag.usernames||[]).length){
+            us=ag.usernames.map(u=>u.username||u.name||'').filter(Boolean);
+          } else {
+            // fallback: all company usernames that match this game
+            us=(comp.usernames||[]).filter(u=>!u.gameName||u.gameName===gname).map(u=>u.username||u.name||'').filter(Boolean);
+          }
+          us=[...new Set(us)];
+          return q?us.filter(n=>n.toLowerCase().includes(q)):us.slice(0,15);
         }
         if(c===CI.level){
-          const levels=['Agent','Sub-Agent','Master','Player','VIP'];
+          const levels=['Agent','Sub-Agent','Master','Player','VIP','Platinum','Gold','Silver'];
           return q?levels.filter(l=>l.toLowerCase().includes(q)):levels;
         }
-        if(c===CI.mode) return MODES.filter(m=>m.includes(q));
-        if(c===CI.paymethod) return pmNames.filter(n=>n.toLowerCase().includes(q));
-        if(c===CI.paystatus) return PAY_STATUSES.filter(s=>s.includes(q));
+        if(c===CI.paymethod) return pmNames.filter(n=>!q||n.toLowerCase().includes(q));
+        if(c===CI.paystatus) return PAY_STATUSES.filter(s=>!q||s.includes(q));
+        if(c===CI.date) return []; // date uses picker
         return[];
       }
       function autoFillRow(r,c,val){
@@ -4088,59 +4133,131 @@
         if(c===CI.game){rows[r][CI.username]='';rows[r][CI.level]='';}
         if(c===CI.username){
           const comp=companies.find(co=>co.name===rows[r][CI.company]);
-          if(comp&&val){rows[r][CI.level]=getUserLevel(comp,val,rows[r][CI.game])||'';}
+          if(comp&&val){const lv=getUserLevel(comp,val,rows[r][CI.game]);if(lv)rows[r][CI.level]=lv;}
         }
+        // Only default date and paystatus when not already set
         if(!rows[r][CI.date]&&rows[r][CI.company])rows[r][CI.date]=todayStr;
-        if(!rows[r][CI.mode])rows[r][CI.mode]='pts→$';
-        if(!rows[r][CI.paystatus])rows[r][CI.paystatus]='not_received';
+        // Never override paystatus - let user set it freely
       }
 
       // ── Edit ──
+      // ── Edit cell — Google Sheets style ──
+      // initChar: the char that triggered editing (typed key). null = F2/dblclick (show full value).
+      // When initChar provided: clear cell and type that char (no double-letter).
       function startEdit(r,c,initChar){
         closeEdit(); closeAc();
         const tbody=document.getElementById('bbBody');
         const td=tbody?.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
         if(!td)return;
+
+        // Special: date column with existing value — open native date picker
+        if(c===CI.date && rows[r][c] && initChar==null){
+          const dateInp=document.createElement('input');
+          const existingDate=rows[r][c].replace(/\//g,'-'); // YYYY/MM/DD → YYYY-MM-DD
+          dateInp.type='date';
+          dateInp.value=existingDate;
+          dateInp.style.cssText='position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:3';
+          td.style.position='relative';
+          td.appendChild(dateInp);
+          editingCell={r,c,el:dateInp};
+          dateInp.focus();
+          dateInp.showPicker?.();
+          dateInp.onchange=()=>{
+            if(dateInp.value){
+              const parts=dateInp.value.split('-');
+              commitEdit(r,c,parts[0]+'/'+parts[1]+'/'+parts[2]);
+            } else closeEdit();
+          };
+          dateInp.onblur=()=>setTimeout(()=>closeEdit(),200);
+          return;
+        }
+
         const inp=document.createElement('input');
-        const curVal=rows[r][c]||'';
-        inp.value=initChar!=null?initChar:curVal;
-        inp.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:none;background:rgba(124,58,237,0.2);color:#fff;font-size:12px;padding:3px 5px;outline:none;box-sizing:border-box;z-index:3;font-family:inherit';
+        // Google Sheets: typing a char REPLACES cell content. F2/dblclick APPENDS to it.
+        inp.value = initChar != null ? '' : (rows[r][c] || '');
+        inp.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:none;background:rgba(18,14,36,0.97);color:#fff;font-size:12px;padding:3px 5px;outline:none;box-sizing:border-box;z-index:3;font-family:inherit';
         td.style.position='relative'; td.style.overflow='visible';
         td.appendChild(inp);
-        inp.focus();
-        if(initChar==null)inp.select(); else inp.setSelectionRange(inp.value.length,inp.value.length);
         editingCell={r,c,el:inp};
-        // Show suggestions immediately
-        const sugg=getSuggestions(r,c,inp.value);
-        if(sugg.length)showAc(inp,sugg,v=>{commitEdit(r,c,v);moveSel(0,1);});
-        inp.oninput=()=>{
-          const sugg2=getSuggestions(r,c,inp.value);
-          if(sugg2.length)showAc(inp,sugg2,v=>{commitEdit(r,c,v);moveSel(0,1);});
+        inp.focus();
+        if(initChar!=null){
+          // Don't set value — let the browser handle the keypress naturally (no double letter)
+          // The keydown already fired; the browser will insert initChar into the empty input
+        } else {
+          inp.select();
+        }
+
+        const doShowAc = () => {
+          const sugg=getSuggestions(r,c,inp.value);
+          if(sugg.length) showAc(inp,sugg, v => { commitEdit(r,c,v); moveSel(0,1); });
           else closeAc();
         };
+
+        // Show AC immediately (empty query = show all for this col)
+        doShowAc();
+
+        inp.oninput = doShowAc;
+
         inp.onkeydown=e=>{
-          if(e.key==='Escape'){closeEdit();closeAc();renderBody();return;}
-          if(e.key==='ArrowDown'){e.preventDefault();if(!acHighlight(1)){commitEdit(r,c,inp.value);moveSel(1,0);}return;}
-          if(e.key==='ArrowUp'){e.preventDefault();if(!acHighlight(-1)){commitEdit(r,c,inp.value);moveSel(-1,0);}return;}
-          if(e.key==='Enter'){e.preventDefault();if(acSelect())return;commitEdit(r,c,inp.value);moveSel(e.shiftKey?-1:1,0);return;}
-          if(e.key==='Tab'){e.preventDefault();if(acSelect())return;commitEdit(r,c,inp.value);moveSel(0,e.shiftKey?-1:1);return;}
-          // Ctrl+; = today
-          if((e.ctrlKey||e.metaKey)&&e.key===';'){e.preventDefault();inp.value=todayStr;inp.oninput();}
-          // Ctrl+Shift+; = current time
-          if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key===';'){e.preventDefault();const n=new Date();inp.value=todayStr+' '+pad(n.getHours())+':'+pad(n.getMinutes());}
+          const open=acIsOpen();
+          if(e.key==='Escape'){
+            e.preventDefault();
+            if(open){closeAc();}
+            else{closeEdit();rows[r][c]=rows[r][c];renderBody();}
+            return;
+          }
+          if(e.key==='ArrowDown'){
+            e.preventDefault();
+            if(open) acMoveHighlight(1);
+            else { commitEdit(r,c,inp.value); moveSel(1,0); }
+            return;
+          }
+          if(e.key==='ArrowUp'){
+            e.preventDefault();
+            if(open) acMoveHighlight(-1);
+            else { commitEdit(r,c,inp.value); moveSel(-1,0); }
+            return;
+          }
+          if(e.key==='Enter'){
+            e.preventDefault();
+            if(open&&acConfirm()) return;
+            commitEdit(r,c,inp.value);
+            moveSel(e.shiftKey?-1:1,0);
+            return;
+          }
+          if(e.key==='Tab'){
+            e.preventDefault();
+            if(open&&acConfirm()) return;
+            commitEdit(r,c,inp.value);
+            moveSel(0,e.shiftKey?-1:1);
+            return;
+          }
+          // Ctrl+; = today's date
+          if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key===';'){
+            e.preventDefault(); inp.value=todayStr; doShowAc(); return;
+          }
+          // Ctrl+Shift+; = now
+          if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key===';'){
+            e.preventDefault(); const n=new Date(); inp.value=todayStr+' '+pad(n.getHours())+':'+pad(n.getMinutes()); doShowAc(); return;
+          }
         };
+
         inp.onblur=()=>setTimeout(()=>{
-          if(document.getElementById('bbAcDrop')?.contains(document.activeElement))return;
+          // Don't commit if AC was clicked (mousedown fires before blur)
+          if(document.getElementById('bbAcDrop')?.style.display!=='none') return;
           commitEdit(r,c,inp.value);
-        },150);
+        },160);
       }
+
       function commitEdit(r,c,val){
         if(!rows[r])return;
         pushUndo();
-        rows[r][c]=val.trim();
-        autoFillRow(r,c,val.trim());
+        const trimmed=val.trim();
+        rows[r][c]=trimmed;
+        autoFillRow(r,c,trimmed);
         closeEdit(); closeAc(); renderBody(); updateBar();
       }
+
       function closeEdit(){
         if(editingCell){
           const{el}=editingCell;
@@ -4309,7 +4426,16 @@
         if(ctrl&&e.key==='d'){e.preventDefault();doFillDown();return;}
         if(ctrl&&e.key==='r'){e.preventDefault();doFillRight();return;}
         if(ctrl&&e.key==='a'){e.preventDefault();doSelectAll();return;}
-        if(ctrl&&e.key==='Enter'){e.preventDefault();doPaste();return;} // tile paste over selection
+        if(ctrl&&e.key==='Enter'){
+          e.preventDefault();
+          const{rMin,rMax,cMin,cMax}=getSelection();
+          const spanR=rMax-rMin,spanC=cMax-cMin;
+          if(spanR>0&&spanC===0) doFillDown();        // tall selection → fill down
+          else if(spanC>0&&spanR===0) doFillRight();  // wide selection → fill right
+          else if(spanR>0&&spanC>0){doFillDown();doFillRight();} // block → both
+          else doPaste();                             // single cell → paste
+          return;
+        }
         if(ctrl&&e.key==='+'){e.preventDefault();doInsertRow();return;}
         if(ctrl&&e.key==='-'){e.preventDefault();doDeleteRows();return;}
         if(ctrl&&e.key==="'"){e.preventDefault();doCopyAbove();return;}
@@ -4317,8 +4443,21 @@
         if(ctrl&&e.shiftKey&&e.key===';'){e.preventDefault();pushUndo();const n=new Date();const t=todayStr+' '+pad(n.getHours())+':'+pad(n.getMinutes());const{rMin,rMax,cMin,cMax}=getSelection();for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++)rows[r][c]=t;renderBody();return;}
         if(e.key===' '&&ctrl){e.preventDefault();doSelectCol();return;}
         if(e.key===' '&&e.shiftKey){e.preventDefault();doSelectRow();return;}
-        // Start typing → begin edit
-        if(!ctrl&&!e.altKey&&e.key.length===1){startEdit(sel.r,sel.c,e.key);}
+        // Start typing → begin edit (replace mode like Google Sheets)
+        // preventDefault stops the char from being inserted by browser default,
+        // but startEdit sets inp.value='' so the next keypress/input event inserts it naturally.
+        if(!ctrl&&!e.altKey&&!e.shiftKey&&e.key.length===1){
+          e.preventDefault();
+          startEdit(sel.r,sel.c,e.key);
+          // After the input is focused, manually insert the char
+          setTimeout(()=>{
+            const ed=editingCell?.el;
+            if(ed&&ed.tagName==='INPUT'&&ed.type!=='date'){
+              ed.value=e.key;
+              ed.dispatchEvent(new Event('input'));
+            }
+          },0);
+        }
       };
       document.addEventListener('keydown',onKey);
 
@@ -4362,7 +4501,7 @@
             // Build bill date
             const rawDate=compRows[0][CI.date]||todayStr;
             const billDate=new Date(rawDate.replace(/\//g,'-')+'T00:00:00').toISOString();
-            const convMode=(compRows[0][CI.mode]||'pts→$')==='$→pts'?'dollar2pts':'pts2dollar';
+            const convMode = 'pts2dollar'; // default since mode column removed
             // Build items
             let totalPts=0,totalDollars=0;
             const items=compRows.map(row=>{
@@ -9196,7 +9335,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
