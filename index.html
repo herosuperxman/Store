@@ -1256,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -4622,9 +4623,10 @@
               ...(pm?{paymentMethodId:pm.id}:{})
             };
             const ref=await db.collection(userPath()+'/bills').add(bill);
-            const newBill={_id:ref.id,...bill};
-            state.bills.push(newBill);
-            // Update master game balances
+            // Do NOT push to state.bills manually — the onSnapshot listener
+            // updates state.bills when Firestore confirms, preventing double entries.
+
+            // Update master game balances (use ref.id for the bill reference)
             for(const row of compRows){
               const mg=state.masterGames.find(g=>g.name===row[CI.game]);
               if(mg){
@@ -4636,7 +4638,7 @@
                 const uLevel=row[CI.level]||getUserLevel(comp,uname,row[CI.game]);
                 const isOrdered=!!(mg.highestLevel&&uLevel===mg.highestLevel);
                 const billDateStr=new Date(billDate).toISOString().slice(0,10);
-                const billingEntry={date:billDateStr,amount:pts,username:uname,billingType:isOrdered?'Ordered':'Direct'};
+                const billingEntry={date:billDateStr,amount:pts,username:uname,billingType:isOrdered?'Ordered':'Direct',billId:ref.id};
                 mg.billingHistory=[...(mg.billingHistory||[]),billingEntry];
                 if(isOrdered){
                   mg.orderedPoints=(mg.orderedPoints||0)+pts;
@@ -4647,7 +4649,7 @@
                 }
               }
             }
-            // Record in CF if payment method selected
+            // Record in CF if payment method selected and payment received
             if(pm&&payStatus!=='not_received'){
               const amount=payStatus==='received'?grandTotal:rawPartial;
               if(amount>0)cfRecordExtraPayment(amount,pm.id,billDate,comp._id,comp.name);
@@ -4655,12 +4657,18 @@
             saved++;
           }catch(e2){console.error('Bulk bill row error:',e2);failed++;}
         }
-        _gbCache.set('data',{mg:state.masterGames,bills:state.bills,companies:state.companies});
         invalidateAnalyticsCache?.();
         btn.disabled=false;
         btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20,6 9,17 4,12"/></svg>Submit Bills';
         setStatus(`✓ ${saved} bill${saved===1?'':'s'} saved${failed?` · ${failed} failed`:''}`,failed?'#f87171':'#34d399');
-        if(saved>0&&!failed){setTimeout(()=>{overlay.remove();document.removeEventListener('keydown',onKey);invalidateAnalyticsCache?.();render();},1800);}
+        // Close the sheet after success — onSnapshot will update bill history automatically
+        if(saved>0&&!failed){
+          setTimeout(()=>{
+            overlay.remove();
+            document.removeEventListener('keydown',onKey);
+            document.getElementById('bbRatePrompt')?.remove();
+          },1500);
+        }
       };
 
       // ── Toolbar bindings ──
@@ -9422,7 +9430,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
