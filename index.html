@@ -1256,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -5669,30 +5670,24 @@
               _saveBillInProgress = false;
               return;
             }
-            // Deduct from master games (or increment orderedPoints for hierarchy ordering)
+            // Deduct from master games — collect all updates then write in one batch
+            const _mgWriteBatch = db.batch();
+            let _mgBatchHasWrites = false;
             for (const item of state.billItems) {
               if (item.gameId) {
                 const calc = calcLine(item);
                 const mg = state.masterGames.find(g => g.name === item.gameName);
                 if (mg) {
                   const _billDate = bill.date || new Date().toISOString().slice(0,10);
-                  // Hierarchy check: if the username's level matches the game's highest level,
-                  // the manager cannot load to that level directly — it must come from ordered stock.
-                  // Also: if the game has an assignedUsername and the bill username matches it
-                  // and their level equals the highestLevel configured for this game → ordered.
                   const _itemUsername = item.username || '';
                   const _userLevel = getUserLevel(c, _itemUsername, item.gameName);
                   const _highestLevel = mg.highestLevel || '';
                   const _assignedLevel = mg.assignedLevel || '';
-                  // isOrdered = true when billing to a username whose level equals the game's
-                  // highest configured account level (peer-level load → must source from ordered).
-                  // Agent accounts can load to anyone — always treated as Direct, never Ordered.
                   const _isAgent = _userLevel === 'Agent' || _assignedLevel === 'Agent';
                   const _isOrdered = !_isAgent && _highestLevel &&
                     (_userLevel === _highestLevel || _assignedLevel === _highestLevel && _itemUsername === (mg.assignedUsername || ''));
                   const _mgUpdatePayload = {};
                   if (_isOrdered) {
-                    // Add to orderedPoints — do NOT touch remainingPoints
                     const newOrdered = (mg.orderedPoints || 0) + calc.points;
                     _mgUpdatePayload.orderedPoints = newOrdered;
                     if (state.empRole !== 'employee') {
@@ -5703,10 +5698,10 @@
                       mg.billingHistory = [...(mg.billingHistory || []), _billingEntry];
                       _mgUpdatePayload.billingHistory = mg.billingHistory;
                     }
-                    await db.doc(userPath()+'/masterGames/'+mg._id).update(_mgUpdatePayload);
+                    _mgWriteBatch.update(db.doc(userPath()+'/masterGames/'+mg._id), _mgUpdatePayload);
+                    _mgBatchHasWrites = true;
                     mg.orderedPoints = newOrdered;
                   } else {
-                    // Direct load — deduct from available balance
                     const newPts = (mg.remainingPoints || 0) - calc.points;
                     _mgUpdatePayload.remainingPoints = newPts;
                     if (state.empRole !== 'employee') {
@@ -5714,11 +5709,17 @@
                       mg.billingHistory = [...(mg.billingHistory || []), _billingEntry];
                       _mgUpdatePayload.billingHistory = mg.billingHistory;
                     }
-                    await db.doc(userPath()+'/masterGames/'+mg._id).update(_mgUpdatePayload);
+                    _mgWriteBatch.update(db.doc(userPath()+'/masterGames/'+mg._id), _mgUpdatePayload);
+                    _mgBatchHasWrites = true;
                     mg.remainingPoints = newPts;
                   }
                 }
               }
+            }
+            // Commit all masterGame updates in one round-trip
+            if (_mgBatchHasWrites) {
+              startWrite();
+              try { await _mgWriteBatch.commit(); endWrite(); } catch(e) { endWrite(); throw e; }
             }
             // Save bill to Firestore and immediately add to state.bills so UI updates
             // without waiting for the onSnapshot listener (which may be slow or miss past-dated bills)
@@ -7686,15 +7687,21 @@
           var compBillsLedger = state.bills.filter(function(b){ return b.companyId === c._id; })
             .sort(function(a,b2){ return toLocalDate(a.date)-toLocalDate(b2.date); });
           var ledgerEntries = [];
+          var _creditClearedAt = c.creditClearedAt ? new Date(c.creditClearedAt) : null;
           compBillsLedger.forEach(function(b) {
             var bd = toLocalDate(b.date);
             var billRef = bd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
             (b.extraPayments||[]).forEach(function(ep) {
               var epDate = ep.date ? toLocalDate(ep.date) : bd;
+              // Skip entries that predate the last credit clear
+              if (_creditClearedAt && epDate <= _creditClearedAt) return;
               ledgerEntries.push({ ts: epDate, type: 'add', amount: ep.amount||0, ref: 'Bill '+billRef, billId: b._id });
             });
             if ((b.creditApplied||0) > 0) {
-              ledgerEntries.push({ ts: bd, type: 'use', amount: b.creditApplied, ref: 'Bill '+billRef, billId: b._id });
+              // Only include creditApplied if it happened after the clear
+              if (!_creditClearedAt || bd > _creditClearedAt) {
+                ledgerEntries.push({ ts: bd, type: 'use', amount: b.creditApplied, ref: 'Bill '+billRef, billId: b._id });
+              }
             }
           });
           ledgerEntries.sort(function(a,b2){ return a.ts - b2.ts; });
@@ -7877,7 +7884,17 @@
             +   '<input type="hidden" id="payMethod" value=""/>'
             +   '<div id="payMethodList" class="hidden" style="position:fixed;background:rgba(16,13,30,0.98);border:1px solid var(--glassBorder);border-radius:10px;z-index:99999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.7)">'
             +     _pmListItems
-            +   '</div></div>'
+            +   '</div>'
+            +   '<div id="payBonusWrap" style="display:none;margin-top:7px;padding:9px 12px;border-radius:8px;background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.14)">'
+            +     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+            +       '<span style="font-size:10px;color:#22d3ee;font-weight:600;white-space:nowrap">Bonus %</span>'
+            +       '<input class="input" type="number" id="payBonusPct" placeholder="0" min="0" max="999" step="0.1" style="width:62px;font-size:13px;text-align:center;padding:4px 6px"/>'
+            +       '<span style="font-size:11px;color:var(--textMuted);font-weight:700">%</span>'
+            +       '<span id="payBonusPreview" style="font-size:11px;margin-left:auto"></span>'
+            +     '</div>'
+            +     '<div style="font-size:9px;color:var(--textMuted);margin-top:4px">Bonus adds to company credit. Only actual cash is recorded as received.</div>'
+            +   '</div>'
+            + '</div>'
             : '')
         +   '<button class="btn btn-green btn-full btn-sm" id="paySave" style="margin-top:10px;justify-content:center">'
         +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Record'
@@ -7916,9 +7933,24 @@
         _pmList.querySelectorAll('.dropdown-item[data-pmid]').forEach(function(item){
           item.onclick = function(e){
             e.stopPropagation();
-            document.getElementById('payMethod').value = item.dataset.pmid || '';
+            var _selPmId = item.dataset.pmid || '';
+            document.getElementById('payMethod').value = _selPmId;
             document.getElementById('payMethodLabel').textContent = item.dataset.pmname || '— None —';
             _pmList.classList.add('hidden');
+            // Show/prefill bonus % for this payment method
+            var _bWrap = document.getElementById('payBonusWrap');
+            var _bInp  = document.getElementById('payBonusPct');
+            if (_bWrap) {
+              if (_selPmId) {
+                _bWrap.style.display = 'block';
+                var _compBonuses = (state.companies[c._id] && state.companies[c._id].paymentMethodBonuses) || c.paymentMethodBonuses || {};
+                _bInp.value = typeof _compBonuses[_selPmId] === 'number' ? _compBonuses[_selPmId] : '';
+                _updateBonusPrev();
+              } else {
+                _bWrap.style.display = 'none';
+                if (_bInp) _bInp.value = '';
+              }
+            }
           };
         });
 
@@ -7953,6 +7985,21 @@
           }
         };
       }
+      // Bonus % live preview helper
+      function _updateBonusPrev() {
+        var _prev = document.getElementById('payBonusPreview');
+        if (!_prev) return;
+        var _a = parseFloat((document.getElementById('payAmt')||{}).value) || 0;
+        var _p = parseFloat((document.getElementById('payBonusPct')||{}).value) || 0;
+        if (_a > 0 && _p > 0) {
+          var _b = parseFloat((_a * _p / 100).toFixed(2));
+          _prev.innerHTML = '<span style="color:#22d3ee">+$'+_b.toFixed(2)+'</span> <span style="color:#34d399;font-weight:700">→ $'+(_a+_b).toFixed(2)+' credit</span>';
+        } else { _prev.textContent = ''; }
+      }
+      var _payAmtEl2 = document.getElementById('payAmt');
+      var _payBonEl  = document.getElementById('payBonusPct');
+      if (_payAmtEl2) _payAmtEl2.addEventListener('input', _updateBonusPrev);
+      if (_payBonEl)  _payBonEl.addEventListener('input', _updateBonusPrev);
       // Edit / Clear credit balance buttons
       var _editCrBtn = document.getElementById('editCreditBalBtn');
       var _clearCrBtn = document.getElementById('clearCreditBalBtn');
@@ -7974,11 +8021,26 @@
       }; }
       if(_clearCrBtn){ _clearCrBtn.onclick = async function(){
         var _cur = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
-        if(!confirm('Clear credit balance of $' + _cur.toFixed(2) + ' for ' + (c.name||'this company') + '?\n\nThis will set it to $0.'))return;
+        if(!confirm('Clear credit balance of $' + _cur.toFixed(2) + ' for ' + (c.name||'this company') + '?\n\nThis will set it to $0 and remove all pending credit ledger entries.'))return;
         try{
-          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:0})});
-          if(state.companies[c._id])state.companies[c._id].creditBalance=0;
-          c.creditBalance=0;
+          var _clearTs = new Date().toISOString();
+          // 1. Zero out the company creditBalance and record the clear timestamp
+          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:0, creditClearedAt:_clearTs})});
+          if(state.companies[c._id]){state.companies[c._id].creditBalance=0; state.companies[c._id].creditClearedAt=_clearTs;}
+          c.creditBalance=0; c.creditClearedAt=_clearTs;
+          // 2. Strip isCredit/isGeneral extraPayments from all this company's bills (they built the old credit)
+          var _compBillsForClear = state.bills.filter(function(b){ return b.companyId===c._id; });
+          var _clearPromises = [];
+          for(var _ci=0; _ci<_compBillsForClear.length; _ci++){
+            var _cb = _compBillsForClear[_ci];
+            var _cbEps = (_cb.extraPayments||[]).filter(function(ep){ return !ep.isCredit && !ep.isGeneral; });
+            if(_cbEps.length !== (_cb.extraPayments||[]).length){
+              var _cbRef = db.doc(userPath()+'/bills/'+_cb._id);
+              _clearPromises.push(_cbRef.update({extraPayments:_cbEps}));
+              _cb.extraPayments = _cbEps;
+            }
+          }
+          if(_clearPromises.length) await Promise.all(_clearPromises);
           invalidateAnalyticsCache();
           ov.remove();
           showPaymentDetailModal(c, d);
@@ -8013,8 +8075,6 @@
           var delEp=eps[pidx];
           var delAmt=delEp?(delEp.amount||0):0;
           var isAddedToCredit=(delEp&&(delEp.isCredit||delEp.isGeneral))||false;
-          var delPmId=delEp?delEp.paymentMethodId:'';
-          var delDate=delEp?delEp.date:'';
           eps.splice(pidx,1);
           await trackedWrite(function(){return ref.update({extraPayments:eps})});
           var lb=state.bills.find(function(bb){return bb._id===bid});
@@ -8027,30 +8087,13 @@
             if(state.companies[c._id])state.companies[c._id].creditBalance=_newCr;
             if(c)c.creditBalance=_newCr;
           }
-          // Bug 1 fix: also delete the matching cfTransaction from Firestore and memory
-          if(delPmId){
-            var _delDateNorm=delDate?(typeof delDate==='string'?delDate:new Date(delDate).toISOString()):'';
-            var _matchIdx=cfTransactions.findIndex(function(t){
-              if(t.category!=='extra_payment'&&t.category!=='payment_bonus') return false;
-              if(t.companyId!==c._id) return false;
-              if(t.paymentMethodId!==delPmId) return false;
-              if(Math.abs((t.amount||0)-delAmt)>0.001) return false;
-              // Date match: compare YYYY-MM-DD portion
-              var _tDate=(t.date||'').slice(0,10);
-              var _eDate=_delDateNorm.slice(0,10);
-              return _tDate===_eDate;
-            });
-            if(_matchIdx>=0){
-              var _matchTx=cfTransactions[_matchIdx];
-              cfTransactions.splice(_matchIdx,1);
-              db.collection(cfPath('transactions')).doc(_matchTx.id).delete().catch(function(e){console.error('cfTx delete:',e)});
-            }
-          }
           invalidateAnalyticsCache();ov.remove();render();
         }catch(e){alert('Error: '+e.message)}
       }});
       document.getElementById('paySave').onclick=async function(){var bid=document.getElementById('payBill').value,amt=parseFloat(document.getElementById('payAmt').value)||0,dt=document.getElementById('payDt').value;
         var _payMethEl=document.getElementById('payMethod'); var _payMethId=_payMethEl?(_payMethEl.value||''):'';
+        var _bonusPctEl=document.getElementById('payBonusPct'); var _bonusPct=(_bonusPctEl&&_bonusPctEl.value.trim()!=='')?Math.max(0,parseFloat(_bonusPctEl.value)||0):0;
+        var _bonusAmt=(_bonusPct>0&&amt>0)?parseFloat((amt*_bonusPct/100).toFixed(2)):0;
         if(!bid||amt<=0){alert('Enter an amount');return}
         try{
           if(bid==='__general__'){
@@ -8072,30 +8115,49 @@
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
             } else {
               var remaining = amt;
-              for(let ubi=0; ubi<unpaidBills.length && remaining>0.001; ubi++){
+              // ── Mobile-fast: batch reads first, then compute, then batch write ──
+              // Step 1: collect which bills need updating and how much
+              var _billsToApply = [];
+              var _remaining2 = amt;
+              for (let ubi = 0; ubi < unpaidBills.length && _remaining2 > 0.001; ubi++) {
                 let ubill = unpaidBills[ubi];
-                let uref = db.doc(userPath()+'/bills/'+ubill._id);
-                let usn = await uref.get(); let udata = usn.data();
-                let uDue = udata.balanceDue||0;
-                if(uDue <= 0.001) continue;
-                let applyAmt = Math.min(remaining, uDue);
-                let newDue = parseFloat((uDue - applyAmt).toFixed(2));
-                let uupdates = { balanceDue: newDue };
-                uupdates.paymentStatus = newDue <= 0.001 ? 'received' : 'partial';
-                let grandTotal = (udata.totalDollars||0)+(udata.extraFeeAmount||0);
-                uupdates.partialAmount = parseFloat((grandTotal - newDue).toFixed(2));
-                let existingEps = udata.extraPayments || [];
-                var _epEntry2={amount: parseFloat(applyAmt.toFixed(2)), date: payDate, isGeneral: true}; if(_payMethId) _epEntry2.paymentMethodId=_payMethId;
-                existingEps.push(_epEntry2);
-                uupdates.extraPayments = existingEps;
-                if(_payMethId) uupdates.paymentMethodId = _payMethId;
-                await trackedWrite(function(){return uref.update(uupdates)});
-                let lbU=state.bills.find(function(bb){return bb._id===ubill._id});
-                if(lbU){Object.assign(lbU,uupdates);}
-                remaining -= applyAmt;
+                let uDueCached = ubill.balanceDue || 0;
+                if (uDueCached <= 0.001) continue;
+                let applyAmt = Math.min(_remaining2, uDueCached);
+                _billsToApply.push({ bill: ubill, applyAmt: parseFloat(applyAmt.toFixed(2)) });
+                _remaining2 -= applyAmt;
               }
+              // Step 2: batch-fetch all needed bill docs in parallel
+              var _billRefs = _billsToApply.map(function(x){ return db.doc(userPath()+'/bills/'+x.bill._id); });
+              var _billSnaps = await Promise.all(_billRefs.map(function(r){ return r.get(); }));
+              // Step 3: compute all updates and apply in a single WriteBatch
+              var _wb = db.batch();
+              for (let wi = 0; wi < _billsToApply.length; wi++) {
+                let { bill: ubill, applyAmt } = _billsToApply[wi];
+                let udata = _billSnaps[wi].data();
+                let uDue = udata.balanceDue || 0;
+                let newDue = parseFloat((uDue - applyAmt).toFixed(2));
+                let grandTotal = (udata.totalDollars||0)+(udata.extraFeeAmount||0);
+                let existingEps = (udata.extraPayments||[]).slice();
+                var _epEntry2 = { amount: applyAmt, date: payDate, isGeneral: true };
+                if (_payMethId) _epEntry2.paymentMethodId = _payMethId;
+                existingEps.push(_epEntry2);
+                let uupdates = {
+                  balanceDue: newDue,
+                  paymentStatus: newDue <= 0.001 ? 'received' : 'partial',
+                  partialAmount: parseFloat((grandTotal - newDue).toFixed(2)),
+                  extraPayments: existingEps
+                };
+                if (_payMethId) uupdates.paymentMethodId = _payMethId;
+                _wb.update(_billRefs[wi], uupdates);
+                // Update local state
+                let lbU = state.bills.find(function(bb){ return bb._id === ubill._id; });
+                if (lbU) Object.assign(lbU, uupdates);
+              }
+              startWrite();
+              try { await _wb.commit(); endWrite(); } catch(e) { endWrite(); throw e; }
 
-              var newCredit = parseFloat((Math.max(0, remaining)).toFixed(2));
+              var newCredit = parseFloat((Math.max(0, _remaining2)).toFixed(2));
               var prevCredit = typeof c.creditBalance==='number' ? c.creditBalance : 0;
               var totalCredit = parseFloat((prevCredit + newCredit).toFixed(2));
 
@@ -8142,6 +8204,29 @@
               await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:newCr})});
               if(state.companies[c._id]) state.companies[c._id].creditBalance = newCr;
             }
+          }
+          // ── Apply bonus credit if bonus % was set ──────────────────────────────
+          if(_bonusAmt > 0.001 && _payMethId){
+            var _bonDate = dt || localDateStr();
+            // Find most recent bill to attach the bonus entry to
+            var _bonBills = state.bills.filter(function(b){return b.companyId===c._id;})
+              .sort(function(a,b2){return toLocalDate(b2.date)-toLocalDate(a.date);});
+            if(_bonBills.length > 0){
+              var _bonBill = _bonBills[0];
+              var _bonRef  = db.doc(userPath()+'/bills/'+_bonBill._id);
+              var _bonSnap = await _bonRef.get();
+              var _bonEps  = (_bonSnap.data().extraPayments||[]).slice();
+              _bonEps.push({amount:_bonusAmt,date:_bonDate,isCredit:true,isBonus:true,paymentMethodId:_payMethId});
+              await trackedWrite(function(){return _bonRef.update({extraPayments:_bonEps})});
+              var _lbBon = state.bills.find(function(b){return b._id===_bonBill._id;});
+              if(_lbBon) _lbBon.extraPayments = _bonEps;
+            }
+            // Add bonus to credit balance
+            var _curCrBon = typeof c.creditBalance==='number' ? c.creditBalance : 0;
+            var _newCrBon = parseFloat((_curCrBon+_bonusAmt).toFixed(2));
+            await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_newCrBon})});
+            if(state.companies[c._id]) state.companies[c._id].creditBalance = _newCrBon;
+            c.creditBalance = _newCrBon;
           }
           invalidateAnalyticsCache();
           _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
@@ -9179,6 +9264,29 @@
         + '<div style="display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:var(--textMuted)">Cost:</span><input class="input" type="number" id="csExtraFeeCost" value="' + (c.extraFeeCostRate||0) + '" min="0" max="100" step="0.1" style="width:65px;font-size:13px;text-align:center" /><span style="font-size:13px;font-weight:700;color:var(--textSecondary)">%</span></div>'
         + '<button class="btn btn-green btn-sm" id="csSaveExtraFee">Save</button>'
         + '</div></div></div>'
+        + (function(){
+            if(!cfPaymentMethods.length) return '';
+            var _pmb = c.paymentMethodBonuses || {};
+            var _rows = cfPaymentMethods.map(function(pm){
+              var _v = typeof _pmb[pm.id]==='number' ? _pmb[pm.id] : '';
+              return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(120,100,200,0.08)">'
+                + '<span style="flex:1;font-size:12px;color:var(--textPrimary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(pm.name)+'">'+esc(pm.name)+'</span>'
+                + '<input class="input cs-pmb-inp" type="number" data-pmid="'+esc(pm.id)+'" value="'+_v+'" placeholder="0" min="0" max="999" step="0.1" style="width:64px;font-size:12px;text-align:right;padding:4px 6px" />'
+                + '<span style="font-size:11px;color:var(--textMuted);font-weight:700">%</span>'
+              + '</div>';
+            }).join('');
+            return '<div style="margin-top:20px;padding:14px;border-radius:12px;background:rgba(34,211,238,0.04);border:1px solid rgba(34,211,238,0.14)">'
+              + '<div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" id="csPmbToggle">'
+              +   '<h4 style="font-family:Orbitron,monospace;font-size:11px;color:#22d3ee;margin:0">PAYMENT BONUSES</h4>'
+              +   '<span style="font-size:10px;color:var(--textMuted)" id="csPmbChev">▼ show</span>'
+              + '</div>'
+              + '<div id="csPmbBody" style="display:none;margin-top:10px">'
+              +   '<p style="font-size:10px;color:var(--textMuted);margin-bottom:8px">Bonus % credited to company per payment method. Example: $1000 via BTC at 13% → $130 bonus credit added.</p>'
+              +   _rows
+              +   '<button class="btn btn-green btn-sm" id="csSavePmBonus" style="margin-top:8px">Save Bonuses</button>'
+              + '</div>'
+              + '</div>';
+          })()
         + '<div style="margin-top:20px;padding:14px;border-radius:12px;border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.03)">'
         + '<h4 style="font-family:Orbitron,monospace;font-size:12px;margin-bottom:4px;color:var(--red)">DANGER ZONE</h4>'
         + '<p style="font-size:11px;color:var(--textMuted);margin-bottom:12px">Permanently delete this company and all data.</p>'
@@ -9298,6 +9406,30 @@
         overlay.remove(); showCompanySettingsModal();
       };
 
+      // Payment Bonus section toggle
+      var _pmbToggle = document.getElementById('csPmbToggle');
+      var _pmbBody   = document.getElementById('csPmbBody');
+      var _pmbChev   = document.getElementById('csPmbChev');
+      if (_pmbToggle) _pmbToggle.onclick = function() {
+        var _hidden = _pmbBody.style.display === 'none';
+        _pmbBody.style.display = _hidden ? 'block' : 'none';
+        if (_pmbChev) _pmbChev.textContent = _hidden ? '▲ hide' : '▼ show';
+      };
+      // Payment Bonus save handler
+      var _pmbSave = document.getElementById('csSavePmBonus');
+      if (_pmbSave) _pmbSave.onclick = async function() {
+        var _bonuses = Object.assign({}, c.paymentMethodBonuses || {});
+        overlay.querySelectorAll('.cs-pmb-inp').forEach(function(inp) {
+          var _pid = inp.dataset.pmid; var _v = inp.value.trim();
+          if (!_pid) return;
+          if (_v === '' || isNaN(parseFloat(_v))) { delete _bonuses[_pid]; }
+          else { _bonuses[_pid] = parseFloat(parseFloat(_v).toFixed(4)); }
+        });
+        await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({paymentMethodBonuses:_bonuses})});
+        if(state.companies[c._id]) state.companies[c._id].paymentMethodBonuses = _bonuses;
+        c.paymentMethodBonuses = _bonuses;
+        showPopup('Payment bonuses saved!','success');
+      };
       document.getElementById('csDeleteCompany').onclick = async function() {
         if (!confirm('Delete company "' + c.name + '" and all its data? This cannot be undone.')) return;
         try {
@@ -9493,7 +9625,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -12175,69 +12307,62 @@
           }
         });
 
-        // Payment-method breakdown: attribute bill inflow to payment method
-        // Use the bill-level pmId for the bill's own billed amount (what was invoiced)
-        if (bFull > 0) {
+        // Payment-method breakdown: scan extraPayments on each bill for their own pmId
+        // This captures payments recorded via "Record Payment" modal with individual methods
+        var _billCompName2 = (state.companies && state.companies[bill.companyId] && state.companies[bill.companyId].name) || bill.companyName || '';
+        (bill.extraPayments || []).forEach(function(ep) {
+          var epPmId = ep.paymentMethodId || '';
+          var epAmt  = ep.amount || 0;
+          if (!epPmId || epAmt <= 0.001 || !byMethod[epPmId]) return;
+          // Date-filter extraPayment by its own date
+          var epDateStr = ep.date || '';
+          var epDateObj = epDateStr ? new Date(epDateStr.length===10 ? epDateStr+'T00:00:00' : epDateStr) : null;
+          if (epDateObj && fD && epDateObj < fD) return;
+          if (epDateObj && tD && epDateObj > tD) return;
+          var epKind = ep.isBonus ? 'Bonus' : (ep.isCredit ? 'Credit' : (ep.isGeneral ? 'Payment' : 'Payment'));
+          byMethod[epPmId].total += epAmt;
+          byMethod[epPmId].txs.push({
+            date: epDateStr || bill.date, amount: epAmt,
+            note: _billCompName2 + ' · ' + epKind,
+            companyName: _billCompName2, paymentMethodId: epPmId
+          });
+        });
+        // Also attribute the bill-level payment method for bills WITHOUT any extraPayments
+        // (i.e. direct "received" bills where method was set at bill creation time)
+        if (bFull > 0 && !(bill.extraPayments && bill.extraPayments.length > 0)) {
           var refId = bill.referenceNumber || bill._id;
-          var _billCompName = (state.companies && state.companies[bill.companyId] && state.companies[bill.companyId].name) || bill.companyName || '';
-          // Determine bill's own payment method: prefer cfTransaction match, then bill.paymentMethodId
           var tx = cfTransactions.find(function(t) { return t.billId === refId; });
           var pmId = (tx && tx.paymentMethodId) || bill.paymentMethodId || '';
           if (pmId && byMethod[pmId]) {
             byMethod[pmId].total  += bFull;
             byMethod[pmId].txs.push({
               date: bill.date, amount: bFull,
-              note: _billCompName + (refId ? ' · ' + refId : ''),
-              companyName: _billCompName,
-              paymentMethodId: pmId
+              note: _billCompName2 + ' · Bill',
+              companyName: _billCompName2, paymentMethodId: pmId
             });
           }
         }
-        // Scan each extraPayment entry for its own payment method (Bug 3+4 fix)
-        // These are individual payments recorded via the Payment Received modal
-        var _epCompName = (state.companies && state.companies[bill.companyId] && state.companies[bill.companyId].name) || bill.companyName || '';
-        (bill.extraPayments || []).forEach(function(ep) {
-          var epPmId = ep.paymentMethodId || '';
-          var epAmt  = ep.amount || 0;
-          if (!epPmId || epAmt <= 0.001) return;
-          if (!byMethod[epPmId]) return;
-          var epDate = ep.date || bill.date;
-          var epDateObj = epDate ? new Date(epDate.length === 10 ? epDate + 'T00:00:00' : epDate) : null;
-          if (fD && epDateObj && epDateObj < fD) return;
-          if (tD && epDateObj && epDateObj > tD) return;
-          var epKind = ep.isCredit ? 'Credit' : ep.isGeneral ? 'Payment' : 'Payment';
-          byMethod[epPmId].total += epAmt;
-          byMethod[epPmId].txs.push({
-            date: epDate, amount: epAmt,
-            note: _epCompName + ' · ' + epKind,
-            companyName: _epCompName,
-            paymentMethodId: epPmId
-          });
-        });
       });
 
-      // Include extra_payment cfTransactions ONLY for companies that have no bills in state
-      // (the "no bills" code path). For companies with bills, extraPayments on bills covers all data.
-      var _companiesWithBills = {};
-      (state.bills || []).forEach(function(b) { _companiesWithBills[b.companyId] = true; });
+      // extra_payment cfTransactions are now covered by the extraPayments scan above.
+      // Only include them for companies that have zero bills (pure credit-only companies).
+      var _compHasBills = {};
+      (state.bills||[]).forEach(function(b){ _compHasBills[b.companyId]=true; });
       cfTransactions.forEach(function(tx) {
         if (tx.category !== 'extra_payment') return;
-        // Skip if this company has bills — those are covered by the extraPayments scan above
-        if (_companiesWithBills[tx.companyId]) return;
-        var txDate = tx.date ? new Date(tx.date.length === 10 ? tx.date + 'T00:00:00' : tx.date) : null;
-        if (!txDate || isNaN(txDate.getTime())) return;
+        if (_compHasBills[tx.companyId]) return; // covered by extraPayments scan
+        var txDate = tx.date ? new Date(tx.date.length===10 ? tx.date+'T00:00:00' : tx.date) : null;
+        if (!txDate||isNaN(txDate.getTime())) return;
         if (fD && txDate < fD) return;
         if (tD && txDate > tD) return;
         var pmId = tx.paymentMethodId || '';
-        if (pmId && byMethod[pmId]) {
-          byMethod[pmId].total += (tx.amount || 0);
-          byMethod[pmId].txs.push({
-            date: tx.date, amount: tx.amount || 0,
-            note: (tx.companyName || '') + ' · Payment',
-            companyName: tx.companyName || '',
-            paymentMethodId: pmId
-          });
-        }
+        if (!pmId || !byMethod[pmId]) return;
+        byMethod[pmId].total += (tx.amount||0);
+        byMethod[pmId].txs.push({
+          date: tx.date, amount: tx.amount||0,
+          note: (tx.companyName||'') + ' · Payment',
+          companyName: tx.companyName||'', paymentMethodId: pmId
+        });
       });
 
       // Total inflow = bill revenue + live credit pool
@@ -12835,14 +12960,8 @@
               ${md.txs.length === 0 ? '<div style="text-align:center;padding:20px;color:var(--textMuted)">No transactions</div>' :
                 md.txs.map(t => {
                   var d = new Date(t.date);
-                  var dStr = isNaN(d)?'-':d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
-                  var _dispName = t.companyName || t.note || '-';
-                  var _dispSub  = t.note && t.note !== t.companyName ? t.note : '';
                   return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(120,100,200,0.1)">
-                    <div style="flex:1;min-width:0">
-                      <div style="font-size:12px;font-weight:600;color:var(--textPrimary)">${esc(_dispName)}</div>
-                      <div style="font-size:10px;color:var(--textMuted)">${dStr}</div>
-                    </div>
+                    <div><div style="font-size:12px;font-weight:600">${esc(t.note || t.companyName || '-')}</div><div style="font-size:10px;color:var(--textMuted)">${d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'})}</div></div>
                     <div style="font-family:'Orbitron',monospace;font-size:13px;color:#34d399;font-weight:700">+$${(t.amount||0).toFixed(2)}</div>
                   </div>`;
                 }).join('')}
