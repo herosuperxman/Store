@@ -1256,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-     apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -7686,37 +7687,53 @@
           var compBillsLedger = state.bills.filter(function(b){ return b.companyId === c._id; })
             .sort(function(a,b2){ return toLocalDate(a.date)-toLocalDate(b2.date); });
           var ledgerEntries = [];
+          // creditClearedAt: only show entries AFTER the last clear timestamp
+          var _ccAt = (state.companies[c._id]&&state.companies[c._id].creditClearedAt) || c.creditClearedAt || null;
+          var _ccAtDate = _ccAt ? new Date(_ccAt) : null;
           compBillsLedger.forEach(function(b) {
             var bd = toLocalDate(b.date);
             var billRef = bd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
-            (b.extraPayments||[]).forEach(function(ep) {
+            (b.extraPayments||[]).forEach(function(ep, epIdx) {
               var epDate = ep.date ? toLocalDate(ep.date) : bd;
-              ledgerEntries.push({ ts: epDate, type: 'add', amount: ep.amount||0, ref: 'Bill '+billRef, billId: b._id });
+              // Skip entries at or before the last credit clear
+              if (_ccAtDate && epDate <= _ccAtDate) return;
+              ledgerEntries.push({ ts: epDate, type: 'add', amount: ep.amount||0, ref: 'Bill '+billRef, billId: b._id, epIdx: epIdx, isBonus: !!ep.isBonus });
             });
             if ((b.creditApplied||0) > 0) {
-              ledgerEntries.push({ ts: bd, type: 'use', amount: b.creditApplied, ref: 'Bill '+billRef, billId: b._id });
+              if (!_ccAtDate || bd > _ccAtDate) {
+                ledgerEntries.push({ ts: bd, type: 'use', amount: b.creditApplied, ref: 'Bill '+billRef, billId: b._id, epIdx: -1 });
+              }
             }
           });
           ledgerEntries.sort(function(a,b2){ return a.ts - b2.ts; });
           if (!ledgerEntries.length) {
-            rows = '<div class="analytics-nodata" style="padding:16px;text-align:center;color:var(--textMuted)">Credit balance of $' + displayCredit.toFixed(2) + ' is available.<br><span style="font-size:11px;opacity:0.7">No detailed ledger entries found — credit may have been recorded via an older payment.</span></div>';
+            rows = '<div class="analytics-nodata" style="padding:16px;text-align:center;color:var(--textMuted)">Credit balance of $' + displayCredit.toFixed(2) + ' is available.<br><span style="font-size:11px;opacity:0.7">No detailed ledger entries found.</span></div>';
           } else {
             var running = 0;
             ledgerEntries.forEach(function(e) {
               if (e.type === 'add') running += e.amount;
               else running = Math.max(0, running - e.amount);
               var isAdd = e.type === 'add';
-              var amtColor = isAdd ? '#34d399' : '#f472b6';
+              var amtColor = isAdd ? (e.isBonus ? '#a78bfa' : '#34d399') : '#f472b6';
               var typeLabel = isAdd
-                ? '<span style="background:rgba(16,185,129,0.15);color:#34d399;font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700">+ ADDED</span>'
+                ? (e.isBonus
+                    ? '<span style="background:rgba(167,139,250,0.15);color:#a78bfa;font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700">+ BONUS</span>'
+                    : '<span style="background:rgba(16,185,129,0.15);color:#34d399;font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700">+ ADDED</span>')
                 : '<span style="background:rgba(244,114,182,0.15);color:#f472b6;font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700">\u2212 USED</span>';
               var sign = isAdd ? '+' : '\u2212';
+              var _actionBtns = (isAdd && e.epIdx >= 0)
+                ? '<div style="display:flex;gap:4px;flex-shrink:0">'
+                    + '<button class="ledger-edit-btn btn btn-ghost btn-sm" data-billid="'+e.billId+'" data-epidx="'+e.epIdx+'" style="padding:2px 6px;font-size:10px;color:#fbbf24;border-color:rgba(251,191,36,0.25)" title="Edit">✏</button>'
+                    + '<button class="ledger-del-btn btn btn-ghost btn-sm" data-billid="'+e.billId+'" data-epidx="'+e.epIdx+'" data-amount="'+e.amount+'" style="padding:2px 6px;font-size:10px;color:#f87171;border-color:rgba(248,113,113,0.25)" title="Delete">✕</button>'
+                  + '</div>'
+                : '';
               rows += '<div class="analytics-detail-item" style="display:flex;align-items:center;gap:8px;padding:9px 10px;flex-wrap:wrap">'
-                + '<span style="color:var(--textMuted);font-size:10px;min-width:60px;flex-shrink:0">' + e.ts.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}) + ' ' + e.ts.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}) + '</span>'
+                + '<span style="color:var(--textMuted);font-size:10px;min-width:60px;flex-shrink:0">' + e.ts.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}) + '</span>'
                 + typeLabel
                 + '<span style="color:var(--textMuted);font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(e.ref) + '</span>'
                 + '<span style="color:' + amtColor + ';font-weight:700;font-size:13px;font-family:Orbitron,monospace">' + sign + ' $' + e.amount.toFixed(2) + '</span>'
                 + '<span style="color:#a78bfa;font-size:11px;font-weight:600;min-width:56px;text-align:right">= $' + running.toFixed(2) + '</span>'
+                + _actionBtns
                 + '</div>';
             });
           }
@@ -7877,17 +7894,7 @@
             +   '<input type="hidden" id="payMethod" value=""/>'
             +   '<div id="payMethodList" class="hidden" style="position:fixed;background:rgba(16,13,30,0.98);border:1px solid var(--glassBorder);border-radius:10px;z-index:99999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.7)">'
             +     _pmListItems
-            +   '</div>'
-            +   '<div id="payBonusWrap" style="display:none;margin-top:7px;padding:9px 12px;border-radius:8px;background:rgba(34,211,238,0.05);border:1px solid rgba(34,211,238,0.15)">'
-            +     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-            +       '<span style="font-size:10px;font-weight:600;color:#22d3ee;white-space:nowrap">Bonus %</span>'
-            +       '<input class="input" type="number" id="payBonusPct" placeholder="0" min="0" max="999" step="0.1" style="width:62px;font-size:13px;text-align:center;padding:4px 6px"/>'
-            +       '<span style="font-size:11px;color:var(--textMuted);font-weight:700">%</span>'
-            +       '<span id="payBonusPreview" style="font-size:11px;margin-left:auto"></span>'
-            +     '</div>'
-            +     '<div style="font-size:9px;color:var(--textMuted);margin-top:3px">Bonus % added to credit on top of the actual payment received.</div>'
-            +   '</div>'
-            + '</div>'
+            +   '</div></div>'
             : '')
         +   '<button class="btn btn-green btn-full btn-sm" id="paySave" style="margin-top:10px;justify-content:center">'
         +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Record'
@@ -7926,41 +7933,11 @@
         _pmList.querySelectorAll('.dropdown-item[data-pmid]').forEach(function(item){
           item.onclick = function(e){
             e.stopPropagation();
-            var _selPmId = item.dataset.pmid || '';
-            document.getElementById('payMethod').value = _selPmId;
+            document.getElementById('payMethod').value = item.dataset.pmid || '';
             document.getElementById('payMethodLabel').textContent = item.dataset.pmname || '— None —';
             _pmList.classList.add('hidden');
-            // Show/prefill bonus % for this payment method
-            var _bWrap = document.getElementById('payBonusWrap');
-            var _bInp  = document.getElementById('payBonusPct');
-            if (_bWrap) {
-              if (_selPmId) {
-                _bWrap.style.display = 'block';
-                var _compBonuses = (state.companies[c._id] && state.companies[c._id].paymentMethodBonuses) || c.paymentMethodBonuses || {};
-                if (_bInp) _bInp.value = typeof _compBonuses[_selPmId] === 'number' ? _compBonuses[_selPmId] : '';
-                _updateBonusPrev();
-              } else {
-                _bWrap.style.display = 'none';
-                if (_bInp) _bInp.value = '';
-              }
-            }
           };
         });
-        // Bonus preview live update helper
-        function _updateBonusPrev() {
-          var _prev = document.getElementById('payBonusPreview');
-          if (!_prev) return;
-          var _a = parseFloat((document.getElementById('payAmt')||{}).value) || 0;
-          var _p = parseFloat((document.getElementById('payBonusPct')||{}).value) || 0;
-          if (_a > 0 && _p > 0) {
-            var _b = parseFloat((_a * _p / 100).toFixed(2));
-            _prev.innerHTML = '<span style="color:#22d3ee">+$'+_b.toFixed(2)+'</span> <span style="color:#34d399;font-weight:700">total $'+(_a+_b).toFixed(2)+'</span>';
-          } else { _prev.textContent = ''; }
-        }
-        var _payAmtInp = document.getElementById('payAmt');
-        var _payBonInp = document.getElementById('payBonusPct');
-        if (_payAmtInp) _payAmtInp.addEventListener('input', _updateBonusPrev);
-        if (_payBonInp) _payBonInp.addEventListener('input', _updateBonusPrev);
 
         // Reposition on scroll/resize in case modal scrolls
         var _reposFn = function(){ if(!_pmList.classList.contains('hidden')) _positionList(); };
@@ -8014,11 +7991,23 @@
       }; }
       if(_clearCrBtn){ _clearCrBtn.onclick = async function(){
         var _cur = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
-        if(!confirm('Clear credit balance of $' + _cur.toFixed(2) + ' for ' + (c.name||'this company') + '?\n\nThis will set it to $0.'))return;
+        if(!confirm('Clear credit balance of $' + _cur.toFixed(2) + ' for ' + (c.name||'this company') + '?\n\nThis will set it to $0 and remove all credit ledger entries.'))return;
         try{
-          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:0})});
-          if(state.companies[c._id])state.companies[c._id].creditBalance=0;
-          c.creditBalance=0;
+          var _clearTs = new Date().toISOString();
+          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:0, creditClearedAt:_clearTs})});
+          if(state.companies[c._id]){ state.companies[c._id].creditBalance=0; state.companies[c._id].creditClearedAt=_clearTs; }
+          c.creditBalance=0; c.creditClearedAt=_clearTs;
+          // Strip isCredit/isGeneral extraPayments from all bills for this company
+          var _compBillsToClear = state.bills.filter(function(b){ return b.companyId===c._id; });
+          var _clearWrites = [];
+          _compBillsToClear.forEach(function(b){
+            var _kept = (b.extraPayments||[]).filter(function(ep){ return !ep.isCredit && !ep.isGeneral && !ep.isBonus; });
+            if(_kept.length !== (b.extraPayments||[]).length){
+              _clearWrites.push(db.doc(userPath()+'/bills/'+b._id).update({extraPayments:_kept}));
+              b.extraPayments = _kept;
+            }
+          });
+          if(_clearWrites.length) await Promise.all(_clearWrites);
           invalidateAnalyticsCache();
           ov.remove();
           showPaymentDetailModal(c, d);
@@ -8068,11 +8057,70 @@
           invalidateAnalyticsCache();ov.remove();render();
         }catch(e){alert('Error: '+e.message)}
       }});
+
+      // ── Ledger entry edit/delete handlers ──
+      ov.querySelectorAll('.ledger-del-btn').forEach(function(btn){
+        btn.onclick = async function(){
+          var _lBid = btn.dataset.billid;
+          var _lIdx = parseInt(btn.dataset.epidx);
+          var _lAmt = parseFloat(btn.dataset.amount)||0;
+          if(!confirm('Delete this credit entry of $'+_lAmt.toFixed(2)+'? This will also reduce the credit balance by that amount.'))return;
+          try{
+            var _lRef = db.doc(userPath()+'/bills/'+_lBid);
+            var _lSnap = await _lRef.get();
+            var _lEps = (_lSnap.data().extraPayments||[]).slice();
+            _lEps.splice(_lIdx,1);
+            await trackedWrite(function(){return _lRef.update({extraPayments:_lEps})});
+            var _lLb = state.bills.find(function(b){return b._id===_lBid;});
+            if(_lLb) _lLb.extraPayments = _lEps;
+            // Deduct from credit balance
+            var _lPrevCr = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
+            var _lNewCr = parseFloat(Math.max(0,_lPrevCr-_lAmt).toFixed(2));
+            await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_lNewCr})});
+            if(state.companies[c._id]) state.companies[c._id].creditBalance = _lNewCr;
+            c.creditBalance = _lNewCr;
+            invalidateAnalyticsCache(); ov.remove(); showPaymentDetailModal(c, d);
+          }catch(e){alert('Error: '+e.message);}
+        };
+      });
+      ov.querySelectorAll('.ledger-edit-btn').forEach(function(btn){
+        btn.onclick = async function(){
+          var _lBid = btn.dataset.billid;
+          var _lIdx = parseInt(btn.dataset.epidx);
+          try{
+            var _lRef = db.doc(userPath()+'/bills/'+_lBid);
+            var _lSnap = await _lRef.get();
+            var _lEps = (_lSnap.data().extraPayments||[]).slice();
+            var _lEp = _lEps[_lIdx];
+            if(!_lEp){alert('Entry not found');return;}
+            var _oldAmt = _lEp.amount||0;
+            var _newAmtStr = prompt('Edit credit entry amount:\nCurrent: $'+_oldAmt.toFixed(2)+'\n\nEnter new amount:', _oldAmt.toFixed(2));
+            if(_newAmtStr===null)return;
+            var _newAmt = parseFloat(_newAmtStr);
+            if(isNaN(_newAmt)||_newAmt<0){alert('Invalid amount');return;}
+            _newAmt = parseFloat(_newAmt.toFixed(2));
+            var _oldDate = _lEp.date ? (typeof _lEp.date==='string' ? _lEp.date.slice(0,10) : '') : '';
+            var _newDateStr = prompt('Edit date (YYYY-MM-DD):', _oldDate||localDateStr());
+            if(_newDateStr===null)return;
+            _lEps[_lIdx] = Object.assign({}, _lEp, {amount:_newAmt, date:_newDateStr||_oldDate});
+            await trackedWrite(function(){return _lRef.update({extraPayments:_lEps})});
+            var _lLb = state.bills.find(function(b){return b._id===_lBid;});
+            if(_lLb) _lLb.extraPayments = _lEps;
+            // Adjust credit balance by the difference
+            var _diff = parseFloat((_newAmt - _oldAmt).toFixed(2));
+            if(Math.abs(_diff) > 0.001){
+              var _lPrevCr2 = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
+              var _lNewCr2 = parseFloat(Math.max(0,_lPrevCr2+_diff).toFixed(2));
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_lNewCr2})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = _lNewCr2;
+              c.creditBalance = _lNewCr2;
+            }
+            invalidateAnalyticsCache(); ov.remove(); showPaymentDetailModal(c, d);
+          }catch(e){alert('Error: '+e.message);}
+        };
+      });
       document.getElementById('paySave').onclick=async function(){var bid=document.getElementById('payBill').value,amt=parseFloat(document.getElementById('payAmt').value)||0,dt=document.getElementById('payDt').value;
         var _payMethEl=document.getElementById('payMethod'); var _payMethId=_payMethEl?(_payMethEl.value||''):'';
-        var _bonusPctEl=document.getElementById('payBonusPct');
-        var _bonusPct=(_bonusPctEl&&_bonusPctEl.value.trim()!=='')?Math.max(0,parseFloat(_bonusPctEl.value)||0):0;
-        var _bonusAmt=(_bonusPct>0&&amt>0)?parseFloat((amt*_bonusPct/100).toFixed(2)):0;
         if(!bid||amt<=0){alert('Enter an amount');return}
         try{
           if(bid==='__general__'){
@@ -8086,26 +8134,12 @@
               // No bills at all — create a holder bill to record the payment
               var _epEntry={amount:amt,date:payDate,isGeneral:true}; if(_payMethId) _epEntry.paymentMethodId=_payMethId;
               var payBill={companyId:c._id,companyName:c.name,date:new Date().toISOString(),convMode:'pts2dollar',items:[],totalDollars:0,totalPoints:0,paymentStatus:'received',partialAmount:0,balanceDue:0,extraPayments:[_epEntry]};
-              var _newHolderRef = await trackedWrite(function(){return db.collection(userPath()+'/bills').add(payBill)});
-              // Update company creditBalance with actual payment amount
-              var _baseCr0 = parseFloat(((c.creditBalance||0)+amt).toFixed(2));
-              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: _baseCr0})});
-              if(state.companies[c._id]) state.companies[c._id].creditBalance = _baseCr0;
-              c.creditBalance = _baseCr0;
+              await trackedWrite(function(){return db.collection(userPath()+'/bills').add(payBill)});
+              // Update company creditBalance
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: Math.max(0,(c.creditBalance||0)+amt)})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = Math.max(0,(c.creditBalance||0)+amt);
               // Record in cash flow
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
-              // Add bonus on top of the now-correct credit balance
-              if(_bonusAmt > 0.001 && _newHolderRef) {
-                var _holderSnap = await db.collection(userPath()+'/bills').doc(_newHolderRef.id).get();
-                var _holderEps = (_holderSnap.data().extraPayments||[]).slice();
-                _holderEps.push({amount:_bonusAmt,date:payDate,isCredit:true,isBonus:true,paymentMethodId:_payMethId||null});
-                await trackedWrite(function(){return db.collection(userPath()+'/bills').doc(_newHolderRef.id).update({extraPayments:_holderEps})});
-                var _curCr0 = typeof (state.companies[c._id]&&state.companies[c._id].creditBalance)==='number' ? state.companies[c._id].creditBalance : _baseCr0;
-                var _withBonus0 = parseFloat((_curCr0+_bonusAmt).toFixed(2));
-                await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_withBonus0})});
-                if(state.companies[c._id]) state.companies[c._id].creditBalance = _withBonus0;
-                c.creditBalance = _withBonus0;
-              }
             } else {
               var remaining = amt;
               for(let ubi=0; ubi<unpaidBills.length && remaining>0.001; ubi++){
@@ -8150,32 +8184,8 @@
               // Record in cash flow for payment method tracking
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
 
-              // Write the base credit (payment amount minus bills applied)
               await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: totalCredit})});
               if(state.companies[c._id]) state.companies[c._id].creditBalance = totalCredit;
-              c.creditBalance = totalCredit;
-
-              // Add bonus on top of the now-correct credit balance (read fresh from state)
-              if(_bonusAmt > 0.001) {
-                var _bonBillsList = state.bills.filter(function(b){return b.companyId===c._id;})
-                  .sort(function(a,b2){return toLocalDate(b2.date)-toLocalDate(a.date);});
-                if(_bonBillsList.length > 0) {
-                  var _bonBill = _bonBillsList[0];
-                  var _bonRef2 = db.doc(userPath()+'/bills/'+_bonBill._id);
-                  var _bonSnap2 = await _bonRef2.get();
-                  var _bonEps2 = (_bonSnap2.data().extraPayments||[]).slice();
-                  _bonEps2.push({amount:_bonusAmt,date:payDate,isCredit:true,isBonus:true,paymentMethodId:_payMethId||null});
-                  await trackedWrite(function(){return _bonRef2.update({extraPayments:_bonEps2})});
-                  var _lbBon2 = state.bills.find(function(b){return b._id===_bonBill._id;});
-                  if(_lbBon2) _lbBon2.extraPayments = _bonEps2;
-                }
-                // Read the LIVE credit from state (already updated above) then add bonus
-                var _liveCr = typeof (state.companies[c._id]&&state.companies[c._id].creditBalance)==='number' ? state.companies[c._id].creditBalance : totalCredit;
-                var _totalWithBonus = parseFloat((_liveCr+_bonusAmt).toFixed(2));
-                await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_totalWithBonus})});
-                if(state.companies[c._id]) state.companies[c._id].creditBalance = _totalWithBonus;
-                c.creditBalance = _totalWithBonus;
-              }
             }
           } else {
             var ref=db.doc(userPath()+'/bills/'+bid);
@@ -8196,25 +8206,11 @@
             if(lb4){Object.assign(lb4,updates2);}
             if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate2, c._id, c.name);
             var overpay = parseFloat(Math.max(0, amt - curDue).toFixed(2));
-            // Write overpay credit first
-            var _baseCredit2 = typeof c.creditBalance==='number' ? c.creditBalance : 0;
             if(overpay > 0.001){
-              var newCr2 = parseFloat((_baseCredit2 + overpay).toFixed(2));
-              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:newCr2})});
-              if(state.companies[c._id]) state.companies[c._id].creditBalance = newCr2;
-              c.creditBalance = newCr2;
-            }
-            // Add bonus on top of live credit balance (after overpay already written)
-            if(_bonusAmt > 0.001) {
-              var _bonEpS = ep.slice();
-              _bonEpS.push({amount:_bonusAmt,date:payDate2,isCredit:true,isBonus:true,paymentMethodId:_payMethId||null});
-              await trackedWrite(function(){return ref.update({extraPayments:_bonEpS})});
-              if(lb4) lb4.extraPayments = _bonEpS;
-              var _liveCr2 = typeof (state.companies[c._id]&&state.companies[c._id].creditBalance)==='number' ? state.companies[c._id].creditBalance : _baseCredit2;
-              var _totalWithBonus2 = parseFloat((_liveCr2+_bonusAmt).toFixed(2));
-              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_totalWithBonus2})});
-              if(state.companies[c._id]) state.companies[c._id].creditBalance = _totalWithBonus2;
-              c.creditBalance = _totalWithBonus2;
+              var prevCr = typeof c.creditBalance==='number' ? c.creditBalance : 0;
+              var newCr = parseFloat((prevCr + overpay).toFixed(2));
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:newCr})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = newCr;
             }
           }
           invalidateAnalyticsCache();
@@ -9567,7 +9563,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -12218,6 +12214,11 @@
       var byMethod = {};
       cfPaymentMethods.forEach(function(pm) { byMethod[pm.id] = { name: pm.name, total: 0, txs: [] }; });
 
+      // Track bonus entries separately: byBonus[pmId] = { name, total, txs:[{company,amount,date,pmName}] }
+      var byBonus = {};
+      var bonusTotal = 0;
+      cfPaymentMethods.forEach(function(pm) { byBonus[pm.id] = { name: pm.name, total: 0, txs: [] }; });
+
       // For payment-method breakdown we use cfTransactions (which store the method used per bill).
       // But the TOTALS must come from state.bills directly so they match analytics.
       var filteredBills = (state.bills || []).filter(function(bill) {
@@ -12263,6 +12264,22 @@
             });
           }
         }
+        // Collect bonus entries from extraPayments
+        var _bonCompName = (state.companies && state.companies[bill.companyId] && state.companies[bill.companyId].name) || bill.companyName || '';
+        (bill.extraPayments || []).forEach(function(ep) {
+          if (!ep.isBonus) return;
+          var epAmt = ep.amount || 0;
+          if (epAmt <= 0.001) return;
+          var epPmId = ep.paymentMethodId || '';
+          var epDate = ep.date ? new Date(ep.date.length===10?ep.date+'T00:00:00':ep.date) : null;
+          if (epDate && fD && epDate < fD) return;
+          if (epDate && tD && epDate > tD) return;
+          bonusTotal += epAmt;
+          if (epPmId && byBonus[epPmId]) {
+            byBonus[epPmId].total += epAmt;
+            byBonus[epPmId].txs.push({ date: ep.date||bill.date, amount: epAmt, companyName: _bonCompName, pmId: epPmId });
+          }
+        });
       });
 
       // Also include extra_payment transactions (general company payments) in byMethod breakdown
@@ -12333,7 +12350,7 @@
         .sort(function(a, b) { return billToDate(b.date) - billToDate(a.date); });
 
       return { inflow, billInflow, creditInflow, redemptionCost, opExpTotal, totalOpEx, totalOutflow, grossProfit,
-               salaryTotal, salaryEmployees, byMethod,
+               salaryTotal, salaryEmployees, byMethod, byBonus, bonusTotal,
                filteredTxs: filteredTxs, opFiltered,
                salaryLoaded: !!_cfSalaryCache };
     }
@@ -12489,6 +12506,21 @@
             <div style="font-size:9px;color:var(--textMuted)">${c.sub}</div>
           </div>`).join('')}
         </div>
+        ${(summary.bonusTotal > 0) ? `
+        <div id="cfBonusCard" style="padding:14px;border-radius:12px;background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);margin-bottom:16px;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(167,139,250,0.12)'" onmouseout="this.style.background='rgba(167,139,250,0.07)'">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <div style="font-size:9px;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;font-weight:700">PAYMENT BONUSES GIVEN</div>
+            <div style="margin-left:auto;font-size:10px;color:var(--textMuted)">tap for details</div>
+          </div>
+          <div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:800;color:#a78bfa;margin-bottom:4px">$${summary.bonusTotal.toFixed(2)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${cfPaymentMethods.filter(pm => (summary.byBonus[pm.id]||{}).total > 0).map(pm => {
+              var bd = summary.byBonus[pm.id];
+              return `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(167,139,250,0.15);color:#a78bfa">${esc(pm.name)}: $${bd.total.toFixed(2)}</span>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
         ${cfShareholders.length > 0 ? `
         <div class="card" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -12889,6 +12921,59 @@
           ov.onclick = e => { if (e.target === ov) ov.remove(); };
         };
       });
+
+      // Bonus summary card click → detail modal
+      var _cfBonusCard = document.getElementById('cfBonusCard');
+      if (_cfBonusCard) {
+        _cfBonusCard.onclick = function() {
+          var _cfN2 = new Date();
+          var _fd2 = (state.cfFromDate||(_cfN2.getFullYear()+'-'+String(_cfN2.getMonth()+1).padStart(2,'0')+'-01T00:00')).slice(0,10);
+          var _td2 = (state.cfToDate||(_cfN2.getFullYear()+'-'+String(_cfN2.getMonth()+1).padStart(2,'0')+'-'+String(_cfN2.getDate()).padStart(2,'0')+'T23:59')).slice(0,10);
+          var _bSummary = cfComputeSummary(_fd2, _td2);
+          // Build flat list of all bonus txs, sorted by date desc
+          var _allBonusTxs = [];
+          cfPaymentMethods.forEach(function(pm) {
+            var _bd = _bSummary.byBonus[pm.id] || { txs: [] };
+            _bd.txs.forEach(function(t) { _allBonusTxs.push(Object.assign({}, t, { pmName: pm.name })); });
+          });
+          _allBonusTxs.sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+          // Per-method subtotals
+          var _pmRows = cfPaymentMethods.filter(function(pm){ return (_bSummary.byBonus[pm.id]||{}).total > 0; }).map(function(pm){
+            var _bd2 = _bSummary.byBonus[pm.id];
+            return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(167,139,250,0.1)">'
+              + '<span style="font-size:12px;color:var(--textPrimary)">'+esc(pm.name)+'</span>'
+              + '<span style="font-family:Orbitron,monospace;font-size:13px;color:#a78bfa;font-weight:700">$'+_bd2.total.toFixed(2)+'</span>'
+              + '</div>';
+          }).join('');
+          var _txRows = _allBonusTxs.map(function(t){
+            var _d = new Date(t.date);
+            var _dStr = isNaN(_d)?'-':_d.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'});
+            return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(167,139,250,0.08)">'
+              + '<div style="flex:1;min-width:0">'
+              +   '<div style="font-size:12px;font-weight:600;color:var(--textPrimary)">'+esc(t.companyName||'-')+'</div>'
+              +   '<div style="font-size:10px;color:var(--textMuted)">'+_dStr+' · '+esc(t.pmName||'-')+'</div>'
+              + '</div>'
+              + '<span style="font-family:Orbitron,monospace;font-size:13px;color:#a78bfa;font-weight:700">+$'+t.amount.toFixed(2)+'</span>'
+              + '</div>';
+          }).join('');
+          var _bonOv = document.createElement('div');
+          _bonOv.className = 'modal-overlay';
+          _bonOv.innerHTML = '<div class="modal fade-in" style="max-width:480px">'
+            + '<div class="modal-header"><h3 class="modal-title" style="color:#a78bfa">★ PAYMENT BONUSES</h3>'
+            + '<button class="btn btn-ghost btn-sm" onclick="this.closest(\'.modal-overlay\').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
+            + '<div style="padding:12px;border-radius:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);margin-bottom:14px">'
+            +   '<div style="font-size:10px;color:#a78bfa;font-weight:700;margin-bottom:2px">TOTAL BONUSES CREDITED</div>'
+            +   '<div style="font-family:Orbitron,monospace;font-size:22px;font-weight:800;color:#a78bfa">$'+_bSummary.bonusTotal.toFixed(2)+'</div>'
+            +   '<div style="font-size:10px;color:var(--textMuted);margin-top:2px">Added to company credit balances (not counted as cash received)</div>'
+            + '</div>'
+            + (_pmRows ? '<div style="margin-bottom:14px"><div style="font-size:10px;color:var(--textMuted);font-weight:700;margin-bottom:6px">BY PAYMENT METHOD</div>'+_pmRows+'</div>' : '')
+            + '<div style="font-size:10px;color:var(--textMuted);font-weight:700;margin-bottom:6px">ALL BONUS ENTRIES</div>'
+            + '<div style="max-height:320px;overflow-y:auto">'+(_txRows||'<div style="text-align:center;padding:20px;color:var(--textMuted)">No bonus entries in this period</div>')+'</div>'
+            + '</div>';
+          document.body.appendChild(_bonOv);
+          _bonOv.onclick = function(e){ if(e.target===_bonOv) _bonOv.remove(); };
+        };
+      }
 
       // Expense: add
       if ($('#cfAddExp')) {
