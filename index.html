@@ -1256,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -7692,11 +7693,11 @@
           compBillsLedger.forEach(function(b) {
             var bd = toLocalDate(b.date);
             var billRef = bd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
-            (b.extraPayments||[]).forEach(function(ep, epIdx) {
+            (b.extraPayments||[]).forEach(function(ep, realIdx) {
               var epDate = ep.date ? toLocalDate(ep.date) : bd;
               // Skip entries at or before the last credit clear
               if (_ccAtDate && epDate <= _ccAtDate) return;
-              ledgerEntries.push({ ts: epDate, type: 'add', amount: ep.amount||0, ref: 'Bill '+billRef, billId: b._id, epIdx: epIdx, isBonus: !!ep.isBonus });
+              ledgerEntries.push({ ts: epDate, type: 'add', amount: ep.amount||0, ref: 'Bill '+billRef, billId: b._id, epIdx: realIdx, isBonus: !!ep.isBonus });
             });
             if ((b.creditApplied||0) > 0) {
               if (!_ccAtDate || bd > _ccAtDate) {
@@ -7722,8 +7723,8 @@
               var sign = isAdd ? '+' : '\u2212';
               var _actionBtns = (isAdd && e.epIdx >= 0)
                 ? '<div style="display:flex;gap:4px;flex-shrink:0">'
-                    + '<button class="ledger-edit-btn btn btn-ghost btn-sm" data-billid="'+e.billId+'" data-epidx="'+e.epIdx+'" style="padding:2px 6px;font-size:10px;color:#fbbf24;border-color:rgba(251,191,36,0.25)" title="Edit">✏</button>'
-                    + '<button class="ledger-del-btn btn btn-ghost btn-sm" data-billid="'+e.billId+'" data-epidx="'+e.epIdx+'" data-amount="'+e.amount+'" style="padding:2px 6px;font-size:10px;color:#f87171;border-color:rgba(248,113,113,0.25)" title="Delete">✕</button>'
+                    + '<button class="ledger-edit-btn btn btn-ghost btn-sm" data-billid="'+e.billId+'" data-epidx="'+e.epIdx+'" style="padding:3px 7px;font-size:10px;color:#22d3ee;border-color:rgba(34,211,238,0.25)" title="Edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+                    + '<button class="ledger-del-btn btn btn-ghost btn-sm" data-billid="'+e.billId+'" data-epidx="'+e.epIdx+'" data-amount="'+e.amount+'" style="padding:3px 7px;font-size:10px;color:#f87171;border-color:rgba(248,113,113,0.25)" title="Delete"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>'
                   + '</div>'
                 : '';
               rows += '<div class="analytics-detail-item" style="display:flex;align-items:center;gap:8px;padding:9px 10px;flex-wrap:wrap">'
@@ -7893,7 +7894,17 @@
             +   '<input type="hidden" id="payMethod" value=""/>'
             +   '<div id="payMethodList" class="hidden" style="position:fixed;background:rgba(16,13,30,0.98);border:1px solid var(--glassBorder);border-radius:10px;z-index:99999;max-height:200px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.7)">'
             +     _pmListItems
-            +   '</div></div>'
+            +   '</div>'
+            +   '<div id="payBonusWrap" style="display:none;margin-top:7px;padding:9px 12px;border-radius:8px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2)">'
+            +     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+            +       '<span style="font-size:10px;font-weight:700;color:#a78bfa;white-space:nowrap">Bonus %</span>'
+            +       '<input class="input" type="number" id="payBonusPct" placeholder="0" min="0" max="999" step="0.1" style="width:62px;font-size:13px;text-align:center;padding:4px 6px"/>'
+            +       '<span style="font-size:11px;color:var(--textMuted);font-weight:700">%</span>'
+            +       '<span id="payBonusPreview" style="font-size:11px;margin-left:auto"></span>'
+            +     '</div>'
+            +     '<div style="font-size:9px;color:var(--textMuted);margin-top:3px">Bonus % credited to company on top of the actual payment received.</div>'
+            +   '</div>'
+            + '</div>'
             : '')
         +   '<button class="btn btn-green btn-full btn-sm" id="paySave" style="margin-top:10px;justify-content:center">'
         +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Record'
@@ -7932,11 +7943,42 @@
         _pmList.querySelectorAll('.dropdown-item[data-pmid]').forEach(function(item){
           item.onclick = function(e){
             e.stopPropagation();
-            document.getElementById('payMethod').value = item.dataset.pmid || '';
+            var _selPmId = item.dataset.pmid || '';
+            document.getElementById('payMethod').value = _selPmId;
             document.getElementById('payMethodLabel').textContent = item.dataset.pmname || '— None —';
             _pmList.classList.add('hidden');
+            // Show bonus panel and prefill configured bonus %
+            var _bWrap = document.getElementById('payBonusWrap');
+            var _bInp  = document.getElementById('payBonusPct');
+            if (_bWrap) {
+              if (_selPmId) {
+                _bWrap.style.display = 'block';
+                var _compBonuses = (state.companies[c._id] && state.companies[c._id].paymentMethodBonuses) || c.paymentMethodBonuses || {};
+                if (_bInp) _bInp.value = typeof _compBonuses[_selPmId] === 'number' ? _compBonuses[_selPmId] : '';
+                _updateBonusPrev();
+              } else {
+                _bWrap.style.display = 'none';
+                if (_bInp) _bInp.value = '';
+              }
+            }
           };
         });
+
+        // Live bonus preview
+        function _updateBonusPrev() {
+          var _prev = document.getElementById('payBonusPreview');
+          if (!_prev) return;
+          var _a = parseFloat((document.getElementById('payAmt')||{}).value) || 0;
+          var _p = parseFloat((document.getElementById('payBonusPct')||{}).value) || 0;
+          if (_a > 0 && _p > 0) {
+            var _b = parseFloat((_a * _p / 100).toFixed(2));
+            _prev.innerHTML = '<span style="color:#a78bfa">+$'+_b.toFixed(2)+'</span> <span style="color:#34d399;font-weight:700">total $'+(_a+_b).toFixed(2)+'</span>';
+          } else { _prev.textContent = ''; }
+        }
+        var _payAmtInp = document.getElementById('payAmt');
+        var _payBonInp = document.getElementById('payBonusPct');
+        if (_payAmtInp) _payAmtInp.addEventListener('input', _updateBonusPrev);
+        if (_payBonInp) _payBonInp.addEventListener('input', _updateBonusPrev);
 
         // Reposition on scroll/resize in case modal scrolls
         var _reposFn = function(){ if(!_pmList.classList.contains('hidden')) _positionList(); };
@@ -8120,6 +8162,8 @@
       });
       document.getElementById('paySave').onclick=async function(){var bid=document.getElementById('payBill').value,amt=parseFloat(document.getElementById('payAmt').value)||0,dt=document.getElementById('payDt').value;
         var _payMethEl=document.getElementById('payMethod'); var _payMethId=_payMethEl?(_payMethEl.value||''):'';
+        var _bonusPctEl=document.getElementById('payBonusPct'); var _bonusPct=(_bonusPctEl&&_bonusPctEl.value.trim()!=='')?Math.max(0,parseFloat(_bonusPctEl.value)||0):0;
+        var _bonusAmt=(_bonusPct>0&&amt>0)?parseFloat((amt*_bonusPct/100).toFixed(2)):0;
         if(!bid||amt<=0){alert('Enter an amount');return}
         try{
           if(bid==='__general__'){
@@ -8133,12 +8177,25 @@
               // No bills at all — create a holder bill to record the payment
               var _epEntry={amount:amt,date:payDate,isGeneral:true}; if(_payMethId) _epEntry.paymentMethodId=_payMethId;
               var payBill={companyId:c._id,companyName:c.name,date:new Date().toISOString(),convMode:'pts2dollar',items:[],totalDollars:0,totalPoints:0,paymentStatus:'received',partialAmount:0,balanceDue:0,extraPayments:[_epEntry]};
-              await trackedWrite(function(){return db.collection(userPath()+'/bills').add(payBill)});
-              // Update company creditBalance
-              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: Math.max(0,(c.creditBalance||0)+amt)})});
-              if(state.companies[c._id]) state.companies[c._id].creditBalance = Math.max(0,(c.creditBalance||0)+amt);
-              // Record in cash flow
+              var _holderRef = await trackedWrite(function(){return db.collection(userPath()+'/bills').add(payBill)});
+              // Write base credit
+              var _baseCr0 = parseFloat(((c.creditBalance||0)+amt).toFixed(2));
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_baseCr0})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = _baseCr0;
+              c.creditBalance = _baseCr0;
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
+              // Apply bonus on top of live credit
+              if(_bonusAmt > 0.001 && _holderRef) {
+                var _hSnap = await db.collection(userPath()+'/bills').doc(_holderRef.id).get();
+                var _hEps = (_hSnap.data().extraPayments||[]).slice();
+                _hEps.push({amount:_bonusAmt,date:payDate,isCredit:true,isBonus:true,paymentMethodId:_payMethId||null});
+                await trackedWrite(function(){return db.collection(userPath()+'/bills').doc(_holderRef.id).update({extraPayments:_hEps})});
+                var _liveCr0 = typeof (state.companies[c._id]&&state.companies[c._id].creditBalance)==='number' ? state.companies[c._id].creditBalance : _baseCr0;
+                var _withBonus0 = parseFloat((_liveCr0+_bonusAmt).toFixed(2));
+                await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_withBonus0})});
+                if(state.companies[c._id]) state.companies[c._id].creditBalance = _withBonus0;
+                c.creditBalance = _withBonus0;
+              }
             } else {
               var remaining = amt;
               for(let ubi=0; ubi<unpaidBills.length && remaining>0.001; ubi++){
@@ -8172,7 +8229,7 @@
                 var newestBill = allCompBills[allCompBills.length-1];
                 var nbRef = db.doc(userPath()+'/bills/'+newestBill._id);
                 var nbSnap = await nbRef.get(); var nbData = nbSnap.data();
-                var nbEp = (nbData.extraPayments||[]);
+                var nbEp = (nbData.extraPayments||[]).slice();
                 var _crEpEntry={amount:newCredit, date:payDate, isCredit:true}; if(_payMethId) _crEpEntry.paymentMethodId=_payMethId;
                 nbEp.push(_crEpEntry);
                 await trackedWrite(function(){return nbRef.update({extraPayments:nbEp})});
@@ -8180,16 +8237,37 @@
                 if(lbN){lbN.extraPayments=nbEp;}
               }
 
-              // Record in cash flow for payment method tracking
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
 
+              // Write base credit, then sync to c
               await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: totalCredit})});
               if(state.companies[c._id]) state.companies[c._id].creditBalance = totalCredit;
+              c.creditBalance = totalCredit;
+
+              // Apply bonus on top of the now-correct live credit
+              if(_bonusAmt > 0.001) {
+                var _bonBills = state.bills.filter(function(b){return b.companyId===c._id;}).sort(function(a,b2){return toLocalDate(b2.date)-toLocalDate(a.date);});
+                if(_bonBills.length > 0) {
+                  var _bonBill = _bonBills[0];
+                  var _bonRef2 = db.doc(userPath()+'/bills/'+_bonBill._id);
+                  var _bonSnap2 = await _bonRef2.get();
+                  var _bonEps2 = (_bonSnap2.data().extraPayments||[]).slice();
+                  _bonEps2.push({amount:_bonusAmt,date:payDate,isCredit:true,isBonus:true,paymentMethodId:_payMethId||null});
+                  await trackedWrite(function(){return _bonRef2.update({extraPayments:_bonEps2})});
+                  var _lbBon2 = state.bills.find(function(b){return b._id===_bonBill._id;});
+                  if(_lbBon2) _lbBon2.extraPayments = _bonEps2;
+                }
+                var _liveCr1 = typeof (state.companies[c._id]&&state.companies[c._id].creditBalance)==='number' ? state.companies[c._id].creditBalance : totalCredit;
+                var _totalWithBonus1 = parseFloat((_liveCr1+_bonusAmt).toFixed(2));
+                await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_totalWithBonus1})});
+                if(state.companies[c._id]) state.companies[c._id].creditBalance = _totalWithBonus1;
+                c.creditBalance = _totalWithBonus1;
+              }
             }
           } else {
             var ref=db.doc(userPath()+'/bills/'+bid);
             var sn=await ref.get(); var bData=sn.data();
-            var ep=(bData.extraPayments||[]);
+            var ep=(bData.extraPayments||[]).slice();
             var payDate2=dt||localDateStr();
             var _epEntry3={amount:amt,date:payDate2}; if(_payMethId) _epEntry3.paymentMethodId=_payMethId;
             ep.push(_epEntry3);
@@ -8205,11 +8283,24 @@
             if(lb4){Object.assign(lb4,updates2);}
             if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate2, c._id, c.name);
             var overpay = parseFloat(Math.max(0, amt - curDue).toFixed(2));
+            var _baseCredit2 = typeof c.creditBalance==='number' ? c.creditBalance : 0;
             if(overpay > 0.001){
-              var prevCr = typeof c.creditBalance==='number' ? c.creditBalance : 0;
-              var newCr = parseFloat((prevCr + overpay).toFixed(2));
-              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:newCr})});
-              if(state.companies[c._id]) state.companies[c._id].creditBalance = newCr;
+              var newCr2 = parseFloat((_baseCredit2 + overpay).toFixed(2));
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:newCr2})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = newCr2;
+              c.creditBalance = newCr2;
+            }
+            // Apply bonus on top of live credit (after overpay written)
+            if(_bonusAmt > 0.001) {
+              var _bonEpS = ep.slice();
+              _bonEpS.push({amount:_bonusAmt,date:payDate2,isCredit:true,isBonus:true,paymentMethodId:_payMethId||null});
+              await trackedWrite(function(){return ref.update({extraPayments:_bonEpS})});
+              if(lb4) lb4.extraPayments = _bonEpS;
+              var _liveCr2 = typeof (state.companies[c._id]&&state.companies[c._id].creditBalance)==='number' ? state.companies[c._id].creditBalance : _baseCredit2;
+              var _totalWithBonus2 = parseFloat((_liveCr2+_bonusAmt).toFixed(2));
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_totalWithBonus2})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = _totalWithBonus2;
+              c.creditBalance = _totalWithBonus2;
             }
           }
           invalidateAnalyticsCache();
@@ -9562,7 +9653,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
