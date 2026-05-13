@@ -1256,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -9651,7 +9652,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -12357,25 +12358,26 @@
         }
       });
 
-      // Also include extra_payment and bonus transactions (general company payments) in byMethod breakdown
+      // Also include extra_payment transactions (actual cash received) in byMethod breakdown
+      // Bonus transactions are tracked separately and do NOT inflate PM totals (we only physically received the base amount)
       var bonusTotal = 0;
       var bonusTxs = [];
       cfTransactions.forEach(function(tx) {
-        if (tx.category !== 'extra_payment' && tx.category !== 'bonus') return;
         var txDate = tx.date ? new Date(tx.date.length === 10 ? tx.date + 'T00:00:00' : tx.date) : null;
         if (!txDate || isNaN(txDate.getTime())) return;
         if (fD && txDate < fD) return;
         if (tD && txDate > tD) return;
-        var pmId = tx.paymentMethodId || '';
-        if (pmId && byMethod[pmId]) {
-          byMethod[pmId].total += (tx.amount || 0);
-          byMethod[pmId].txs.push({
-            date: tx.date, amount: tx.amount || 0,
-            note: tx.note || 'Extra payment', companyName: tx.companyName || '',
-            paymentMethodId: pmId
-          });
-        }
-        if (tx.category === 'bonus') {
+        if (tx.category === 'extra_payment') {
+          var pmId = tx.paymentMethodId || '';
+          if (pmId && byMethod[pmId]) {
+            byMethod[pmId].total += (tx.amount || 0);
+            byMethod[pmId].txs.push({
+              date: tx.date, amount: tx.amount || 0,
+              note: tx.note || 'Extra payment', companyName: tx.companyName || '',
+              paymentMethodId: pmId
+            });
+          }
+        } else if (tx.category === 'bonus') {
           bonusTotal += (tx.amount || 0);
           bonusTxs.push(tx);
         }
@@ -12709,33 +12711,64 @@
           <button class="btn btn-ghost btn-sm" id="cfResetDate" style="font-size:11px;color:var(--textMuted)">Reset</button>
         </div>
 
-        ${summary.bonusTotal > 0 ? `
-        <div style="margin-bottom:14px;border-radius:12px;background:rgba(34,211,238,0.07);border:1px solid rgba(34,211,238,0.22);overflow:hidden">
-          <div id="cfBonusCardHeader" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            <div style="flex:1">
-              <div style="font-family:'Orbitron',monospace;font-size:10px;color:#22d3ee;font-weight:700;letter-spacing:1px">PAYMENT BONUSES</div>
-              <div style="font-size:10px;color:var(--textMuted);margin-top:1px">Extra value from bonus incentives · ${summary.bonusTxs.length} entries</div>
-            </div>
-            <div style="font-family:'Orbitron',monospace;font-size:17px;font-weight:800;color:#22d3ee">+$${summary.bonusTotal.toFixed(2)}</div>
-            <svg id="cfBonusChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0"><polyline points="6,9 12,15 18,9"/></svg>
-          </div>
-          <div id="cfBonusCardBody" style="display:none;padding:0 14px 12px">
-            <div style="height:1px;background:rgba(34,211,238,0.15);margin-bottom:10px"></div>
-            ${summary.bonusTxs.map(function(tx){
+        ${summary.bonusTotal > 0 ? (function(){
+          // Group bonus txs by payment method
+          var _byPm = {};
+          summary.bonusTxs.forEach(function(tx){
+            var pid = tx.paymentMethodId || '__none__';
+            if(!_byPm[pid]) _byPm[pid] = { total: 0, txs: [], pmName: '' };
+            _byPm[pid].total += (tx.amount||0);
+            _byPm[pid].txs.push(tx);
+            if(!_byPm[pid].pmName){
+              var _pm = cfPaymentMethods.find(function(p){return p.id===pid;});
+              _byPm[pid].pmName = _pm ? _pm.name : (pid==='__none__' ? 'Unknown' : pid);
+            }
+          });
+          var _pmKeys = Object.keys(_byPm);
+          var _pmSections = _pmKeys.map(function(pid, idx){
+            var _g = _byPm[pid];
+            var _rows = _g.txs.map(function(tx){
               var d2 = new Date(tx.date);
-              var pm2 = cfPaymentMethods.find(function(p){return p.id===tx.paymentMethodId;});
-              return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(34,211,238,0.08)">'
-                + '<div style="flex:1;min-width:0">'
-                +   '<div style="font-size:12px;font-weight:600;color:var(--textPrimary)">' + esc(tx.companyName||'-') + '</div>'
-                +   '<div style="font-size:10px;color:var(--textMuted)">' + d2.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}) + (pm2?' · '+esc(pm2.name):'') + '</div>'
-                +   '<div style="font-size:10px;color:#22d3ee;opacity:0.7">' + esc(tx.note||'') + '</div>'
-                + '</div>'
-                + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;color:#22d3ee">+$' + (tx.amount||0).toFixed(2) + '</div>'
-                + '</div>';
-            }).join('')}
-          </div>
-        </div>` : ''}
+              return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(34,211,238,0.07)">'
+                +'<div style="flex:1;min-width:0">'
+                +'<div style="font-size:12px;font-weight:600">'+esc(tx.companyName||'-')+'</div>'
+                +'<div style="font-size:10px;color:var(--textMuted)">'+d2.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'})+'</div>'
+                +'</div>'
+                +'<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;color:#22d3ee">+$'+(tx.amount||0).toFixed(2)+'</div>'
+                +'</div>';
+            }).join('');
+            return '<div style="border-bottom:1px solid rgba(34,211,238,0.1);padding:8px 0">'
+              +'<div class="cf-bonus-pm-hdr" data-pmidx="'+idx+'" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">'
+              +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'
+              +'<span style="flex:1;font-size:12px;font-weight:700;color:var(--textPrimary)">'+esc(_g.pmName)+'</span>'
+              +'<span style="font-size:11px;color:var(--textMuted)">'+_g.txs.length+' entries</span>'
+              +'<span style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;color:#22d3ee">+$'+_g.total.toFixed(2)+'</span>'
+              +'<svg class="cf-bonus-pm-chv" data-pmidx="'+idx+'" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" style="transition:transform 0.2s"><polyline points="6,9 12,15 18,9"/></svg>'
+              +'</div>'
+              +'<div class="cf-bonus-pm-body" data-pmidx="'+idx+'" style="display:none;padding:4px 0 0 20px">'+_rows+'</div>'
+              +'</div>';
+          }).join('');
+
+          return '<div style="margin-bottom:14px;border-radius:12px;background:rgba(34,211,238,0.07);border:1px solid rgba(34,211,238,0.22);overflow:hidden">'
+            +'<div id="cfBonusCardHeader" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none">'
+            +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'
+            +'<div style="flex:1">'
+            +'<div style="font-family:\'Orbitron\',monospace;font-size:10px;color:#22d3ee;font-weight:700;letter-spacing:1px">PAYMENT BONUSES</div>'
+            +'<div style="font-size:10px;color:var(--textMuted);margin-top:1px">'+_pmKeys.length+' method'+ (_pmKeys.length!==1?'s':'')+' · '+summary.bonusTxs.length+' entries</div>'
+            +'</div>'
+            +'<div style="font-family:\'Orbitron\',monospace;font-size:17px;font-weight:800;color:#22d3ee">+$'+summary.bonusTotal.toFixed(2)+'</div>'
+            +'<svg id="cfBonusChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0"><polyline points="6,9 12,15 18,9"/></svg>'
+            +'</div>'
+            +'<div id="cfBonusCardBody" style="display:none;padding:0 14px 12px">'
+            +'<div style="height:1px;background:rgba(34,211,238,0.15);margin-bottom:10px"></div>'
+            +_pmSections
+            +'<div style="margin-top:10px;padding:6px 10px;border-radius:8px;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);display:flex;justify-content:space-between;align-items:center">'
+            +'<span style="font-size:11px;color:var(--textMuted)">Total bonuses in period</span>'
+            +'<span style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:800;color:#22d3ee">+$'+summary.bonusTotal.toFixed(2)+'</span>'
+            +'</div>'
+            +'</div>'
+            +'</div>';
+        })() : ''}
 
         <div style="font-size:11px;color:var(--textMuted);margin-bottom:10px">Payment method breakdown (click for details)</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px">
@@ -12937,7 +12970,7 @@
       // Back button
       $('#cfBackBtn').onclick = () => { state.view = 'companies'; render(); };
 
-      // Bonus card toggle
+      // Bonus card toggle (outer)
       var _cfBonusHdr = document.getElementById('cfBonusCardHeader');
       if (_cfBonusHdr) {
         _cfBonusHdr.onclick = function() {
@@ -12949,6 +12982,19 @@
           if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
         };
       }
+      // Bonus card per-PM sub-accordion toggles
+      $$('.cf-bonus-pm-hdr').forEach(function(hdr){
+        hdr.onclick = function(e){
+          e.stopPropagation();
+          var idx = hdr.dataset.pmidx;
+          var body = document.querySelector('.cf-bonus-pm-body[data-pmidx="'+idx+'"]');
+          var chv = document.querySelector('.cf-bonus-pm-chv[data-pmidx="'+idx+'"]');
+          if(!body) return;
+          var isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'block';
+          if(chv) chv.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        };
+      });
 
       // Tab switching
       $$('.cf-tab-btn').forEach(btn => {
@@ -13181,21 +13227,110 @@
           var _cfN=new Date();
           var _fd=(state.cfFromDate||(_cfN.getFullYear()+'-'+String(_cfN.getMonth()+1).padStart(2,'0')+'-01T00:00')).slice(0,10);
           var _td=(state.cfToDate||(_cfN.getFullYear()+'-'+String(_cfN.getMonth()+1).padStart(2,'0')+'-'+String(_cfN.getDate()).padStart(2,'0')+'T23:59')).slice(0,10);
-          var summary  = cfComputeSummary(_fd, _td);
-          var rows = [['Date','Type','Category','Amount','PaymentMethod','Company','Note']];
-          summary.filteredTxs.forEach(t => {
-            var pm = cfPaymentMethods.find(p => p.id === t.paymentMethodId);
-            rows.push([t.date, t.type, t.category, t.amount, pm ? pm.name : '', t.companyName || '', t.note || '']);
+          var summary = cfComputeSummary(_fd, _td);
+          var rows = [['Date','Type','Category','Amount ($)','Payment Method','Company','Note','Bonus %','Bonus Amount']];
+
+          // Bill income transactions
+          summary.filteredTxs.forEach(function(t) {
+            var pm = cfPaymentMethods.find(function(p){return p.id===t.paymentMethodId;});
+            var label = t.category==='bill' ? 'Bill Income'
+                      : t.category==='extra_payment' ? 'Extra Payment'
+                      : t.category==='bonus' ? 'Payment Bonus'
+                      : t.category || 'Income';
+            rows.push([
+              t.date ? new Date(t.date).toLocaleDateString('en-US') : '',
+              t.type || 'income',
+              label,
+              (t.amount||0).toFixed(2),
+              pm ? pm.name : '',
+              t.companyName || '',
+              t.note || '',
+              '', ''
+            ]);
           });
-          summary.opFiltered.forEach(e => {
-            rows.push([e.date, 'expense', 'opex', e.amount, '', '', e.title]);
+
+          // Bonus transactions (from cfTransactions, date-filtered)
+          var fD_csv = _fd ? new Date(_fd+'T00:00:00') : null;
+          var tD_csv = _td ? new Date(_td+'T23:59:59') : null;
+          cfTransactions.forEach(function(tx){
+            if(tx.category !== 'bonus') return;
+            var txDate = tx.date ? new Date(tx.date.length===10?tx.date+'T00:00:00':tx.date) : null;
+            if(!txDate||isNaN(txDate.getTime())) return;
+            if(fD_csv && txDate < fD_csv) return;
+            if(tD_csv && txDate > tD_csv) return;
+            var pm = cfPaymentMethods.find(function(p){return p.id===tx.paymentMethodId;});
+            // Parse bonus % from note if present
+            var _bonusPctStr = '';
+            var _noteMatch = (tx.note||'').match(/(\d+(?:\.\d+)?)%/);
+            if(_noteMatch) _bonusPctStr = _noteMatch[1]+'%';
+            rows.push([
+              txDate.toLocaleDateString('en-US'),
+              'income',
+              'Payment Bonus',
+              (tx.amount||0).toFixed(2),
+              pm ? pm.name : '',
+              tx.companyName || '',
+              tx.note || '',
+              _bonusPctStr,
+              (tx.amount||0).toFixed(2)
+            ]);
           });
-          var csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+
+          // Operating expenses
+          summary.opFiltered.forEach(function(e){
+            rows.push([
+              e.date ? new Date(e.date).toLocaleDateString('en-US') : '',
+              'expense',
+              'Operating Expense',
+              (e.amount||0).toFixed(2),
+              '', '', e.title||'', '', ''
+            ]);
+          });
+
+          // Redemption cost rows
+          (state.bills||[]).forEach(function(bill){
+            var bd = billToDate(bill.date);
+            if(fD_csv && bd < fD_csv) return;
+            if(tD_csv && bd > tD_csv) return;
+            (bill.items||[]).forEach(function(it){
+              if((it.points||0)<0){
+                var absPts=Math.abs(it.points);
+                var cR=(it.costRate!=null?it.costRate:getCostRate(it.gameName));
+                var cost=parseFloat((absPts*(cR/100)).toFixed(2));
+                if(cost>0){
+                  var comp = state.companies&&state.companies[bill.companyId];
+                  rows.push([
+                    bill.date ? new Date(bill.date.seconds?bill.date.seconds*1000:bill.date).toLocaleDateString('en-US') : '',
+                    'expense',
+                    'Redemption Cost',
+                    cost.toFixed(2),
+                    '',
+                    (comp&&comp.name)||bill.companyName||'',
+                    'Redeem: '+(it.gameName||'')+(it.username?' ('+it.username+')':''),
+                    '', ''
+                  ]);
+                }
+              }
+            });
+          });
+
+          // Summary footer rows
+          rows.push(['','','','','','','','','']);
+          rows.push(['SUMMARY','','','','','','','','']);
+          rows.push(['Period',_fd+' to '+_td,'','','','','','','']);
+          rows.push(['Total Bill Inflow','$'+summary.billInflow.toFixed(2),'','','','','','','']);
+          rows.push(['Payment Bonuses','$'+summary.bonusTotal.toFixed(2),'','','','','','','']);
+          rows.push(['Total Operating Expenses','$'+summary.totalOpEx.toFixed(2),'','','','','','','']);
+          rows.push(['Redemption Cost','$'+summary.redemptionCost.toFixed(2),'','','','','','','']);
+          rows.push(['Gross Profit','$'+summary.grossProfit.toFixed(2),'','','','','','','']);
+
+          var csv = rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
           var blob = new Blob([csv], { type: 'text/csv' });
           var url = URL.createObjectURL(blob);
           var a = document.createElement('a'); a.href = url;
-          a.download = 'cashflow_' + _fd2 + '_to_' + _td2 + '.csv';
-          a.click(); URL.revokeObjectURL(url);
+          a.download = 'cashflow_'+_fd+'_to_'+_td+'.csv';
+          document.body.appendChild(a); a.click();
+          setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
         };
       }
     }
