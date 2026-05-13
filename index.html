@@ -1256,18 +1256,25 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    // On mobile browsers, Firestore's IndexedDB persistence can cause severe slowdowns
+    // because mobile browsers throttle IndexedDB in background tabs or on low-power mode.
+    // Disable persistence on mobile for much faster writes; desktop keeps multi-tab sync.
+    var _isMobileBrowser = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!_isMobileBrowser) {
+      db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    }
     // Handle redirect result for iOS Safari / PWA
     auth.getRedirectResult().then(result => {
       if (result && result.user) {
@@ -1384,7 +1391,15 @@
     // Tracked write helper for await-style writes (blocks but updates sync indicator)
     async function trackedWrite(promiseFn) {
       startWrite();
-      try { const r = await promiseFn(); endWrite(); return r; }
+      try {
+        // Add a 15-second timeout so mobile saves don't hang forever
+        var _writePromise = promiseFn();
+        var _timeoutPromise = new Promise(function(_, reject){
+          setTimeout(function(){ reject(new Error('Save timed out — check your connection and try again.')); }, 15000);
+        });
+        const r = await Promise.race([_writePromise, _timeoutPromise]);
+        endWrite(); return r;
+      }
       catch(e) { endWrite(); throw e; }
     }
 
@@ -7987,21 +8002,46 @@
       // Edit / Clear credit balance buttons
       var _editCrBtn = document.getElementById('editCreditBalBtn');
       var _clearCrBtn = document.getElementById('clearCreditBalBtn');
-      if(_editCrBtn){ _editCrBtn.onclick = async function(){
+      if(_editCrBtn){ _editCrBtn.onclick = function(){
+        // Remove any existing edit modal
+        document.getElementById('creditEditModal')?.remove();
         var _cur = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
-        var _newVal = prompt('Edit credit balance for ' + (c.name||'this company') + ':\nCurrent: $' + _cur.toFixed(2) + '\n\nEnter new credit balance amount:', _cur.toFixed(2));
-        if(_newVal===null)return;
-        var _parsed = parseFloat(_newVal);
-        if(isNaN(_parsed)||_parsed<0){alert('Invalid amount');return;}
-        _parsed = parseFloat(_parsed.toFixed(2));
-        try{
-          await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_parsed})});
-          if(state.companies[c._id])state.companies[c._id].creditBalance=_parsed;
-          c.creditBalance=_parsed;
-          invalidateAnalyticsCache();
-          ov.remove();
-          showPaymentDetailModal(c, d);
-        }catch(e){alert('Error: '+e.message);}
+        var _cem = document.createElement('div');
+        _cem.className = 'modal-overlay';
+        _cem.id = 'creditEditModal';
+        _cem.style.zIndex = '1002';
+        _cem.innerHTML = '<div class="modal fade-in" style="max-width:340px">'
+          + '<div class="modal-header"><h3 class="modal-title">EDIT CREDIT BALANCE</h3>'
+          + '<button class="btn btn-ghost btn-sm" id="closeCrEdit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
+          + '<div style="padding:4px 0 12px">'
+          + '<div style="font-size:11px;color:var(--textMuted);margin-bottom:8px">Current credit balance: <span style="color:#34d399;font-weight:700">$' + _cur.toFixed(2) + '</span></div>'
+          + '<span class="label" style="font-size:9px">New Credit Balance ($)</span>'
+          + '<input class="input" type="number" id="crEditInput" value="' + _cur.toFixed(2) + '" min="0" step="0.01" style="font-size:16px;margin-bottom:12px" />'
+          + '<button class="btn btn-green btn-full btn-sm" id="crEditSave" style="justify-content:center">Save Credit Balance</button>'
+          + '</div></div>';
+        document.body.appendChild(_cem);
+        _cem.onclick = function(e2){ if(e2.target===_cem) _cem.remove(); };
+        document.getElementById('closeCrEdit').onclick = function(){ _cem.remove(); };
+        // Focus input after render
+        setTimeout(function(){ var inp=document.getElementById('crEditInput'); if(inp){inp.focus();inp.select();} }, 50);
+        document.getElementById('crEditSave').onclick = async function(){
+          var _inp = document.getElementById('crEditInput');
+          var _parsed = parseFloat(_inp ? _inp.value : '');
+          if(isNaN(_parsed)||_parsed<0){alert('Invalid amount');return;}
+          _parsed = parseFloat(_parsed.toFixed(2));
+          var btn = document.getElementById('crEditSave');
+          if(btn){ btn.disabled=true; btn.textContent='Saving...'; }
+          try{
+            await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance:_parsed})});
+            if(state.companies[c._id])state.companies[c._id].creditBalance=_parsed;
+            c.creditBalance=_parsed;
+            invalidateAnalyticsCache();
+            _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
+            _cem.remove();
+            ov.remove();
+            showPaymentDetailModal(c, d);
+          }catch(e){alert('Error: '+e.message); if(btn){btn.disabled=false;btn.textContent='Save Credit Balance';}}
+        };
       }; }
       if(_clearCrBtn){ _clearCrBtn.onclick = async function(){
         var _cur = typeof c.creditBalance==='number' ? c.creditBalance : getCompanyCreditBalance(c);
@@ -8033,6 +8073,7 @@
       }; }
 
       ov.querySelectorAll('.pay-edit-btn').forEach(function(eb){eb.onclick=function(){
+        var bid=eb.dataset.billid, pidx=parseInt(eb.dataset.payidx), oldAmt=eb.dataset.amt, oldDate=eb.dataset.date;
         var pev=document.createElement('div');pev.className='modal-overlay';pev.id='payEditModal';pev.style.zIndex='1002';
         var billOpts=d.compBills.map(function(b2){return '<option value="'+b2._id+'"'+(b2._id===bid?' selected':'')+'>'+new Date(b2.date&&b2.date.seconds?b2.date.seconds*1000:b2.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</option>'}).join('');
         pev.innerHTML='<div class="modal fade-in" style="max-width:360px"><div class="modal-header"><h3 class="modal-title">EDIT PAYMENT</h3><button class="btn btn-ghost btn-sm" onclick="this.closest(\'.modal-overlay\').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div style="margin-bottom:8px"><span class="label" style="font-size:9px">Amount ($)</span><input class="input" type="number" id="peAmt" value="'+oldAmt+'" step="0.01" /></div><div style="margin-bottom:8px"><span class="label" style="font-size:9px">Date</span><input class="input" type="date" id="peDate" value="'+oldDate+'" /></div><div style="margin-bottom:10px"><span class="label" style="font-size:9px">Bill</span><select class="input styled-select" id="peBill" style="font-size:12px;background-color:var(--bgInput)">'+billOpts+'</select></div><button class="btn btn-green btn-full btn-sm" id="peSave" style="justify-content:center">Save</button></div>';
@@ -8100,6 +8141,8 @@
         var _bonusAmt = _bonusPct > 0 ? parseFloat((amt * _bonusPct / 100).toFixed(2)) : 0;
         if(!bid||amt<=0){alert('Enter an amount');return}
         try{
+          // effectiveAmt = the total value including bonus (what the company gets to use)
+          var _effectiveAmt = parseFloat((amt + _bonusAmt).toFixed(2));
           if(bid==='__general__'){
             var payDate = dt || localDateStr();
             // Get ALL unpaid bills for this company (not just in date range), oldest first
@@ -8109,16 +8152,16 @@
 
             if(allCompBills.length===0){
               // No bills at all — create a holder bill to record the payment
-              var _epEntry={amount:amt,date:payDate,isGeneral:true}; if(_payMethId) _epEntry.paymentMethodId=_payMethId;
+              var _epEntry={amount:_effectiveAmt,date:payDate,isGeneral:true,cashReceived:amt,bonusAmt:_bonusAmt||0}; if(_payMethId) _epEntry.paymentMethodId=_payMethId;
               var payBill={companyId:c._id,companyName:c.name,date:new Date().toISOString(),convMode:'pts2dollar',items:[],totalDollars:0,totalPoints:0,paymentStatus:'received',partialAmount:0,balanceDue:0,extraPayments:[_epEntry]};
               await trackedWrite(function(){return db.collection(userPath()+'/bills').add(payBill)});
-              // Update company creditBalance
-              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: Math.max(0,(c.creditBalance||0)+amt)})});
-              if(state.companies[c._id]) state.companies[c._id].creditBalance = Math.max(0,(c.creditBalance||0)+amt);
-              // Record in cash flow
+              // Update company creditBalance with effective amount (cash + bonus)
+              await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: Math.max(0,(c.creditBalance||0)+_effectiveAmt)})});
+              if(state.companies[c._id]) state.companies[c._id].creditBalance = Math.max(0,(c.creditBalance||0)+_effectiveAmt);
+              // Record actual cash received in cash flow
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
             } else {
-              var remaining = amt;
+              var remaining = _effectiveAmt; // use effective amount (with bonus) for deduction
               for(let ubi=0; ubi<unpaidBills.length && remaining>0.001; ubi++){
                 let ubill = unpaidBills[ubi];
                 let uref = db.doc(userPath()+'/bills/'+ubill._id);
@@ -8132,7 +8175,7 @@
                 let grandTotal = (udata.totalDollars||0)+(udata.extraFeeAmount||0);
                 uupdates.partialAmount = parseFloat((grandTotal - newDue).toFixed(2));
                 let existingEps = udata.extraPayments || [];
-                var _epEntry2={amount: parseFloat(applyAmt.toFixed(2)), date: payDate, isGeneral: true}; if(_payMethId) _epEntry2.paymentMethodId=_payMethId;
+                var _epEntry2={amount: parseFloat(applyAmt.toFixed(2)), date: payDate, isGeneral: true, cashReceived: amt, bonusAmt: _bonusAmt||0}; if(_payMethId) _epEntry2.paymentMethodId=_payMethId;
                 existingEps.push(_epEntry2);
                 uupdates.extraPayments = existingEps;
                 if(_payMethId) uupdates.paymentMethodId = _payMethId;
@@ -8151,14 +8194,14 @@
                 var nbRef = db.doc(userPath()+'/bills/'+newestBill._id);
                 var nbSnap = await nbRef.get(); var nbData = nbSnap.data();
                 var nbEp = (nbData.extraPayments||[]);
-                var _crEpEntry={amount:newCredit, date:payDate, isCredit:true}; if(_payMethId) _crEpEntry.paymentMethodId=_payMethId;
+                var _crEpEntry={amount:newCredit, date:payDate, isCredit:true, cashReceived: amt, bonusAmt: _bonusAmt||0}; if(_payMethId) _crEpEntry.paymentMethodId=_payMethId;
                 nbEp.push(_crEpEntry);
                 await trackedWrite(function(){return nbRef.update({extraPayments:nbEp})});
                 var lbN=state.bills.find(function(bb){return bb._id===newestBill._id});
                 if(lbN){lbN.extraPayments=nbEp;}
               }
 
-              // Record in cash flow for payment method tracking
+              // Record actual cash received in cash flow for payment method tracking
               if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate, c._id, c.name);
 
               await trackedWrite(function(){return db.doc(userPath()+'/companies/'+c._id).update({creditBalance: totalCredit})});
@@ -8169,10 +8212,11 @@
             var sn=await ref.get(); var bData=sn.data();
             var ep=(bData.extraPayments||[]);
             var payDate2=dt||localDateStr();
-            var _epEntry3={amount:amt,date:payDate2}; if(_payMethId) _epEntry3.paymentMethodId=_payMethId;
+            // Store effective amount (cash + bonus) in the extraPayment entry
+            var _epEntry3={amount:_effectiveAmt,date:payDate2,cashReceived:amt,bonusAmt:_bonusAmt||0}; if(_payMethId) _epEntry3.paymentMethodId=_payMethId;
             ep.push(_epEntry3);
             var curDue = bData.balanceDue||0;
-            var newDue2 = parseFloat(Math.max(0, curDue - amt).toFixed(2));
+            var newDue2 = parseFloat(Math.max(0, curDue - _effectiveAmt).toFixed(2));
             var updates2={extraPayments:ep, balanceDue:newDue2};
             updates2.paymentStatus = newDue2 <= 0.001 ? 'received' : 'partial';
             var grandTotal2=(bData.totalDollars||0)+(bData.extraFeeAmount||0);
@@ -8182,7 +8226,7 @@
             var lb4=state.bills.find(function(bb){return bb._id===bid});
             if(lb4){Object.assign(lb4,updates2);}
             if(_payMethId) cfRecordExtraPayment(amt, _payMethId, payDate2, c._id, c.name);
-            var overpay = parseFloat(Math.max(0, amt - curDue).toFixed(2));
+            var overpay = parseFloat(Math.max(0, _effectiveAmt - curDue).toFixed(2));
             if(overpay > 0.001){
               var prevCr = typeof c.creditBalance==='number' ? c.creditBalance : 0;
               var newCr = parseFloat((prevCr + overpay).toFixed(2));
@@ -9608,7 +9652,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
@@ -12315,6 +12359,8 @@
       });
 
       // Also include extra_payment and bonus transactions (general company payments) in byMethod breakdown
+      var bonusTotal = 0;
+      var bonusTxs = [];
       cfTransactions.forEach(function(tx) {
         if (tx.category !== 'extra_payment' && tx.category !== 'bonus') return;
         var txDate = tx.date ? new Date(tx.date.length === 10 ? tx.date + 'T00:00:00' : tx.date) : null;
@@ -12329,6 +12375,10 @@
             note: tx.note || 'Extra payment', companyName: tx.companyName || '',
             paymentMethodId: pmId
           });
+        }
+        if (tx.category === 'bonus') {
+          bonusTotal += (tx.amount || 0);
+          bonusTxs.push(tx);
         }
       });
 
@@ -12381,8 +12431,32 @@
         .filter(Boolean)
         .sort(function(a, b) { return billToDate(b.date) - billToDate(a.date); });
 
+      // Add extra_payment and bonus cfTransactions to filteredTxs so they show in the list
+      var _extraTxRows = cfTransactions.filter(function(tx) {
+        if (tx.category !== 'extra_payment' && tx.category !== 'bonus') return false;
+        var txDate = tx.date ? new Date(tx.date.length === 10 ? tx.date + 'T00:00:00' : tx.date) : null;
+        if (!txDate || isNaN(txDate.getTime())) return false;
+        if (fD && txDate < fD) return false;
+        if (tD && txDate > tD) return false;
+        return true;
+      }).map(function(tx) {
+        return {
+          id: tx.id, type: 'income',
+          category: tx.category,
+          amount: tx.amount || 0,
+          paymentMethodId: tx.paymentMethodId || '',
+          companyId: tx.companyId || '',
+          companyName: tx.companyName || '',
+          date: tx.date,
+          billId: tx.billId || '',
+          note: tx.note || ''
+        };
+      });
+      filteredTxs = filteredTxs.concat(_extraTxRows).sort(function(a,b){ return billToDate(b.date)-billToDate(a.date); });
+
       return { inflow, billInflow, creditInflow, redemptionCost, opExpTotal, totalOpEx, totalOutflow, grossProfit,
                salaryTotal, salaryEmployees, byMethod,
+               bonusTotal, bonusTxs,
                filteredTxs: filteredTxs, opFiltered,
                salaryLoaded: !!_cfSalaryCache };
     }
@@ -12635,6 +12709,35 @@
           <button class="btn btn-ghost btn-sm" id="cfApplyDate" style="font-size:11px">Filter</button>
           <button class="btn btn-ghost btn-sm" id="cfResetDate" style="font-size:11px;color:var(--textMuted)">Reset</button>
         </div>
+
+        ${summary.bonusTotal > 0 ? `
+        <div style="margin-bottom:14px;border-radius:12px;background:rgba(34,211,238,0.07);border:1px solid rgba(34,211,238,0.22);overflow:hidden">
+          <div id="cfBonusCardHeader" style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <div style="flex:1">
+              <div style="font-family:'Orbitron',monospace;font-size:10px;color:#22d3ee;font-weight:700;letter-spacing:1px">PAYMENT BONUSES</div>
+              <div style="font-size:10px;color:var(--textMuted);margin-top:1px">Extra value from bonus incentives · ${summary.bonusTxs.length} entries</div>
+            </div>
+            <div style="font-family:'Orbitron',monospace;font-size:17px;font-weight:800;color:#22d3ee">+$${summary.bonusTotal.toFixed(2)}</div>
+            <svg id="cfBonusChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0"><polyline points="6,9 12,15 18,9"/></svg>
+          </div>
+          <div id="cfBonusCardBody" style="display:none;padding:0 14px 12px">
+            <div style="height:1px;background:rgba(34,211,238,0.15);margin-bottom:10px"></div>
+            ${summary.bonusTxs.map(function(tx){
+              var d2 = new Date(tx.date);
+              var pm2 = cfPaymentMethods.find(function(p){return p.id===tx.paymentMethodId;});
+              return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(34,211,238,0.08)">'
+                + '<div style="flex:1;min-width:0">'
+                +   '<div style="font-size:12px;font-weight:600;color:var(--textPrimary)">' + esc(tx.companyName||'-') + '</div>'
+                +   '<div style="font-size:10px;color:var(--textMuted)">' + d2.toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'2-digit'}) + (pm2?' · '+esc(pm2.name):'') + '</div>'
+                +   '<div style="font-size:10px;color:#22d3ee;opacity:0.7">' + esc(tx.note||'') + '</div>'
+                + '</div>'
+                + '<div style="font-family:\'Orbitron\',monospace;font-size:13px;font-weight:700;color:#22d3ee">+$' + (tx.amount||0).toFixed(2) + '</div>'
+                + '</div>';
+            }).join('')}
+          </div>
+        </div>` : ''}
+
         <div style="font-size:11px;color:var(--textMuted);margin-bottom:10px">Payment method breakdown (click for details)</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px">
           ${cfPaymentMethods.map(pm => {
@@ -12834,6 +12937,19 @@
     function bindCashFlowPage() {
       // Back button
       $('#cfBackBtn').onclick = () => { state.view = 'companies'; render(); };
+
+      // Bonus card toggle
+      var _cfBonusHdr = document.getElementById('cfBonusCardHeader');
+      if (_cfBonusHdr) {
+        _cfBonusHdr.onclick = function() {
+          var body = document.getElementById('cfBonusCardBody');
+          var chevron = document.getElementById('cfBonusChevron');
+          if (!body) return;
+          var isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'block';
+          if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        };
+      }
 
       // Tab switching
       $$('.cf-tab-btn').forEach(btn => {
