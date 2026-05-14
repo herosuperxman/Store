@@ -1256,12 +1256,13 @@
     // FIREBASE INIT
     // ============================================================
     const firebaseConfig = {
-      apiKey: "AIzaSyBA8XuXoM2L82AwlBYNzrXyi2NVWYo3l2Y",
-      authDomain: "store-manage-a5c84.firebaseapp.com",
-      projectId: "store-manage-a5c84",
-      storageBucket: "store-manage-a5c84.firebasestorage.app",
-      messagingSenderId: "382462372132",
-      appId: "1:382462372132:web:3a8f93153ad2c91cd3abb1",
+      apiKey: "AIzaSyDjrOg8Q0sIXI6Jo5f4DT2x-kv9rkbaMx0",
+      authDomain: "auth.sweepadmin.com",
+      projectId: "sweepadministrator",
+      storageBucket: "sweepadministrator.firebasestorage.app",
+      messagingSenderId: "909535669253",
+      appId: "1:909535669253:web:8389b6274f269178c3806c",
+      measurementId: "G-0LMKKJRY4X"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -1410,15 +1411,14 @@
     let _unsubs = []; // Firestore listener unsubscribers
     function stopListeners() { _unsubs.forEach(fn => fn()); _unsubs = []; }
 
-    // One-time initial load (fast from cache)
-    // === PERFORMANCE: Cache helpers ===
+    // === PERFORMANCE: Debounce/schedule helpers ===
     var _gbCacheWriteTimer = null;
     function scheduleGbCacheWrite() {
       if (_gbCacheWriteTimer) clearTimeout(_gbCacheWriteTimer);
       _gbCacheWriteTimer = setTimeout(function() {
         _gbCacheWriteTimer = null;
         _gbCache.set('data', {mg:state.masterGames, bills:state.bills, companies:state.companies});
-      }, 1500); // only write cache 1.5s after last change
+      }, 1500);
     }
 
     var _cfSyncTimer = null;
@@ -1427,11 +1427,14 @@
       _cfSyncTimer = setTimeout(function() {
         _cfSyncTimer = null;
         cfSyncBillsToTransactions();
-      }, 2000); // debounce CF sync — expensive Firestore writes, no rush
+      }, 2000);
     }
 
     // Migration: only run once ever per session, not on every snapshot
     var _migrationDoneSession = false;
+
+    // One-time initial load (fast from cache)
+    var _gbCache = {
       get: function(k) { try { var raw = localStorage.getItem('gb_'+dataOwnerUid()+'_'+k); if(!raw) return null; var d=JSON.parse(raw); return d; } catch(e){ return null; } },
       set: function(k,v) { try { localStorage.setItem('gb_'+dataOwnerUid()+'_'+k, JSON.stringify(v)); } catch(e){} },
       clear: function() { try { var keys=[]; for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith('gb_'))keys.push(k)} keys.forEach(function(k){localStorage.removeItem(k)}) } catch(e){} }
@@ -4972,6 +4975,11 @@
     function getCompanyBills(companyId) {
       return _billsByCompany[companyId] || [];
     }
+
+    // ============================================================
+    // BILLING
+    // ============================================================
+    function renderBilling(c) {
       const mode = state.convMode;
       const items = state.billItems;
       const assignedGames = c.assignedGames || [];
@@ -9733,7 +9741,7 @@
     // ============================================================
     // AUTH STATE LISTENER (with access control)
     // ============================================================
-    const ADMIN_EMAIL = 'hero.superxman@gmail.com';
+    const ADMIN_EMAIL = 'service@sweepadmin.com';
 
     async function checkUserAccess(user) {
       // Admin always has access
