@@ -6998,7 +6998,7 @@
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <div class="search-wrap" style="flex:1">
             <span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
-            <input class="input input-search" id="rateSearch" placeholder="Search assigned games..." />
+            <input class="input input-search" id="rateSearch" placeholder="Search by game or rate (e.g. 10%)" />
           </div>
           <button class="btn btn-purple" id="showAssignGame"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Assign</button>
         </div>
@@ -7172,7 +7172,9 @@
           const q = $('#rateSearch').value.toLowerCase();
           $$('.assigned-row').forEach(r => {
             const name = r.querySelector('span:nth-child(2)').textContent.toLowerCase();
-            r.style.display = name.includes(q) ? '' : 'none';
+            const badge = r.querySelector('.badge-cyan');
+            const rate = badge ? badge.textContent.toLowerCase() : '';
+            r.style.display = (name.includes(q) || rate.includes(q)) ? '' : 'none';
           });
         };
         $$('.rate-edit').forEach(btn => {
